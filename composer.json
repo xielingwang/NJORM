@@ -1,0 +1,23 @@
+{
+    "name": "njorm/njorm",
+    "type": "library",
+    "description": "NJORM - Not Just ORM, a database.",
+    "keywords": ["orm","database","pdo"],
+    "homepage": "http://github.com/xielingwang/njorm",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Amin By",
+            "email": "admin@aminby.net",
+            "homepage": "http://www.aminby.net/"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.0",
+        "pimple/pimple" :"~3.0"
+    },
+    "suggest": {},
+    "autoload": {
+        "psr-0": { "NJORM": "." }
+    }
+}

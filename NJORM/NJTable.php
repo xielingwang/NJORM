@@ -2,27 +2,25 @@
 /**
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
- * @Last Modified by:   Amin by
- * @Last Modified time: 2014-12-17 18:15:57
+ * @Last Modified by:   byamin
+ * @Last Modified time: 2014-12-20 15:12:16
  */
 namespace NJORM;
+interface INJTable {
+  function name();
+}
 
-class NJTable {
-  protected $columns = array();
-  protected $filters = array();
-  protected $sorts = array();
-  protected $aggregates = array();
-  protected $result = null;
-
-  public function 
-
-  public function findAll() {
-    if($this->result) {
-
-    }
+class NJTable implements INJTable {
+  protected $_name;
+  protected function __construct($name){
+    $this->_name = $name;
   }
 
-  public function findOne() {
+  public function name() {
+    return $this->_name;
+  }
 
+  public static function factory($name) {
+    return new INJTable($name);
   }
 }
