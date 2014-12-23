@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
  * @Last Modified by:   byamin
- * @Last Modified time: 2014-12-23 01:22:54
+ * @Last Modified time: 2014-12-23 08:28:21
  */
 namespace NJORM;
 class NJCondition {
@@ -41,6 +41,7 @@ class NJCondition {
       if(!in_array($v, array(self::TYPE_EXPR, self::TYPE_AND, self::TYPE_OR))) {
         throw new Exception("Condition Unexpected Type!");
       }
+      $this->_type = $v;
     }
     return $this->_type;
   }
@@ -129,6 +130,7 @@ class NJCondition {
   }
 
   public function toString($enclose = false) {
+    print_r($this->_data);
     if($this->_type === self::TYPE_EXPR)
       return $this->expr2Str($enclose);
     elseif($this->_type === self::TYPE_AND)
