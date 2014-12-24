@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
  * @Last Modified by:   byamin
- * @Last Modified time: 2014-12-23 08:28:21
+ * @Last Modified time: 2014-12-24 08:16:44
  */
 namespace NJORM;
 class NJCondition {
@@ -39,7 +39,7 @@ class NJCondition {
     if(count($args)) {
       $v = array_shift($args);
       if(!in_array($v, array(self::TYPE_EXPR, self::TYPE_AND, self::TYPE_OR))) {
-        throw new Exception("Condition Unexpected Type!");
+        throw new \Exception("Condition Unexpected Type!");
       }
       $this->_type = $v;
     }
@@ -53,7 +53,7 @@ class NJCondition {
       $this->_data[] = $this->selfFactory($arg);
     }
     else {
-      throw new Exception("Not NJConditon NOT array!");
+      throw new \Exception("Not NJConditon NOT array!");
     }
     return $this;
   }
@@ -76,6 +76,26 @@ class NJCondition {
     return $this;
   }
 
+  protected function _operator_is($op) {
+    if(in_array($op, array('==','='))) {
+      $op = 'IS';
+    }
+    elseif(in_array($op, array('!=', '<>'))) {
+      $op = 'IS NOT';
+    }
+    return $op;
+  }
+
+  protected function _operator_in($op) {
+    if(in_array($op, array('==','='))) {
+      $op = 'IN';
+    }
+    elseif(in_array($op, array('!=', '<>'))) {
+      $op = 'NOT IN';
+    }
+    return $op;
+  }
+
   protected function expr($arg) {
     $this->type(self::TYPE_EXPR);
     if(strpos($arg[0], '%') !== false) {
@@ -95,7 +115,26 @@ class NJCondition {
         $arg[] = $v;
       }
       if(count($arg) <= 3) {
-        if(!is_numeric($arg[2]))
+        if(is_null($arg[2]) || is_bool($arg[2])) {
+          $arg[1] = $this->_operator_is($arg[1]);
+          if(is_null($arg[2]))
+            $arg[2] = 'NULL';
+          else
+            $arg[2] = $arg[2] ? 'TRUE' : 'FALSE';
+        }
+
+        elseif(is_array($arg[2])) {
+          if(empty($arg[2])) {
+            $arg[1] = $this->_operator_is($arg[1]);
+            $arg[2] = 'NULL';
+          }
+          else {
+            $arg[1] = $this->_operator_in($arg[1]);
+            $arg[2] = '('.implode(',', $arg[2]).')';
+          }
+        }
+
+        elseif(!is_numeric($arg[2]))
           $arg[2] = sprintf("'%s'", $arg[2]);
         $this->_data = sprintf("`%s` %s %s", $arg[0], $arg[1], $arg[2]);
       }
@@ -112,25 +151,24 @@ class NJCondition {
   protected function and2Str($enclose) {
     $strs = array();
     foreach($this->_data as $c) {
-      $strs[] = $w->toString($c->type() === self::TYPE_OR);
+      $strs[] = $c->toString($c->type() === self::TYPE_OR);
     }
     $op = ' AND ';
     $string = implode($op, $strs);
-    return $enclose ? $where = ('('.$where.')') : $where;
+    return $enclose ? $string = ('('.$string.')') : $string;
   }
 
   protected function or2Str($enclose) {
     $strs = array();
     foreach($this->_data as $c) {
-      $strs[] = $w->toString($c->type() === self::TYPE_OR);
+      $strs[] = $c->toString($c->type() === self::TYPE_OR);
     }
     $op = ' OR ';
     $string = implode($op, $strs);
-    return $enclose ? $where = ('('.$where.')') : $where;
+    return $enclose ? $string = ('('.$string.')') : $string;
   }
 
   public function toString($enclose = false) {
-    print_r($this->_data);
     if($this->_type === self::TYPE_EXPR)
       return $this->expr2Str($enclose);
     elseif($this->_type === self::TYPE_AND)
