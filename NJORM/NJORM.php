@@ -2,8 +2,8 @@
 /**
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
- * @Last Modified by:   byamin
- * @Last Modified time: 2014-12-21 17:10:19
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2014-12-22 11:15:57
  */
 namespace NJORM;
 
@@ -21,7 +21,7 @@ class NJORM {
   *******************************************************************************/
 
   /**
-   * Slim PSR-0 autoloader
+   * NJORM PSR-0 autoloader
    */
   public static function autoload($className)
   {
@@ -49,7 +49,7 @@ class NJORM {
   }
 
   /**
-   * Register Slim's PSR-0 autoloader
+   * Register NJORM's PSR-0 autoloader
    */
   public static function registerAutoloader()
   {

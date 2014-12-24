@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:11:15
  * @Last Modified by:   byamin
- * @Last Modified time: 2014-12-24 08:07:48
+ * @Last Modified time: 2014-12-25 00:47:46
  */
 class NJWhereTest extends PHPUnit_Framework_TestCase {
   function testCondition() {
@@ -40,7 +40,7 @@ class NJWhereTest extends PHPUnit_Framework_TestCase {
     $this->assertEquals("`eee` = 5 AND `abc` >= 'eee' AND `abc` > 3 AND `abc` = 3", $conds_4->toString());
   }
 
-  function testAdvanceCondition() {
+  function testAdvanceCondition1() {
     $cond = new \NJORM\NJCondition("field", null);
     $this->assertEquals('`field` IS NULL', $cond->toString());
 
@@ -55,5 +55,22 @@ class NJWhereTest extends PHPUnit_Framework_TestCase {
 
     $cond = new \NJORM\NJCondition("field", array(1,2,3,4));
     $this->assertEquals('`field` IN (1,2,3,4)', $cond->toString());
+
+    $cond = new \NJORM\NJCondition("field", array(1,2,3,4,"s'3"));
+    $this->assertEquals("`field` IN (1,2,3,4,'s\'3')", $cond->toString());
+  }
+  function testAdvanceCondition2() {
+    $cond = new \NJORM\NJCondition("field", 'between', 3, 5);
+    $this->assertEquals("`field` BETWEEN 3 AND 5", $cond->toString());
+
+    $cond = new \NJORM\NJCondition("field", 'not   between', 3, 5);
+    $this->assertEquals("`field` NOT BETWEEN 3 AND 5", $cond->toString());
+
+    $cond = new \NJORM\NJCondition("field1", "`field2`");
+    $this->assertEquals("`field1` = `field2`", $cond->toString());
+
+    $cond = new \NJORM\NJCondition("field1", "like", "abc%");
+    $this->assertEquals("`field1` LIKE 'abc%'", $cond->toString());
+    $this->assertEquals("WHERE `field1` LIKE 'abc%'", $cond->toWhere());
   }
 }
