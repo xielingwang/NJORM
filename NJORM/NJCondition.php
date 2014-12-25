@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
  * @Last Modified by:   byamin
- * @Last Modified time: 2014-12-25 00:53:02
+ * @Last Modified time: 2014-12-25 01:12:08
  */
 namespace NJORM;
 class NJCondition {
@@ -114,6 +114,10 @@ class NJCondition {
     return $op;
   }
 
+  protected function _field_standardize($f) {
+    return '`' . $f . '`';
+  }
+
   protected function _implode_array(array $arr) {
     foreach($arr as &$v) {
       $v = $this->_value_standardize($v);
@@ -175,7 +179,8 @@ class NJCondition {
           $arg[2] = $this->_value_standardize($arg[2]);
         }
 
-        $this->_data = sprintf("`%s` %s %s", $arg[0], $arg[1], $arg[2]);
+        $arg[0] = $this->_field_standardize($arg[0]);
+        $this->_data = sprintf("%s %s %s", $arg[0], $arg[1], $arg[2]);
       }
     }
     while(0);
