@@ -3,10 +3,10 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:11:15
  * @Last Modified by:   byamin
- * @Last Modified time: 2014-12-25 01:08:49
+ * @Last Modified time: 2014-12-26 01:42:46
  */
-use \NJORM\NJCondition as NJCnd;
-class NJWhereTest extends PHPUnit_Framework_TestCase {
+use \NJORM\NJCom\NJCondition as NJCnd;
+class NJConditionTest extends PHPUnit_Framework_TestCase {
   function testCondition() {
     $cond1 = new NJCnd("abc", ">", 3);
     $this->assertEquals("`abc` > 3", $cond1->toString());
@@ -72,6 +72,6 @@ class NJWhereTest extends PHPUnit_Framework_TestCase {
 
     $cond = new NJCnd("field1", "like", "abc%");
     $this->assertEquals("`field1` LIKE 'abc%'", $cond->toString());
-    $this->assertEquals("WHERE `field1` LIKE 'abc%'", $cond->toWhere());
+    $this->assertEquals("WHERE `field1` LIKE 'abc%'", (string)$cond);
   }
 }

@@ -3,9 +3,9 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
  * @Last Modified by:   byamin
- * @Last Modified time: 2014-12-25 01:12:08
+ * @Last Modified time: 2014-12-26 01:42:27
  */
-namespace NJORM;
+namespace NJORM\NJCom;
 class NJCondition {
   const TYPE_EXPR = 0;
   const TYPE_AND = 1;
@@ -221,7 +221,7 @@ class NJCondition {
       return $this->or2Str($enclose);
   }
 
-  public function toWhere() {
+  public function __toString() {
     return "WHERE " . $this->toString();
   }
 
