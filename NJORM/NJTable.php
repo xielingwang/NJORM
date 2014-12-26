@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   Amin by
- * @Last Modified time: 2014-12-26 14:06:16
+ * @Last Modified time: 2014-12-26 14:17:18
  */
 namespace NJORM;
 interface INJTable {
@@ -30,10 +30,6 @@ class NJTable implements INJTable {
       'type' => 'VARCHAR(256)'
       ),
     );
-
-  public function insert($arr) {
-    
-  }
 
   public function select_star() {
     $cols = array();
