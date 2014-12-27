@@ -3,14 +3,15 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
  * @Last Modified by:   byamin
- * @Last Modified time: 2014-12-26 01:42:27
+ * @Last Modified time: 2014-12-27 10:06:54
  */
 namespace NJORM\NJCom;
+use \NJORM\NJMisc;
 class NJCondition {
   const TYPE_EXPR = 0;
   const TYPE_AND = 1;
   const TYPE_OR = 2;
-  protected $_supported_operators = array('=','>=','>','<=','<','<>','!=','<=>','IS','IS NOT','IN','NOT IN','BETWEEN','NOT BETWEEN','REGEXP', 'NOT REGEXP','LIKE','NOT LIKE');
+  protected $_supported_operators = array();
 
   protected $_data;
   protected $_type;
@@ -97,30 +98,9 @@ class NJCondition {
     return $op;
   }
 
-  protected function _value_standardize($v) {
-    if(strpos($v, '`') !== false)
-      return $v;
-    if(!is_numeric($v)) {
-      return '\''.addslashes($v).'\'';
-    }
-    return $v;
-  }
-
-  protected function _operator_standardize($op) {
-    $op = preg_replace('/\s+/i', ' ', strtoupper($op));
-    if(!in_array($op, $this->_supported_operators)) {
-      throw new \Exception( "illegal operator " . $op );
-    }
-    return $op;
-  }
-
-  protected function _field_standardize($f) {
-    return '`' . $f . '`';
-  }
-
   protected function _implode_array(array $arr) {
     foreach($arr as &$v) {
-      $v = $this->_value_standardize($v);
+      $v = NJMisc::value_standardize($v);
     }
     return '(' . implode(',', $arr) . ')';
   }
@@ -144,18 +124,18 @@ class NJCondition {
         $arg[] = $v;
       }
       if(count($arg) >= 3) {
-        $arg[1] = $this->_operator_standardize($arg[1]);
+        $arg[1] = NJMisc::op_standardize($arg[1]);
 
         // between
         if(in_array($arg[1], array('BETWEEN', 'NOT BETWEEN'))) {
           if(count($arg) < 4)
             throw new \Exception('Forth argument is need for `between` operator');
-          $arg[2] = sprintf("%s AND %s", $this->_value_standardize($arg[2]), $this->_value_standardize($arg[3]));
+          $arg[2] = sprintf("%s AND %s", NJMisc::value_standardize($arg[2]), NJMisc::value_standardize($arg[3]));
         }
 
         // IS (NOT) NULL
         elseif(is_null($arg[2]) || is_bool($arg[2])) {
-          $arg[1] = $this->_operator_is($arg[1]);
+          $arg[1] = NJMisc::equal2is($arg[1]);
           if(is_null($arg[2]))
             $arg[2] = 'NULL';
           else
@@ -165,21 +145,21 @@ class NJCondition {
         // (NOT) IN (...)
         elseif(is_array($arg[2])) {
           if(empty($arg[2])) {
-            $arg[1] = $this->_operator_is($arg[1]);
+            $arg[1] = NJMisc::equal2is($arg[1]);
             $arg[2] = 'NULL';
           }
           else {
-            $arg[1] = $this->_operator_in($arg[1]);
-            $arg[2] = $this->_implode_array($arg[2]);
+            $arg[1] = NJMisc::equal2in($arg[1]);
+            $arg[2] = NJMisc::value_standardize($arg[2]);
           }
         }
 
         // A VALUE OR A Field
         else {
-          $arg[2] = $this->_value_standardize($arg[2]);
+          $arg[2] = NJMisc::value_standardize($arg[2]);
         }
 
-        $arg[0] = $this->_field_standardize($arg[0]);
+        $arg[0] = NJMisc::field_standardize($arg[0]);
         $this->_data = sprintf("%s %s %s", $arg[0], $arg[1], $arg[2]);
       }
     }

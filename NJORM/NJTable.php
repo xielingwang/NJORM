@@ -2,8 +2,8 @@
 /**
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
- * @Last Modified by:   Amin by
- * @Last Modified time: 2014-12-26 14:06:16
+ * @Last Modified by:   byamin
+ * @Last Modified time: 2014-12-27 23:57:09
  */
 namespace NJORM;
 interface INJTable {
@@ -35,33 +35,24 @@ class NJTable implements INJTable {
     
   }
 
-  public function select_star() {
+  public function select_star($alias_tb = null, $dbname = null) {
     $cols = array();
     foreach($this->_fields as $alias => $fi) {
-      $cols[] = sprintf('`%s` `%s`', $fi['name'], $alias);
+      $field = array($fi['name']);
+
+      if(!empty($alias_tb))
+        array_unshift($field, $alias_tb);
+
+      if(!empty($dbname))
+        array_unshift($field, $dbname);
+
+      $cols[] = implode(' ', array(NJMisc::field_standardize($field), NJMisc::field_standardize($alias)));
     }
     return 'SELECT ' . implode(',', $cols);
   }
 
   public function field($alias, $name, $type) {
     $field =& $this->_fields[$alias];
-    $field = array(
-      'name' => $name,
-      'type' => $type,
-      );
-    if(func_num_args() > 3) {
-      if(is_bool(func_get_arg(3))) {
-        $field['notnull'] = func_get_arg(3);
-        if(func_num_args()>4)
-          $field['default'] = func_get_arg(4);
-        if(func_num_args()>5)
-          $field['comment'] = func_get_arg(5);
-      }
-      else {
-        $field['comment'] = func_get_arg(3);
-      }
-    }
-    return $this;
   }
 
   public function __toString() {
