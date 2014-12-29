@@ -2,8 +2,8 @@
 /**
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
- * @Last Modified by:   Amin by
- * @Last Modified time: 2014-12-29 17:13:33
+ * @Last Modified by:   byamin
+ * @Last Modified time: 2014-12-30 00:34:01
  */
 namespace NJORM;
 use NJCom\NJField;
@@ -13,9 +13,48 @@ interface INJTable {
 
 class NJTable implements INJTable {
   protected $_name;
-  protected $_pri_key = 'sa1,sa2';
-  protected $_auto_increment = 'sa1';
+  protected $_pri_key;
+  protected $_auto_increment;
   protected $_fields = array();
+
+  public function setPrimaryKey($key) {
+    if(func_num_args() < 1) {
+      trigger_error('NJTable setPrimaryKey() expects at least one argument.');
+    }
+
+    $this->_pri_key = func_get_args();
+    foreach($this->_pri_key as $pk) {
+      if(!in_array($pk, $this->field_names())) {
+        trigger_error('primary key "%s" should be in defined fields.');
+      }
+
+    }
+    return $this;
+  }
+
+  public function field_by_name($key) {
+    foreach($this->_fields as $field) {
+      if($field->name == $key) {
+        return $field;
+      }
+    }
+  }
+
+  public function setAutoIncrement($key) {
+    if(!in_array($this->_pri_key)) {
+      trigger_error('auto_increment must primary key.');
+    }
+
+    foreach($this->_fields as $field) {
+      if($field->name != $key)
+        continue;
+
+      $field_type = $field->type;
+      if(strpos('INT', $field_type) === false || strpos('FLOAT', $field_type) === false || strpos('DOUBLE', $field_type) === false) {
+        trigger_error('auto_increment field expects int/float/double type.');
+      }
+    }
+  }
 
   public function select_star($alias_tb = null, $dbname = null) {
     $cols = array();
@@ -33,13 +72,29 @@ class NJTable implements INJTable {
     return 'SELECT ' . implode(',', $cols);
   }
 
-  public function field($alias, NJField $field = null) {
-    if($field instanceof NJField)
-      $this->_field[$alias] = $field;
-    else
-      $this->_field[$alias] = new NJField($this);
+  // field('name', $field);
+  // field('name', 'nm', $field);
+  // field('name');
+  // field('name', 'nm');
+  public function field($name) {
+    $arg1 = func_get_arg(1);
+    if(is_string($arg1)) {
+      $alias = func_get_arg(1);
+      if(func_get_arg(2) instanceof NJField) {
+        $field = func_get_arg(2)->setName($name);
+      }
+    }
+    elseif(func_get_arg(1) instanceof NJField) {
+      $field = func_get_arg(1)->setName($name);
+    }
 
-    return $this->_field[$alias];
+    if(empty($field)) {
+      $field = (new NJField($this))->setName($name);
+    }
+
+    empty($alias) && $alias = $name;
+
+    return $this->_fields[$alias] = $field;
   }
 
   public function __toString() {
@@ -50,8 +105,10 @@ class NJTable implements INJTable {
 
     // fields
     foreach ($this->_fields as $alias => $field) {
-      $defines = (string)$field;
-      if($this->_auto_increment)
+      $stmt = (string)$field;
+      if(in_array($this->_auto_increment, array($alias, $field->name))) {
+        $stmt .= ' AUTO_INCREMENT';
+      }
       $defines[] = $stmt;
     }
 

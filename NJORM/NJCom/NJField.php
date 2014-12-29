@@ -41,11 +41,10 @@ class NJField {
   }
 
   public function __get($key) {
-    if(in_array($key, array('type', 'not_null','name', 'default', 'comment'))) {
-      if($key != 'not_null')
-        $key = 'set'.ucfirst($key);
-      else
-        $key = 'setNotNull';
+    if(in_array($key, array('type', 'not_null', 'name', 'default', 'comment'))) {
+      if($key == 'type')
+        $this->type_parse();
+      $key = '_' . $key;
       return $this->$key();
     }
   }
@@ -153,11 +152,8 @@ class NJField {
 
         // attributes: unsigned
         if(!in_array($p_key, array('M', 'D'))) {
-          if(!empty($arg)) {
-            $v = array_shift($arg);
-            printf('%s %d', $v, $v);
-            if($v)
-              $attributes[] = $p_key;
+          if(!empty($arg) && array_shift($arg)) {
+            $attributes[] = $p_key;
           }
           continue;
         }
