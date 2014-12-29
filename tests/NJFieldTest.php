@@ -3,12 +3,20 @@
  * @Author: byamin
  * @Date:   2014-12-27 23:54:52
  * @Last Modified by:   byamin
- * @Last Modified time: 2014-12-28 01:16:44
+ * @Last Modified time: 2014-12-29 08:06:49
  */
 
 use \NJORM\NJCom\NJField;
 class NJTableTest extends PHPUnit_Framework_TestCase {
   function testTypeFormat() {
+    $exception = false;
+    try {
+      $ret = NJField::format_type('invalidtype', 256);
+    }
+    catch(\Exception $e) {
+      $exception = true;
+    }
+
     $ret = NJField::format_type('int');
     $this->assertEquals('INT', $ret);
 
@@ -29,5 +37,11 @@ class NJTableTest extends PHPUnit_Framework_TestCase {
 
     $ret = NJField::format_type('decimal', 1000, 4, 20);
     $this->assertEquals('DECIMAL(1000,4)', $ret);
+  }
+
+  public function testField() {
+    $field = new NJField(null);
+    $field->name('field')->type('int', 10, true)->not_null()->defval(111)->comment("It's a comment!");
+    $this->assertEquals("`field` INT(10) unsigned NOT NULL DEFAULT 111 COMMENT 'It\'s a comment!'", (string)$field);
   }
 }
