@@ -3,9 +3,10 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   Amin by
- * @Last Modified time: 2014-12-26 14:17:18
+ * @Last Modified time: 2014-12-29 17:13:33
  */
 namespace NJORM;
+use NJCom\NJField;
 interface INJTable {
   function name();
 }
@@ -13,51 +14,32 @@ interface INJTable {
 class NJTable implements INJTable {
   protected $_name;
   protected $_pri_key = 'sa1,sa2';
-  protected $_fields = array(
-    'sa1' => array(
-      'name' => 'pk1',
-      'type' => 'INT(11) unsigned',
-      'notnull' => true,
-      'default' => 1,
-      'comment' => '这是个注释',
-      ),
-    'sa2' => array(
-      'name' => 'pk2',
-      'type' => 'INT(11)'
-      ),
-    'sa3' => array(
-      'name' => 'longkey1',
-      'type' => 'VARCHAR(256)'
-      ),
-    );
+  protected $_auto_increment = 'sa1';
+  protected $_fields = array();
 
-  public function select_star() {
+  public function select_star($alias_tb = null, $dbname = null) {
     $cols = array();
-    foreach($this->_fields as $alias => $fi) {
-      $cols[] = sprintf('`%s` `%s`', $fi['name'], $alias);
+    foreach($this->_fields as $alias => $field_define) {
+      $field = array($field_define['name']);
+
+      if(!empty($alias_tb))
+        array_unshift($field, $alias_tb);
+
+      if(!empty($dbname))
+        array_unshift($field, $dbname);
+
+      $cols[] = implode(' ', array(NJMisc::field_standardize($field), NJMisc::field_standardize($alias)));
     }
     return 'SELECT ' . implode(',', $cols);
   }
 
-  public function field($alias, $name, $type) {
-    $field =& $this->_fields[$alias];
-    $field = array(
-      'name' => $name,
-      'type' => $type,
-      );
-    if(func_num_args() > 3) {
-      if(is_bool(func_get_arg(3))) {
-        $field['notnull'] = func_get_arg(3);
-        if(func_num_args()>4)
-          $field['default'] = func_get_arg(4);
-        if(func_num_args()>5)
-          $field['comment'] = func_get_arg(5);
-      }
-      else {
-        $field['comment'] = func_get_arg(3);
-      }
-    }
-    return $this;
+  public function field($alias, NJField $field = null) {
+    if($field instanceof NJField)
+      $this->_field[$alias] = $field;
+    else
+      $this->_field[$alias] = new NJField($this);
+
+    return $this->_field[$alias];
   }
 
   public function __toString() {
@@ -67,22 +49,9 @@ class NJTable implements INJTable {
     $defines = array();
 
     // fields
-    foreach ($this->_fields as $fi) {
-      $stmt = sprintf("`%s` %s", $fi['name'], $fi['type']);
-      if(array_key_exists('notnull', $fi) && $fi['notnull'] === true) {
-        $stmt .= " NOT NULL";
-      }
-      if(array_key_exists('default', $fi)) {
-        $defVal = $fi['default'];
-        if(is_null($defVal))
-          $defVal = 'notnull';
-        elseif(!is_numeric($defVal))
-          $defVal = "'".$defVal."'";
-        $stmt .= " DEFAULT " . $defVal;
-      }
-      if(array_key_exists('comment', $fi)) {
-        $stmt .= sprintf(" COMMENT '%s'", addslashes($fi['comment']));
-      }
+    foreach ($this->_fields as $alias => $field) {
+      $defines = (string)$field;
+      if($this->_auto_increment)
       $defines[] = $stmt;
     }
 
