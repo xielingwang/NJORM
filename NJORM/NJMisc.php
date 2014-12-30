@@ -27,28 +27,36 @@ public static function wrap_grave_accent($v) {
  */
 public static function value_standardize($v) {
 
-  // is scalar
-  if(is_scalar($v)) {
-    if(strpos($v, '`') !== false)
-      return $v;
-    if(!is_numeric($v)) {
-      return '\''.addslashes($v).'\'';
-    }
-  }
-
-  // is array
-  elseif(is_array($v)) {
+  // array
+  if(is_array($v)) {
     if(empty($v))
-      throw new \Exception('array value is empty!');
+      trigger_error('array value for value_standardize() cant be empty!', E_USER_ERROR);
     foreach($v as &$_v) {
       $_v = NJMisc::value_standardize($_v);
     }
     return '(' . implode(',', $v) . ')';
   }
 
+  // numeric
+  elseif(is_numeric($v)) {
+    return $v;
+  }
+
+  // null
+  elseif(is_null($v)) {
+    return 'NULL';
+  }
+
+  // string
+  elseif(is_string($v)) {
+    if(strpos($v, '`') !== false)
+      return $v;
+    return "'" . addslashes($v) . "'";
+  }
+
   // how to support object/resource
   else {
-    throw new \Exception('can not standardize for type ' . gettype($v));
+    trigger_error('Unexpected type for value_standardize(): ' . $v . " " . gettype($v), E_USER_ERROR);
   }
 
   return $v;
@@ -62,7 +70,7 @@ public static function value_standardize($v) {
 public static function op_standardize($op) {
   $op = strtoupper(preg_replace('/\s+/i', ' ', trim($op)));
   if(!self::op_supported($op)){
-    throw new \Exception( "illegal operator " . $op );
+    trigger_error("illegal operator " . $op, E_USER_ERROR);
   }
   return $op;
 }
@@ -130,7 +138,6 @@ public static function equal2in($op) {
 /**
  * [op_supported description]
  * @param  [type]  $op        [description]
- * @param  boolean $exception [description]
  * @return [type]             [description]
  */
 public static function op_supported($op) {

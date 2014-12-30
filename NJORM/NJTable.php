@@ -2,8 +2,8 @@
 /**
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
- * @Last Modified by:   byamin
- * @Last Modified time: 2014-12-30 08:03:46
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2014-12-30 13:54:14
  */
 namespace NJORM;
 use NJORM\NJCom\NJField;
@@ -17,24 +17,24 @@ class NJTable implements INJTable {
   protected $_auto_increment;
   protected $_fields = array();
 
-  public function setPrimaryKey($key) {
+  public function setPrimaryKey() {
     if(func_num_args() < 1) {
-      trigger_error('NJTable setPrimaryKey() expects at least one argument.');
+      trigger_error('NJTable setPrimaryKey() expects at least one argument.', E_USER_ERROR);
     }
 
     $this->_pri_key = func_get_args();
-    foreach($this->_pri_key as &$pk) {
+    foreach($this->_pri_key as &$pkey) {
 
-      if(!($field = $this->field_by_name($key))) {
+      if(!($field = $this->field_by_name($pkey))) {
         if(array_key_exists($key, $this->_fields))
           $field = $this->_fields[$key];
       }
 
       if(!$field) {
-        trigger_error(sprintf('Field key "%s" undefined!', $key));
+        trigger_error(sprintf('Field key "%s" undefined!', $key), E_USER_ERROR);
       }
 
-      $pk = $field->name;
+      $pkey = $field->name;
     }
     return $this;
   }
@@ -56,35 +56,25 @@ class NJTable implements INJTable {
     }
 
     if(!$field) {
-      trigger_error(sprintf('Field key "%s" undefined!', $key));
+      trigger_error(sprintf('Field key "%s" undefined!', $key), E_USER_ERROR);
     }
 
-    $key = $field->name;
-    if(!in_array($key, $this->_pri_key)) {
-      trigger_error('auto_increment must primary key.');
-    }
-
-    $field_type = $field->type;
-    if(strpos('INT', $field_type) === false || strpos('FLOAT', $field_type) === false || strpos('DOUBLE', $field_type) === false) {
-      trigger_error('auto_increment field expects int/float/double type.');
-    }
-
-    $this->_auto_increment = $field->name;
+    $field->auto_increment();
     return $this;
   }
 
   public function select_star($alias_tb = null, $dbname = null) {
     $cols = array();
-    foreach($this->_fields as $alias => $field_define) {
-      $field = array($field_define['name']);
+    foreach($this->_fields as $alias => $field) {
+      $fieldName = array($field->name);
 
       if(!empty($alias_tb))
-        array_unshift($field, $alias_tb);
+        array_unshift($fieldName, $alias_tb);
 
       if(!empty($dbname))
-        array_unshift($field, $dbname);
+        array_unshift($fieldName, $dbname);
 
-      $cols[] = implode(' ', array(NJMisc::field_standardize($field), NJMisc::field_standardize($alias)));
+      $cols[] = implode(' ', array(NJMisc::field_standardize($fieldName), NJMisc::field_standardize($alias)));
     }
     return 'SELECT ' . implode(',', $cols);
   }
@@ -101,7 +91,7 @@ class NJTable implements INJTable {
       $arg1 = func_get_arg(1);
       if(is_string($arg1)) {
         $alias = func_get_arg(1);
-        if(func_num_args() >= 2 && func_get_arg(2) instanceof NJField) {
+        if(func_num_args() > 2 && (func_get_arg(2) instanceof NJField)) {
           $field = func_get_arg(2)->name($name);
         }
       }
@@ -120,7 +110,7 @@ class NJTable implements INJTable {
     return $this->_fields[$alias] = $field;
   }
 
-  public function __toString() {
+  public function toDefine() {
     $tbprefix = "test_";
     $tbname = $tbprefix . $this->_name;
     $string = sprintf("CREATE TABLE `%s`", $tbname);
@@ -128,7 +118,7 @@ class NJTable implements INJTable {
 
     // fields
     foreach ($this->_fields as $alias => $field) {
-      $stmt = (string)$field;
+      $stmt = $field->toDefine();
       if(in_array($this->_auto_increment, array($alias, $field->name))) {
         $stmt .= ' AUTO_INCREMENT';
       }
@@ -137,11 +127,11 @@ class NJTable implements INJTable {
 
     // primary key
     if(!empty($this->_pri_key)) {
-      $prikeys = explode(',', $this->_pri_key);
-      foreach ($prikeys as &$key) {
+      $prikeys = array();
+      foreach ($this->_pri_key as $key) {
         if(array_key_exists($key, $this->_fields))
-          $key = $this->_fields[$key]['name'];
-        $key = '`' . $key . '`';
+          $key = $this->_fields[$key]->name;
+        $prikeys[] = NJMisc::field_standardize($key);
       }
       $defines[] = 'PRIMARY KEY ('.implode(',', $prikeys).')';
     }

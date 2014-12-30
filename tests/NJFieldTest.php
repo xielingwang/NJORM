@@ -2,21 +2,13 @@
 /**
  * @Author: byamin
  * @Date:   2014-12-27 23:54:52
- * @Last Modified by:   byamin
- * @Last Modified time: 2014-12-30 07:46:26
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2014-12-30 13:34:05
  */
 
 use \NJORM\NJCom\NJField;
 class NJFieldTest extends PHPUnit_Framework_TestCase {
   function testTypeFormat() {
-    $exception = false;
-    try {
-      $ret = NJField::format_type('invalidtype', 256);
-    }
-    catch(\Exception $e) {
-      $exception = true;
-    }
-
     $ret = NJField::format_type('int');
     $this->assertEquals('INT', $ret);
 
@@ -42,6 +34,6 @@ class NJFieldTest extends PHPUnit_Framework_TestCase {
   public function testField() {
     $field = new NJField(null);
     $field->name('field')->type('int', 10, true)->notnull()->default(111)->comment("It's a comment!");
-    $this->assertEquals("`field` INT(10) unsigned NOT NULL DEFAULT 111 COMMENT 'It\'s a comment!'", (string)$field);
+    $this->assertEquals("`field` INT(10) unsigned NOT NULL DEFAULT 111 COMMENT 'It\'s a comment!'", $field->toDefine());
   }
 }

@@ -13,51 +13,67 @@ class NJField {
 
   protected $_comment;
 
-  public function __toString() {
-    return $this->toString();
-  }
+  protected $_auto_increment_msg;
+  protected $_auto_increment;
 
-  public function toString() {
+  public function toDefine() {
     if(!$this->_name) {
-      trigger_error('name of field should not be null.');
+      trigger_error('name of field should be set.', E_USER_ERROR);
     }
 
-    if(!($this->_type_arg && $this->type_parse())) {
-      trigger_error('type of field should not be null.');
+    if(!$this->_type) {
+      trigger_error('type of field should be set.', E_USER_ERROR);
     }
 
-    $string = sprintf('`%s` %s', $this->_name, $this->_type);
+    // type
+    $stmt = sprintf('%s %s', NJMisc::field_standardize($this->_name), $this->_type);
 
+    // not null
     if($this->_notnull)
-      $string .= " NOT NULL";
+      $stmt .= " NOT NULL";
 
-    if(!is_null($this->_defined_default))
-      $string .= " DEFAULT " . NJMisc::value_standardize($this->_default);
+    // default
+    if($this->_defined_default)
+      $stmt .= " DEFAULT " . NJMisc::value_standardize($this->_default);
 
+    // auto increment
+    if($this->_auto_increment) {
+      $stmt .= " AUTO_INCREMENT";
+    }
+
+    // comment
     if($this->_comment)
-      $string .= sprintf(" COMMENT '%s'", addslashes($this->_comment));
+      $stmt .= sprintf(" COMMENT '%s'", addslashes($this->_comment));
 
-    return $string;
+    return $stmt;
   }
 
   public function __get($key) {
-    die("error here!!ewsfdsfddddfdfdsfsfsfsd");
-    if(in_array($key, array('type', 'not_null', 'name', 'default', 'comment'))) {
-      if($key == 'type') {
-        $this->type_parse();
-      }
+    if(in_array($key, array('type', 'notnull', 'name', 'default', 'comment'))) {
       $key = '_' . $key;
-      return $this->$key();
+      return $this->$key;
     }
   }
 
-  public function type($type) {
-    $this->_type_arg = func_get_args();
+  public function auto_increment() {
+    if($this->_auto_increment_msg){
+      trigger_error($this->_auto_increment_msg, E_USER_ERROR);
+    }
+    $this->_auto_increment = true;
     return $this;
   }
 
-  protected function type_parse() {
-    return $this->_type = call_user_func_array('self::format_type', $this->_type_arg);
+  public function type($type) {
+    $this->_auto_increment_msg = null;
+
+    if(stripos('int', $type) === false && stripos('float', $type) === false && stripos('double', $type) === false) {
+      $this->_auto_increment_msg = $type . ' can be used with auto_increment.';
+    }
+
+    $this->_type_arg = func_get_args();
+    $this->_type = call_user_func_array('self::format_type', $this->_type_arg);
+
+    return $this;
   }
 
   public function name($name) {
@@ -84,6 +100,9 @@ class NJField {
       trigger_error('default value expects a scalar!', E_USER_ERROR);
     }
 
+    // 
+    $this->_auto_increment_msg = 'default value can be used with auto_increment meantime.';
+    $this->_defined_default = true;
     $this->_default = $default;
     return $this;
   }
@@ -167,7 +186,7 @@ class NJField {
         }
 
         // parameter: (M, D)
-        // no default && need but no value, throw exception
+        // no default && need but no value, trigger error
         if($parameter_needed && $p_val && empty($arg)) {
           trigger_error(sprintf('Type "%s" expects parameter "%s" ', $type, $p_key), E_USER_ERROR);
         }
