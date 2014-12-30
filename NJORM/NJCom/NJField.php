@@ -93,6 +93,7 @@ class NJField {
     if($name == 'default'){
       return call_user_func_array(array($this, '_default'), $args);
     }
+    trigger_error('Call undefined function: '.$name, E_USER_ERROR);
   }
 
   protected function _default($default) {
