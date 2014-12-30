@@ -3,10 +3,10 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   byamin
- * @Last Modified time: 2014-12-30 00:34:01
+ * @Last Modified time: 2014-12-30 08:03:46
  */
 namespace NJORM;
-use NJCom\NJField;
+use NJORM\NJCom\NJField;
 interface INJTable {
   function name();
 }
@@ -23,11 +23,18 @@ class NJTable implements INJTable {
     }
 
     $this->_pri_key = func_get_args();
-    foreach($this->_pri_key as $pk) {
-      if(!in_array($pk, $this->field_names())) {
-        trigger_error('primary key "%s" should be in defined fields.');
+    foreach($this->_pri_key as &$pk) {
+
+      if(!($field = $this->field_by_name($key))) {
+        if(array_key_exists($key, $this->_fields))
+          $field = $this->_fields[$key];
       }
 
+      if(!$field) {
+        trigger_error(sprintf('Field key "%s" undefined!', $key));
+      }
+
+      $pk = $field->name;
     }
     return $this;
   }
@@ -38,22 +45,32 @@ class NJTable implements INJTable {
         return $field;
       }
     }
+
+    return false;
   }
 
   public function setAutoIncrement($key) {
-    if(!in_array($this->_pri_key)) {
+    if(!($field = $this->field_by_name($key))) {
+      if(array_key_exists($key, $this->_fields))
+        $field = $this->_fields[$key];
+    }
+
+    if(!$field) {
+      trigger_error(sprintf('Field key "%s" undefined!', $key));
+    }
+
+    $key = $field->name;
+    if(!in_array($key, $this->_pri_key)) {
       trigger_error('auto_increment must primary key.');
     }
 
-    foreach($this->_fields as $field) {
-      if($field->name != $key)
-        continue;
-
-      $field_type = $field->type;
-      if(strpos('INT', $field_type) === false || strpos('FLOAT', $field_type) === false || strpos('DOUBLE', $field_type) === false) {
-        trigger_error('auto_increment field expects int/float/double type.');
-      }
+    $field_type = $field->type;
+    if(strpos('INT', $field_type) === false || strpos('FLOAT', $field_type) === false || strpos('DOUBLE', $field_type) === false) {
+      trigger_error('auto_increment field expects int/float/double type.');
     }
+
+    $this->_auto_increment = $field->name;
+    return $this;
   }
 
   public function select_star($alias_tb = null, $dbname = null) {
@@ -77,19 +94,25 @@ class NJTable implements INJTable {
   // field('name');
   // field('name', 'nm');
   public function field($name) {
-    $arg1 = func_get_arg(1);
-    if(is_string($arg1)) {
-      $alias = func_get_arg(1);
-      if(func_get_arg(2) instanceof NJField) {
-        $field = func_get_arg(2)->setName($name);
+    do {
+      if(func_num_args() <= 1)
+        break;
+
+      $arg1 = func_get_arg(1);
+      if(is_string($arg1)) {
+        $alias = func_get_arg(1);
+        if(func_num_args() >= 2 && func_get_arg(2) instanceof NJField) {
+          $field = func_get_arg(2)->name($name);
+        }
+      }
+      elseif(func_get_arg(1) instanceof NJField) {
+        $field = func_get_arg(1)->name($name);
       }
     }
-    elseif(func_get_arg(1) instanceof NJField) {
-      $field = func_get_arg(1)->setName($name);
-    }
+    while(0);
 
     if(empty($field)) {
-      $field = (new NJField($this))->setName($name);
+      $field = (new NJField($this))->name($name);
     }
 
     empty($alias) && $alias = $name;

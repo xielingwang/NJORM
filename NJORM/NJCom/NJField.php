@@ -41,15 +41,17 @@ class NJField {
   }
 
   public function __get($key) {
+    die("error here!!ewsfdsfddddfdfdsfsfsfsd");
     if(in_array($key, array('type', 'not_null', 'name', 'default', 'comment'))) {
-      if($key == 'type')
+      if($key == 'type') {
         $this->type_parse();
+      }
       $key = '_' . $key;
       return $this->$key();
     }
   }
 
-  public function setType($type) {
+  public function type($type) {
     $this->_type_arg = func_get_args();
     return $this;
   }
@@ -58,7 +60,7 @@ class NJField {
     return $this->_type = call_user_func_array('self::format_type', $this->_type_arg);
   }
 
-  public function setName($name) {
+  public function name($name) {
     if(!is_string($name)){
       trigger_error('table name expects a string!', E_USER_ERROR);
     }
@@ -66,12 +68,18 @@ class NJField {
     return $this;
   }
 
-  public function setNotNull() {
+  public function notnull() {
     $this->_notnull = true;
     return $this;
   }
 
-  public function setDefault($default) {
+  public function __call($name, $args){
+    if($name == 'default'){
+      return call_user_func_array(array($this, '_default'), $args);
+    }
+  }
+
+  protected function _default($default) {
     if(!is_scalar($default)){
       trigger_error('default value expects a scalar!', E_USER_ERROR);
     }
@@ -80,7 +88,7 @@ class NJField {
     return $this;
   }
 
-  public function setComment($comment) {
+  public function comment($comment) {
     if(!is_string($comment)) {
       trigger_error('comment value expects a string!', E_USER_ERROR);
     }
