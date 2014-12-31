@@ -3,17 +3,11 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   Amin by
- * @Last Modified time: 2014-12-22 11:15:57
+ * @Last Modified time: 2014-12-31 16:46:40
  */
 namespace NJORM;
 
 class NJORM {
-  function __get($table) {
-    $query = NJQuery::factory();
-    $query->from(NJTable::factory($table));
-    return $query;
-  }
-
   /********************************************************************************
   * PSR-0 Autoloader
   *

@@ -175,6 +175,9 @@ class NJField {
       // no default for VARCHAR CHAR
       $parameter_needed = in_array($type, array('VARCHAR', 'CHAR'));
 
+      if(!is_array($types[$type]))
+        break;
+
       // parameter key && parameter value
       foreach($types[$type] as $p_key => $p_val) {
 
