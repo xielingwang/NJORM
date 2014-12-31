@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2014-12-27 23:54:52
- * @Last Modified by:   Amin by
- * @Last Modified time: 2014-12-30 13:34:05
+ * @Last Modified by:   byamin
+ * @Last Modified time: 2015-01-01 01:44:40
  */
 
 use \NJORM\NJCom\NJField;
@@ -35,5 +35,11 @@ class NJFieldTest extends PHPUnit_Framework_TestCase {
     $field = new NJField(null);
     $field->name('field')->type('int', 10, true)->notnull()->default(111)->comment("It's a comment!");
     $this->assertEquals("`field` INT(10) unsigned NOT NULL DEFAULT 111 COMMENT 'It\'s a comment!'", $field->toDefine());
+
+    $field = NJField::email(64)->name('email');
+    $this->assertEquals("`email` VARCHAR(64) COMMENT 'Email.'", $field->toDefine());
+
+    $field = NJField::id(18)->name('Id');
+    $this->assertEquals("`Id` BIGINT(18) unsigned NOT NULL COMMENT 'ID.'", $field->toDefine());
   }
 }

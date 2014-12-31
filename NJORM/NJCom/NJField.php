@@ -237,4 +237,21 @@ class NJField {
 
     return $string;
   }
+
+  // predefine type
+  protected static $_predefine_types = array(
+    'email' => function($len) {
+      return (new NJField())->type('varchar', $len)->comment('Email.');
+    },
+    'id' => function($len) {
+      return (new NJField())->type('bigint', $len, true)->notnull()->comment('ID.');
+    }
+  );
+
+  public static function __callStatic($name, $args) {
+    if(in_array($name, self::$_predefine_types)) {
+      return call_user_func_array(self::$_predefine_types[$name], $args);
+    }
+    trigger_error(sprintf("static method %s() is not found.", $name), E_USER_ERROR);
+  }
 }
