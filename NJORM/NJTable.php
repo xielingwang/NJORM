@@ -2,8 +2,8 @@
 /**
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
- * @Last Modified by:   byamin
- * @Last Modified time: 2014-12-31 01:14:08
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2014-12-31 17:04:01
  */
 namespace NJORM;
 use NJORM\NJCom\NJField;
@@ -12,22 +12,27 @@ interface INJTable {
 }
 
 class NJTable implements INJTable {
-  protected $_name;
-  protected $_pri_key;
-  protected $_auto_increment;
-  protected $_fields = array();
+  /* table creataion */
+  protected $_d_name;
+  protected $_d_pri_key;
+  protected $_d_auto_increment;
+  protected $_d_fields = array();
+
+  /* table query */
+  protected $_q_as;
+  protected $_q_selection;
 
   public function primaryKey() {
     if(func_num_args() < 1) {
-      trigger_error('NJTable::primaryKey() expects at least one argument.', E_USER_ERROR);
+      return $this->_d_pri_key;
     }
 
-    $this->_pri_key = func_get_args();
-    foreach($this->_pri_key as &$pkey) {
+    $this->_d_pri_key = func_get_args();
+    foreach($this->_d_pri_key as &$pkey) {
 
       if(!($field = $this->field_by_name($pkey))) {
-        if(array_key_exists($key, $this->_fields))
-          $field = $this->_fields[$key];
+        if(array_key_exists($key, $this->_d_fields))
+          $field = $this->_d_fields[$key];
       }
 
       if(!$field) {
@@ -40,7 +45,7 @@ class NJTable implements INJTable {
   }
 
   public function field_by_name($key) {
-    foreach($this->_fields as $field) {
+    foreach($this->_d_fields as $field) {
       if($field->name == $key) {
         return $field;
       }
@@ -51,8 +56,8 @@ class NJTable implements INJTable {
 
   public function autoIncrement($key) {
     if(!($field = $this->field_by_name($key))) {
-      if(array_key_exists($key, $this->_fields))
-        $field = $this->_fields[$key];
+      if(array_key_exists($key, $this->_d_fields))
+        $field = $this->_d_fields[$key];
     }
 
     if(!$field) {
@@ -70,22 +75,27 @@ class NJTable implements INJTable {
     trigger_error('Call undefined function: '.$name, E_USER_ERROR);
   }
 
-  protected $_with_table_alias = null;
-  protected function _as($table_alias) {
-    $this->_with_table_alias = $table_alias;
+  protected function _as($tbAs) {
+    $this->_q_as = $tbAs;
+    return $this;
   }
 
-  public function select() {
-    $args = func_get_args();
+  public function select(){
+    $this->_q_selection = func_get_args();
+    return $this;
+  }
+
+  public function selectionString() {
+    $args = $this->_q_selection;
     $select_cols = array();
 
-    $table_alias = null;
-    if($this->_with_table_alias) {
-      $table_alias = $this->_with_table_alias;
-      $this->_with_table_alias = null;
+    $tbAs = null;
+    if($this->_q_as) {
+      $tbAs = $this->_q_as;
+      $this->_q_as = null;
     }
 
-    $field_aliases = array_keys($this->_fields);
+    $field_aliases = array_keys($this->_d_fields);
     foreach($args as $arg) {
       if($arg == '*') {
         $select_cols = array_merge($select_cols, $field_aliases);
@@ -101,31 +111,43 @@ class NJTable implements INJTable {
     }
     $select_cols = array_unique($select_cols);
     $cols = array();
-    foreach($select_cols as $col) {
-      if(!is_scalar($col)) {
+    foreach($select_cols as $fAlias) {
+      if(!is_scalar($fAlias)) {
         trigger_error('Unexpected type of value for NJTable::select()', E_USER_ERROR);
       }
 
-      print_r($field_aliases);
-      if(!in_array($col, $field_aliases)) {
-        trigger_error(sprintf('Field %s have not defined in table.', $col), E_USER_ERROR);
+      if(!in_array($fAlias, $field_aliases)) {
+        trigger_error(sprintf('Field %s have not defined in table.', $fAlias), E_USER_ERROR);
       }
 
-      $field = $this->_fields[$col];
+      $field = $this->_d_fields[$fAlias];
       $fieldName = array($field->name);
-      if($table_alias) {
-        array_unshift($fieldName, $table_alias);
+      if($tbAs) {
+        array_unshift($fieldName, $tbAs);
       }
-      $cols[] = implode(' ', array(NJMisc::field_standardize($fieldName), NJMisc::field_standardize($alias)));
+      $col = NJMisc::field_standardize($fieldName);
+      if($field->name != $fAlias)
+        $col .= ' ' . NJMisc::field_standardize($fAlias);
+      $cols[] = $col;
     }
 
     return 'SELECT ' . implode(',', $cols);
   }
 
-  // field('name', $field);
-  // field('name', 'nm', $field);
-  // field('name');
-  // field('name', 'nm');
+  
+  
+  
+  /**
+   * set/add table field
+   * 
+   * 1. field('name', 'alias');
+   * 2. field('name', 'alias', $field);
+   * 3. field('name', $field);
+   * 4. field('name');
+   * 
+   * @param  [type] $name [description]
+   * @return [type]       [description]
+   */
   public function field($name) {
     do {
       if(func_num_args() <= 1)
@@ -133,47 +155,67 @@ class NJTable implements INJTable {
 
       $arg1 = func_get_arg(1);
       if(is_string($arg1)) {
-        $alias = func_get_arg(1);
-        if(func_num_args() > 2 && (func_get_arg(2) instanceof NJField)) {
-          $field = func_get_arg(2)->name($name);
+        // 1. match 'name,alias'
+        $alias = $arg1;
+        if(func_num_args() <= 2)
+          break;
+
+        // 2. try to match 'name,alias,njfield'
+        $arg2 = func_get_arg(2);
+        if(!($arg2 instanceof NJField)) {
+          trigger_error('The 3nd argument for NJTable::field()expects NJField instance.');
         }
+        $field = $arg2;
+        break;
       }
-      elseif(func_get_arg(1) instanceof NJField) {
-        $field = func_get_arg(1)->name($name);
+
+      // 3. try to match 'name,field'
+      if($arg1 instanceof NJField) {
+        $field = $arg1;
+        break;
       }
+
+      trigger_error('The 2nd argument for NJTable::field()expects NJField or string instance .');
     }
     while(0);
 
+    // 4. match 'name'
     if(empty($field)) {
-      $field = (new NJField($this))->name($name);
+      $field = new NJField($this);
     }
+    $field->name($name);
 
     empty($alias) && $alias = $name;
 
-    return $this->_fields[$alias] = $field;
+    return $this->_d_fields[$alias] = $field;
   }
 
-  public function toDefine() {
-    $tbprefix = "test_";
-    $tbname = $tbprefix . $this->_name;
+  /**
+   * Show Create Table
+   * @return [type] [description]
+   */
+  public function showCreateTable($tbprefix = "test_", $dropIfExists = false) {
+    $tbname = $tbprefix . $this->_d_name;
+
+    // defines
     $string = sprintf("CREATE TABLE `%s`", $tbname);
     $defines = array();
 
     // fields
-    foreach ($this->_fields as $alias => $field) {
+    foreach ($this->_d_fields as $alias => $field) {
       $stmt = $field->toDefine();
-      if(in_array($this->_auto_increment, array($alias, $field->name))) {
+      if(in_array($this->_d_auto_increment, array($alias, $field->name))) {
         $stmt .= ' AUTO_INCREMENT';
       }
       $defines[] = $stmt;
     }
 
     // primary key
-    if(!empty($this->_pri_key)) {
+    if(!empty($this->_d_pri_key)) {
       $prikeys = array();
-      foreach ($this->_pri_key as $key) {
-        if(array_key_exists($key, $this->_fields))
-          $key = $this->_fields[$key]->name;
+      foreach ($this->_d_pri_key as $key) {
+        if(array_key_exists($key, $this->_d_fields))
+          $key = $this->_d_fields[$key]->name;
         $prikeys[] = NJMisc::field_standardize($key);
       }
       $defines[] = 'PRIMARY KEY ('.implode(',', $prikeys).')';
@@ -187,16 +229,20 @@ class NJTable implements INJTable {
     // table attributes
     $string .= ";";
 
+    // DROP: drop statement
+    if($dropIfExists) {
+      $string = sprintf("DROP TABLE IF EXISTS `%s`;\n", $tbname) . $string;
+    }
+
     return $string;
   }
 
-
   public function __construct($name){
-    $this->_name = $name;
+    $this->_d_name = $name;
   }
 
   public function name() {
-    return $this->_name;
+    return $this->_d_name;
   }
 
   public static function factory($name) {
