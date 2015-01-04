@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-27 23:54:52
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-01-01 01:44:40
+ * @Last Modified time: 2015-01-01 10:22:27
  */
 
 use \NJORM\NJCom\NJField;
@@ -35,11 +35,17 @@ class NJFieldTest extends PHPUnit_Framework_TestCase {
     $field = new NJField(null);
     $field->name('field')->type('int', 10, true)->notnull()->default(111)->comment("It's a comment!");
     $this->assertEquals("`field` INT(10) unsigned NOT NULL DEFAULT 111 COMMENT 'It\'s a comment!'", $field->toDefine());
+    NJField::predefine('unixtime', function(){
+      return (new NJField(null))->type(int, 11, true)->notnull()->default(0)->comment('unix timestamp.');
+    });
 
     $field = NJField::email(64)->name('email');
     $this->assertEquals("`email` VARCHAR(64) COMMENT 'Email.'", $field->toDefine());
 
     $field = NJField::id(18)->name('Id');
     $this->assertEquals("`Id` BIGINT(18) unsigned NOT NULL COMMENT 'ID.'", $field->toDefine());
+
+    $field = NJField::unixtime()->name('created');
+    $this->assertEquals("`created` INT(11) unsigned NOT NULL DEFAULT 0 COMMENT 'unix timestamp.'", $field->toDefine());
   }
 }

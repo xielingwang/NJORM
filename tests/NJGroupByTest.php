@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-25 01:06:58
  * @Last Modified by:   byamin
- * @Last Modified time: 2014-12-26 01:42:40
+ * @Last Modified time: 2015-01-01 10:26:20
  */
 use \NJORM\NJCom\NJGroupBy as NJGB;
 use \NJORM\NJCom\NJCondition as NJCnd;
@@ -12,7 +12,7 @@ class NJOrderByTest extends PHPUnit_Framework_TestCase {
     $o = new NJGB("field");
     $this->assertEquals('GROUP BY `field`', (string)$o);
 
-    $o->add("field2", false);
+    $o->desc("field2");
     $this->assertEquals('GROUP BY `field`, `field2` DESC', (string)$o);
 
     $o->add("1", false);

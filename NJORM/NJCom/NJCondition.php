@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
- * @Last Modified by:   Amin by
- * @Last Modified time: 2014-12-29 17:48:24
+ * @Last Modified by:   byamin
+ * @Last Modified time: 2015-01-03 01:18:11
  */
 namespace NJORM\NJCom;
 use \NJORM\NJMisc;
@@ -11,7 +11,6 @@ class NJCondition {
   const TYPE_EXPR = 0;
   const TYPE_AND = 1;
   const TYPE_OR = 2;
-  protected $_supported_operators = array();
 
   protected $_data;
   protected $_type;
@@ -30,7 +29,7 @@ class NJCondition {
       return;
     }
 
-    $this->andSth($arg);
+    $this->andString($arg);
   }
 
   protected function selfFactory($arg) {
@@ -63,7 +62,7 @@ class NJCondition {
     return $this;
   }
 
-  protected function andSth($arg) {
+  protected function andString($arg) {
     $this->type(self::TYPE_AND);
     $this->_data = array();
     foreach($arg as $c) {
@@ -72,7 +71,7 @@ class NJCondition {
     return $this;
   }
 
-  protected function orSth($arg) {
+  protected function orString($arg) {
     $this->type(self::TYPE_OR);
     $this->_data = array();
     foreach($arg as $c) {
@@ -217,6 +216,6 @@ class NJCondition {
 
   public static function O() {
     $c = new self();
-    return $c->orSth(func_get_args());
+    return $c->orString(func_get_args());
   }
 }

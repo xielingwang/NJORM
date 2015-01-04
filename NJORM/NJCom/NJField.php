@@ -117,7 +117,7 @@ class NJField {
     return $this;
   }
 
-  public function __construct($njtable) {
+  public function __construct($njtable = null) {
     $this->_table = $njtable;
   }
 
@@ -242,19 +242,33 @@ class NJField {
   }
 
   // predefine type
-  protected static $_predefine_types = array(
-    'email' => function($len) {
+  public static function predefine($name, $callable = null) {
+    static $_pdts = array();
+    $_pdts['email'] = function($len) {
       return (new NJField())->type('varchar', $len)->comment('Email.');
-    },
-    'id' => function($len) {
+    };
+    $_pdts['id'] = function($len) {
       return (new NJField())->type('bigint', $len, true)->notnull()->comment('ID.');
+    };
+
+    if(func_num_args() < 2){
+      if(array_key_exists($name, $_pdts))
+        return $_pdts[$name];
+      return false;
     }
-  );
+
+    $_pdts[$name] = $callable;
+  }
 
   public static function __callStatic($name, $args) {
-    if(in_array($name, self::$_predefine_types)) {
-      return call_user_func_array(self::$_predefine_types[$name], $args);
+    $callable = self::predefine($name);
+    if(!$callable) {
+      trigger_error(sprintf("static method %s() is not found.", $name), E_USER_ERROR);
     }
-    trigger_error(sprintf("static method %s() is not found.", $name), E_USER_ERROR);
+
+    if(is_callable($callable)) {
+      return call_user_func_array($callable, $args);
+    }
+    trigger_error(sprintf("static method %s is uncallable.", $name), E_USER_ERROR);
   }
 }
