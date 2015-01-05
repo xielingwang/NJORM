@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-25 00:56:57
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-01-05 00:21:15
+ * @Last Modified time: 2015-01-06 01:47:00
  */
 namespace NJORM\NJCom;
 class NJOrderBy {
@@ -24,7 +24,7 @@ class NJOrderBy {
     return $this->add($field, false);
   }
 
-  protected function add($field, $asc = true){
+  public function add($field, $asc = true){
     $this->_data[$field] = $asc;
     return $this;
   }

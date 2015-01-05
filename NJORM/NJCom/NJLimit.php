@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2014-12-26 01:41:57
- * @Last Modified by:   Amin by
- * @Last Modified time: 2014-12-29 17:53:52
+ * @Last Modified by:   byamin
+ * @Last Modified time: 2015-01-06 01:42:17
  */
 namespace NJORM\NJCom;
 class NJLimit {
@@ -13,6 +13,12 @@ class NJLimit {
   protected $_limit;
   protected $_offset;
   protected $_type;
+
+  public static function factory(){
+    $class = get_class($this);
+    $rc = new \ReflectionClass($class);
+    return $rc->newInstanceArgs(func_num_args());
+  }
 
   public function __construct() {
     $this->_type = self::TYPE_COMMA;
