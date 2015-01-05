@@ -3,12 +3,15 @@
  * @Author: byamin
  * @Date:   2014-12-25 00:56:57
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-01-01 10:28:54
+ * @Last Modified time: 2015-01-05 00:21:15
  */
 namespace NJORM\NJCom;
 class NJOrderBy {
   protected $_data = array();
-  public function __construct($field, $order = 'asc') {
+  public function __construct($field = null, $order = 'asc') {
+    if(func_num_args() <= 0)
+      return;
+
     $order = (trim($order) == 'asc');
     call_user_func_array(array($this, 'add'), array($field, $order));
   }
