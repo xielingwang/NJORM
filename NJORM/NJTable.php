@@ -2,8 +2,8 @@
 /**
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-01-06 01:26:59
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2015-01-06 10:33:39
  */
 namespace NJORM;
 use NJORM\NJCom\NJField;
@@ -71,6 +71,7 @@ class NJTable implements INJTable {
   public function __get($name) {
     if($name == 'name')
       return sprintf('`%s`', $this->_d_name);
+    trigger_error(sprintf('undefined "%s" in NJTable.', $name));
   }
 
   public function __call($name, $args) {

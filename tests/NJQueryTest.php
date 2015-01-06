@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2015-01-01 12:21:16
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-01-06 01:48:01
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2015-01-06 10:54:37
  */
 
 
@@ -41,6 +41,6 @@ PRIMARY KEY (`field_1`,`field_2`)
   function testNJQuery($tbl) {
     $query = (new NJQuery($tbl));
     $query->select('f1', 'f2', 'ct')->limit(5,100)->where(array('f1', '>', '1'), array('f2', 2))->sortAsc('ct');
-    $this->assertEquals('SELECT `good` FROM `field_1` f1, `field_2` f2, `created_time` ct ORDER BY `ct` DESC LIMIT 5,100', $query->stringify());
+    $this->assertEquals('SELECT `field_1` `f1`,`field_2` `f2`,`created_time` `ct` FROM `good` WHERE `f1` > 1 AND `f2` = 2 `ct` LIMIT 5,100', $query->stringify());
   }
 }

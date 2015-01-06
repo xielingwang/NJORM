@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-01-06 01:45:01
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2015-01-06 10:53:31
  */
 namespace NJORM;
 use \NJORM\NJCom\NJStringifiable;
@@ -18,7 +18,7 @@ class NJQuery implements NJStringifiable{
 
   protected $_select_arg = array('*');
   public function select() {
-    $this->_select_arg = array_merge($this->_select_arg, func_get_args());
+    $this->_select_arg = func_get_args();
     return $this;
   }
 
@@ -56,11 +56,11 @@ class NJQuery implements NJStringifiable{
   }
 
   public function stringify() {
-    $string = call_user_func_array(array($this->_table, 'select'), $this->_select_arg);
+    $string = call_user_func_array(array($this->_table, 'select'), $this->_select_arg)->selectionString();
     $string .= ' FROM ' . $this->_table->name;
 
     if($this->_where_arg) {
-      $string .= ' ' . call_user_func_array(__NAMESPACE__.'\NJCom\NJCondition::N', $this->_where_arg)->toString();
+      $string .= ' ' . call_user_func_array(__NAMESPACE__.'\NJCom\NJCondition::N', $this->_where_arg);
     }
 
     if($this->_order_by) {

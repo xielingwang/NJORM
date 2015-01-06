@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2014-12-26 01:41:57
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-01-06 01:42:17
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2015-01-06 10:51:08
  */
 namespace NJORM\NJCom;
 class NJLimit {
@@ -15,9 +15,9 @@ class NJLimit {
   protected $_type;
 
   public static function factory(){
-    $class = get_class($this);
+    $class = get_called_class();
     $rc = new \ReflectionClass($class);
-    return $rc->newInstanceArgs(func_num_args());
+    return $rc->newInstanceArgs(func_get_args());
   }
 
   public function __construct() {
