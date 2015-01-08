@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-01-07 00:27:39
  * @Last Modified by:   Amin by
- * @Last Modified time: 2015-01-08 16:33:01
+ * @Last Modified time: 2015-01-08 20:18:45
  */
 namespace NJORM\NJCom;
 
@@ -17,20 +17,19 @@ class NJValid {
   }
 
   public static function register($rule, $callable) {
-    self::instance()->addRule($rule, $callable);
+    static::instance()->addRule($rule, $callable);
   }
 
   public static function V() {
-    return call_user_func_array(array(self::instance(), 'rule'), func_get_args());
+    return call_user_func_array(array(static::instance(), 'rule'), func_get_args());
   }
 
   public function rule($rule) {
     $args = func_get_args();
     array_shift($args);
-    $that =& $this;
-    return function ($val) use ($that, $rule, $args) {
+    return function ($val) use ($rule, $args) {
       array_unshift($args, $rule, $val);
-      return call_user_func_array(array($that, 'checkRule'), $args);
+      return call_user_func_array(__CLASS__.'::checkRule', $args);
     };
   }
 
@@ -42,7 +41,7 @@ class NJValid {
     $this->rules[$rule] = $callable;
   }
 
-  public function checkRule($rule) {
+  public function _checkRule($rule) {
     $args = func_get_args();
     array_shift($args);
     if(!array_key_exists($rule, $this->rules)) {
@@ -50,6 +49,10 @@ class NJValid {
     }
 
     return call_user_func_array($this->rules[$rule], $args);
+  }
+
+  public static function checkRule() {
+    return call_user_func_array(array(static::instance(), '_checkRule'), func_get_args());
   }
 
   public function __construct() {
@@ -66,14 +69,33 @@ class NJValid {
       return !!preg_grep($regex, $arr);
     });
     $this->addRule('notIn', function($val, $arr, $caseinsensitive=false){
-      return !$this->checkRule('in', $val, $arr, $caseinsensitive);
+      return !static::checkRule('in', $val, $arr, $caseinsensitive);
     });
     $this->addRule('array', 'is_array');
     $this->addRule('integer', 'is_int');
-    $this->addRule('true', function($val){
-      return $this->checkRule('in', trim($val), array('yes','1','on','true'), true);
+    $this->addRule('float', function($val){
+      return !!filter_var($val, FILTER_VALIDATE_FLOAT, FILTER_FLAG_ALLOW_THOUSAND);
+    });
+    $this->addRule('true', function($val, $strict = false){
+      $options = null;
+      $strict && $options = FILTER_NULL_ON_FAILURE;
+      $ret = filter_var($val, FILTER_VALIDATE_BOOLEAN, $options);
+      if($ret === NULL) {
+        trigger_error(sprintf('"%s" is an invalid boolean value.', $val));
+      }
+      return $ret;
     });
     $this->addRule('numeric', 'is_numeric');
+    $this->addRule('positive', function($val){
+      if(!is_numeric($val)) {
+        trigger_error(sprintf('"%s" is not a numeric.', $val));
+      }
+      return $val > 0;
+    });
+    $this->addRule('negative', function($val){
+      return !self::checkRule('positive', $val) && $val;
+    });
+
     $this->addRule('max', function($val, $max){
       return $val <= $max;
     });
@@ -81,26 +103,34 @@ class NJValid {
       return $val >= $min;
     });
     $this->addRule('between', function($val, $min, $max){
-      return $this->checkRule('min', $val, $min)
-        && $this->checkRule('max', $val, $max);
+      if(static::checkRule('datetime', $val)) {
+        $val = strtotime($val);
+      }
+      if(static::checkRule('datetime', $min)) {
+        $min = strtotime($min);
+      }
+      if(static::checkRule('datetime', $max)) {
+        $max = strtotime($max);
+      }
+
+      return static::checkRule('min', $val, $min)
+        && static::checkRule('max', $val, $max);
     });
 
     // string
-    $this->addRule('alpha', function($val){
-      $this->checkRule('regex', $val, '/^[a-z]$/i');
-    });
+    $this->addRule('alpha', 'ctype_alpha');
+    $this->addRule('alnum', 'ctype_alnum');
+    $this->addRule('digit', 'ctype_digit');
+    $this->addRule('hex', 'ctype_xdigit');
     $this->addRule('word', function($val){
-      $this->checkRule('regex', $val, '/^[a-z-]$/i');
+      return static::checkRule('regex', $val, '/^[a-z-.]+$/i');
     });
 
-    $this->addRule('alphaNum', function($val){
-      $this->checkRule('regex', $val, '/^[a-z0-9]$/i');
-    });
     $this->addRule('length', function($val, $len){
       return strlen($val) == $len;
     });
     $this->addRule('lengthBetween', function($val, $min, $max){
-      return $this->checkRule('lengthMin', $val, $min) && $this->checkRule('lengthMax', $val, $max);
+      return static::checkRule('lengthMin', $val, $min) && static::checkRule('lengthMax', $val, $max);
     });
     $this->addRule('lengthMin', function($val, $min){
       return strlen($val) >= $min;
@@ -108,9 +138,36 @@ class NJValid {
     $this->addRule('lengthMax', function($val, $max){
       return strlen($val) <= $max;
     });
-
-    $this->addRule('contains', function($val, $need, $caseinsensitive = false){
-      return ($caseinsensitive ? stripos($val, $need) : strpos($val, $need)) !== false;
+    $this->addRule('contains', function($val, $needle, $caseinsensitive = false){
+      return ($caseinsensitive
+        ? mb_stripos($val, $needle, 0, mb_detect_encoding($val))
+        : mb_strpos($val, $needle, 0, mb_detect_encoding($val))
+        ) !== false;
+    });
+    $this->addRule('startsWith', function($val, $needle, $caseinsensitive=false){
+      if(is_array($val)) {
+        return ($caseinsensitive
+          ? strcasecmp(reset($val), $needle)
+          : strcmp(reset($val), $needle)
+          ) === 0;
+      }
+      return ($caseinsensitive
+        ? mb_stripos($val, $needle, 0, mb_detect_encoding($val))
+        : mb_strpos($val, $needle, 0, mb_detect_encoding($val))
+        ) === 0;
+    });
+    $this->addRule('endsWith', function($val, $needle, $caseinsensitive=false){
+      if(is_array($val)) {
+        return ($caseinsensitive
+          ? strcasecmp(end($val), $needle)
+          : strcmp(end($val), $needle)
+          ) === 0;
+      }
+      $last = strlen($val) - strlen($needle);
+      return ($caseinsensitive
+        ? mb_strripos($val, $needle, 0, mb_detect_encoding($val))
+        : mb_strrpos($val, $needle, 0, mb_detect_encoding($val))
+        ) === $last;
     });
 
     // regex
@@ -122,16 +179,20 @@ class NJValid {
       return !!$ret;
     });
     $this->addRule('email', function($val){
-      static $email_regex = '/^[\w.+-]+@(?:[\w-]+\.)+\w{2,4}$/i';
-      return $this->checkRule('regex', $val, $email_regex);
+      return !!filter_var($val, FILTER_VALIDATE_EMAIL);
     });
     $this->addRule('url', function($val){
-      static $url_regex = '/^https?:\/\/(?:[\w-]+\.)+\w{2,4}$/i';
-      return $this->checkRule('regex', $val, $url_regex);
+      return !!filter_var($val, FILTER_VALIDATE_URL);
     });
     $this->addRule('ip', function($val){
-      static $ip_regex = '/^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/';
-      return $this->checkRule('regex', $val, $ip_regex);
+      return !!filter_var($val, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4|FILTER_FLAG_IPV6);
+    });
+
+    // datetime
+    $this->addRule('datetime', function($val){
+      if(@date_default_timezone_get())
+        date_default_timezone_set('Asia/Shanghai');
+      return !!strtotime($val);
     });
   }
 }

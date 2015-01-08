@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-01-08 01:18:08
  * @Last Modified by:   Amin by
- * @Last Modified time: 2015-01-08 16:35:35
+ * @Last Modified time: 2015-01-08 20:20:11
  */
 use \NJORM\NJCom\NJValid;
 
@@ -65,6 +65,7 @@ class NJValidTest extends PHPUnit_Framework_TestCase{
     $this->assertTrue($v('255.255.255.255'), '"255.255.255.255" is good');
     $this->assertTrue($v('0.0.0.0'), '"0.0.0.0" is good');
     $this->assertTrue($v('1.12.123.1'), '"1.12.123.1" is good');
+    $this->assertTrue($v('2001:0db8:85a3:08d3:1319:8a2e:0370:7334'), '"2001:0db8:85a3:08d3:1319:8a2e:0370:7334" is good');
     $this->assertFalse($v('1.12.123.256'), '"1.12.123.256" is bad');
   }
   function testURL() {
@@ -73,7 +74,9 @@ class NJValidTest extends PHPUnit_Framework_TestCase{
     $this->assertTrue($v('http://github.com'), '"http://github.com" is good');
     $this->assertTrue($v('https://github.com'), '"https://github.com" is good');
     $this->assertTrue($v('https://gist.github.com'), '"https://gist.github.com" is good');
-    $this->assertFalse($v('http://111'), '"http://111" is bad');
+    $this->assertTrue($v('http://111.111.222.12'), '"http://111.111.222.12" is good');
+    $this->assertTrue($v('http://111'), '"http://111" is bad');
+    $this->assertFalse($v('helloworld.com'), '"helloworld.com" is bad');
   }
   function testMin() {
 
@@ -88,6 +91,32 @@ class NJValidTest extends PHPUnit_Framework_TestCase{
     $this->assertTrue($v(30), '30 >= 30 >= 20 is good!');
     $this->assertTrue($v(20), '30 >= 20 >= 20 is good!');
     $this->assertFalse($v(19), '30 >= 19 >= 20 is bad!');
+  }
+  function testPositive() {
+
+    $v = NJValid::V('positive');
+    $this->assertTrue($v(1), '1 is positive.');
+    $this->assertTrue($v("1"), '"1" is positive.');
+    $this->assertTrue($v(0.1), '0.1 is positive.');
+    $this->assertTrue($v("0.1"), '"0.1" is positive.');
+    $this->assertFalse($v("0"), '"0" is not positive.');
+    $this->assertFalse($v(0), '0 is not positive.');
+    $this->assertFalse($v(-1), '-1 is not positive.');
+    $this->assertFalse($v("-1"), '"-1" is not positive.');
+    $this->assertFalse($v(-0.001), '-0.001 is not positive.');
+  }
+  function testNegative() {
+
+    $v = NJValid::V('negative');
+    $this->assertTrue($v(-1), '-1 is negative.');
+    $this->assertTrue($v("-1"), '"-1" is negative.');
+    $this->assertTrue($v(-0.1), '-0.1 is negative.');
+    $this->assertTrue($v("-0.1"), '"-0.1" is negative.');
+    $this->assertFalse($v("0"), '"0" is not negative.');
+    $this->assertFalse($v(0), '0 is not negative.');
+    $this->assertFalse($v(1), '1 is not negative.');
+    $this->assertFalse($v("1"), '"1" is not negative.');
+    $this->assertFalse($v(0.001), '0.001 is not negative.');
   }
   function testContainsCaseSensitive() {
 
@@ -110,5 +139,109 @@ class NJValidTest extends PHPUnit_Framework_TestCase{
     $this->assertTrue($v('1234567'), '"1234567" strlen(7-16) is good.');
     $this->assertFalse($v("1234567890123456789"), '"1234567890123456789" strlen(7-16) is bad.');
     $this->assertFalse($v("123456"), '"123456" strlen(7-16) is bad.');
+  }
+
+  function testStartsWithCaseSensitive() {
+
+    $v = NJValid::V('startsWith', 'start');
+    $this->assertTrue($v('startFrom'), '"startFrom" is start with "start", case sensitive');
+    $this->assertFalse($v('StartFrom'), '"StartFrom" is start with "start", case sensitive');
+    $this->assertFalse($v('otherFrom'), '"otherFrom" is not start with "start", case sensitive');
+
+    $this->assertTrue($v(array('start','hello','world')), 'array start with start, case sensitive');
+    $this->assertFalse($v(array('Start','hello','world')), 'array start with start, case sensitive');
+    $this->assertFalse($v(array('hello','world','end')), 'array not start with start, case sensitive');
+  }
+
+  function testStartsWithCaseInsensitive() {
+
+    $v = NJValid::V('startsWith', 'start', true);
+    $this->assertTrue($v('startFrom'), '"startFrom" is start with "start", case insensitive');
+    $this->assertTrue($v('StartFrom'), '"StartFrom" is start with "start", case insensitive');
+    $this->assertFalse($v('otherFrom'), '"otherFrom" is not start with "start", case insensitive');
+
+    $this->assertTrue($v(array('start','hello','world')), 'array start with start, case insensitive');
+    $this->assertTrue($v(array('Start','hello','world')), 'array start with start, case sensitive');
+    $this->assertFalse($v(array('hello','world','end')), 'array not start with start, case insensitive');
+  }
+
+  function testEndsWithCaseSensitive() {
+
+    $v = NJValid::V('endsWith', 'end');
+    $this->assertTrue($v('abc.end'), '"abc.end" is end with "end", case sensitive.');
+    $this->assertFalse($v('abc.End'), '"abc.End" is end with "end", case sensitive.');
+    $this->assertFalse($v('end.abc'), '"end.abc" is not end with "end", case sensitive.');
+
+    $this->assertFalse($v(array('start','hello','world')), 'array end with end, case sensitive.');
+    $this->assertTrue($v(array('hello','world','end')), 'array not end with end, case sensitive.');
+    $this->assertFalse($v(array('hello','world','End')), 'array not end with end, case sensitive.');
+  }
+
+  function testEndsWithCaseInsensitive() {
+
+    $v = NJValid::V('endsWith', 'end', true);
+    $this->assertTrue($v('abc.end'), '"abc.end" is end with "end", case sensitive.');
+    $this->assertTrue($v('abc.End'), '"abc.End" is end with "end", case sensitive.');
+    $this->assertFalse($v('end.abc'), '"end.abc" is not end with "end", case sensitive.');
+
+    $this->assertFalse($v(array('start','hello','world')), 'array end with end, case sensitive.');
+    $this->assertTrue($v(array('hello','world','end')), 'array not end with end, case sensitive.');
+    $this->assertTrue($v(array('hello','world','End')), 'array not end with end, case sensitive.');
+  }
+
+  function testWord() {
+
+    $v = NJValid::V('word');
+    $this->assertTrue($v('world'), '"world" is a word.');
+    $this->assertTrue($v('lucky-dog'), '"lucky-dog" is a word.');
+    $this->assertTrue($v('B.C.'), '"B.C." is a word.');
+    $this->assertFalse($v('good morning'), '"good morning" is not a word.');
+  }
+
+  function testAlpha() {
+
+    $v = NJValid::V('alpha');
+    $this->assertTrue($v('world'), '"world" is an alpha.');
+    $this->assertFalse($v('lucky-dog'), '"lucky-dog" is an alpha.');
+    $this->assertFalse($v('B.C.'), '"B.C." is an alpha.');
+    $this->assertFalse($v('a3a4'), '"a3a4" is an alpha.');
+    $this->assertFalse($v('good morning'), '"good morning" is not an alpha.');
+  }
+
+  function testHex() {
+
+    $v = NJValid::V('hex');
+    $this->assertTrue($v('12345'), '"12345" is a hex.');
+    $this->assertTrue($v('12334abcdE'), '"12334abcdE" is a hex.');
+    $this->assertFalse($v('12g3e'), '"12g3e" is not a hex.');
+    $this->assertFalse($v('0x6f6f6f'), '"0x6f6f6f" is not a hex.');
+  }
+
+  function testDigit() {
+
+    $v = NJValid::V('digit');
+    $this->assertTrue($v('12345'), '"12345" are all digits.');
+    $this->assertFalse($v('12334abcdE'), '"12334abcdE" are not all digits.');
+    $this->assertFalse($v('12.30'), '"12.30" are not all digits.');
+    $this->assertFalse($v(78), 'chr(78) are not all digits.');
+  }
+
+  function testDatetime() {
+    $this->markTestIncomplete();
+
+    $v = NJValid::V('datetime');
+    $this->assertTrue($v('1996-11-1'), '1996-11-1 is good.');
+    $this->assertFalse($v('1996-2-31'), '1996-2-31 is bad.');
+
+    $this->assertTrue($v('1996-11-1 16:30'), '1996-11-1 16:30 is good.');
+    $this->assertFalse($v('1996-11-1 16:61'), '1996-11-1 16:61 is bad.');
+
+    $this->assertTrue($v('1996-11-1 16:30:59'), '1996-11-1 16:30:59 is good.');
+    $this->assertFalse($v('1996-11-1 16:30:61'), '1996-11-1 16:30:61 is bad.');
+
+    $v = NJValid::V('between', '1996-10-29', '1996-10-31');
+    $this->assertTrue($v('1996-10-30'), '1996-10-30 is good.');
+    $this->assertTrue($v('1996-11-1'), '1996-11-1 is bad.');
+
   }
 }
