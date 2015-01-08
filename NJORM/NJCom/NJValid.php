@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2015-01-07 00:27:39
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-01-08 01:42:28
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2015-01-08 16:33:01
  */
 namespace NJORM\NJCom;
 
@@ -20,7 +20,7 @@ class NJValid {
     self::instance()->addRule($rule, $callable);
   }
 
-  public static function R() {
+  public static function V() {
     return call_user_func_array(array(self::instance(), 'rule'), func_get_args());
   }
 
@@ -56,17 +56,22 @@ class NJValid {
     $this->addRule('notEmpty', function($val){
       return !empty($val);
     });
-    $this->addRule('in', 'in_array');
-    $this->addRule('notIn', function($val, $arr){
+    $this->addRule('in', function($val, $arr, $caseinsensitive=false){
       if(!is_array($arr)) {
-        trigger_error('Argument 2 expects an array for rule "notIn"');
+        trigger_error('Argument 2 expects an array for rule "in/notIn"');
       }
-      return !in_array($val, $arr);
+      $regex = "/^{$val}$/";
+      if($caseinsensitive)
+        $regex .= 'i';
+      return !!preg_grep($regex, $arr);
+    });
+    $this->addRule('notIn', function($val, $arr, $caseinsensitive=false){
+      return !$this->checkRule('in', $val, $arr, $caseinsensitive);
     });
     $this->addRule('array', 'is_array');
     $this->addRule('integer', 'is_int');
-    $this->addRule('accepted', function($val){
-      $this->checkRule('in', strtolower(trim($val)), array('yes','1','on','true'));
+    $this->addRule('true', function($val){
+      return $this->checkRule('in', trim($val), array('yes','1','on','true'), true);
     });
     $this->addRule('numeric', 'is_numeric');
     $this->addRule('max', function($val, $max){
@@ -75,23 +80,19 @@ class NJValid {
     $this->addRule('min', function($val, $min){
       return $val >= $min;
     });
-    $this->addRule('regex', function($val, $pattern){
-      return preg_match($pattern, $val);
-    });
-    $this->addRule('email', function($val){
-      return $this->checkRule('regex', $val, '/^[a-z0-9_.]+@(?:[a-z0-9_-]+\.)+[a-z0-9_]+$/i');
-    });
-    $this->addRule('url', function($val){
-      return $this->checkRule('regex', $val, "/^https?:\/\/(?:[a-z0-9_-]+\.)+[a-z0-9_]+$/i");
-    });
-    $this->addRule('ip', function($val){
-      return $this->checkRule('regex', $val, '/^(?:\d{1,3}){3}\d{1,3}$/');
+    $this->addRule('between', function($val, $min, $max){
+      return $this->checkRule('min', $val, $min)
+        && $this->checkRule('max', $val, $max);
     });
 
     // string
     $this->addRule('alpha', function($val){
       $this->checkRule('regex', $val, '/^[a-z]$/i');
     });
+    $this->addRule('word', function($val){
+      $this->checkRule('regex', $val, '/^[a-z-]$/i');
+    });
+
     $this->addRule('alphaNum', function($val){
       $this->checkRule('regex', $val, '/^[a-z0-9]$/i');
     });
@@ -108,8 +109,29 @@ class NJValid {
       return strlen($val) <= $max;
     });
 
-    $this->addRule('contains', function($val, $need){
-      return strpos($val, $need) != false;
+    $this->addRule('contains', function($val, $need, $caseinsensitive = false){
+      return ($caseinsensitive ? stripos($val, $need) : strpos($val, $need)) !== false;
+    });
+
+    // regex
+    $this->addRule('regex', function($val, $pattern){
+      $ret = preg_match($pattern, $val);
+      if($ret === false){
+        trigger_error('A regex error occurs: "' . $pattern . '"');
+      }
+      return !!$ret;
+    });
+    $this->addRule('email', function($val){
+      static $email_regex = '/^[\w.+-]+@(?:[\w-]+\.)+\w{2,4}$/i';
+      return $this->checkRule('regex', $val, $email_regex);
+    });
+    $this->addRule('url', function($val){
+      static $url_regex = '/^https?:\/\/(?:[\w-]+\.)+\w{2,4}$/i';
+      return $this->checkRule('regex', $val, $url_regex);
+    });
+    $this->addRule('ip', function($val){
+      static $ip_regex = '/^(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])\.(\d{1,2}|1\d\d|2[0-4]\d|25[0-5])$/';
+      return $this->checkRule('regex', $val, $ip_regex);
     });
   }
 }
