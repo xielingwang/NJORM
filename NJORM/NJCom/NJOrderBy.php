@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-25 00:56:57
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-01-06 01:47:00
+ * @Last Modified time: 2015-01-13 00:11:39
  */
 namespace NJORM\NJCom;
 class NJOrderBy {
@@ -29,14 +29,14 @@ class NJOrderBy {
     return $this;
   }
 
-  protected function _field_standardize($f) {
+  protected function _formatFieldName($f) {
     return is_numeric($f) ? $f : '`' . $f . '`';
   }
 
   public function toString() {
     $orders = array();
     foreach($this->_data as $field => $v) {
-      $orders[] = $this->_field_standardize($field) . (!$v ? ' DESC' : '');
+      $orders[] = $this->_formatFieldName($field) . (!$v ? ' DESC' : '');
     }
     return implode(', ', $orders);
   }

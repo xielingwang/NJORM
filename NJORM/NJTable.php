@@ -2,8 +2,8 @@
 /**
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
- * @Last Modified by:   Amin by
- * @Last Modified time: 2015-01-06 10:33:39
+ * @Last Modified by:   byamin
+ * @Last Modified time: 2015-01-13 00:10:47
  */
 namespace NJORM;
 use NJORM\NJCom\NJField;
@@ -131,9 +131,9 @@ class NJTable implements INJTable {
       if($tbAs) {
         array_unshift($fieldName, $tbAs);
       }
-      $col = NJMisc::field_standardize($fieldName);
+      $col = NJMisc::formatFieldName($fieldName);
       if($field->name != $fAlias)
-        $col .= ' ' . NJMisc::field_standardize($fAlias);
+        $col .= ' ' . NJMisc::formatFieldName($fAlias);
       $cols[] = $col;
     }
 
@@ -222,7 +222,7 @@ class NJTable implements INJTable {
       foreach ($this->_d_pri_key as $key) {
         if(array_key_exists($key, $this->_d_fields))
           $key = $this->_d_fields[$key]->name;
-        $prikeys[] = NJMisc::field_standardize($key);
+        $prikeys[] = NJMisc::formatFieldName($key);
       }
       $defines[] = 'PRIMARY KEY ('.implode(',', $prikeys).')';
     }

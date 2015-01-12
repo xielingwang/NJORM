@@ -26,7 +26,7 @@ class NJField {
     }
 
     // type
-    $stmt = sprintf('%s %s', NJMisc::field_standardize($this->_name), $this->_type);
+    $stmt = sprintf('%s %s', NJMisc::formatFieldName($this->_name), $this->_type);
 
     // not null
     if($this->_notnull)
@@ -34,7 +34,7 @@ class NJField {
 
     // default
     if($this->_defined_default)
-      $stmt .= " DEFAULT " . NJMisc::value_standardize($this->_default);
+      $stmt .= " DEFAULT " . NJMisc::formatValue($this->_default);
 
     // auto increment
     if($this->_auto_increment) {

@@ -2,15 +2,20 @@
 /**
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
- * @Last Modified by:   Amin by
- * @Last Modified time: 2015-01-06 10:53:31
+ * @Last Modified by:   byamin
+ * @Last Modified time: 2015-01-13 00:03:44
  */
 namespace NJORM;
 use \NJORM\NJCom\NJStringifiable;
 use \NJORM\NJCom\NJOrderby;
 
 class NJQuery implements NJStringifiable{
+  const QUERY_TYPE_SELECT = 0;
+  const QUERY_TYPE_INSERT = 1;
+  const QUERY_TYPE_UPDATE = 2;
+  const QUERY_TYPE_DELETE = 3;
   protected $_table;
+  protected $_type;
 
   public function __construct($table) {
     $this->_table = $table;
@@ -18,6 +23,7 @@ class NJQuery implements NJStringifiable{
 
   protected $_select_arg = array('*');
   public function select() {
+    $this->_type = static::QUERY_TYPE_SELECT;
     $this->_select_arg = func_get_args();
     return $this;
   }
@@ -55,7 +61,24 @@ class NJQuery implements NJStringifiable{
     return $this;
   }
 
-  public function stringify() {
+  protected function stringify() {
+    switch($this->_type) {
+    case static::QUERY_TYPE_SELECT:
+    return $this->selectionStringify();
+    break;
+    case static::QUERY_TYPE_INSERT:
+    return $this->insertionStringify();
+    break;
+    case static::QUERY_TYPE_UPDATE:
+    return $this->updationStringify();
+    break;
+    case static::QUERY_TYPE_DELETE:
+    return $this->deletionStringify();
+    break;
+    }
+  }
+
+  public function selectionStringify() {
     $string = call_user_func_array(array($this->_table, 'select'), $this->_select_arg)->selectionString();
     $string .= ' FROM ' . $this->_table->name;
 

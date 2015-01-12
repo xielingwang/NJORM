@@ -21,18 +21,18 @@ public static function wrap_grave_accent($v) {
 }
 
 /**
- * [value_standardize description]
+ * [formatValue description]
  * @param  [type] $v [description]
  * @return [type]    [description]
  */
-public static function value_standardize($v) {
+public static function formatValue($v) {
 
   // array
   if(is_array($v)) {
     if(empty($v))
-      trigger_error('array value for value_standardize() cant be empty!', E_USER_ERROR);
+      trigger_error('array value for formatValue() cant be empty!', E_USER_ERROR);
     foreach($v as &$_v) {
-      $_v = NJMisc::value_standardize($_v);
+      $_v = NJMisc::formatValue($_v);
     }
     return '(' . implode(',', $v) . ')';
   }
@@ -56,20 +56,20 @@ public static function value_standardize($v) {
 
   // how to support object/resource
   else {
-    trigger_error('Unexpected type for value_standardize(): ' . $v . " " . gettype($v), E_USER_ERROR);
+    trigger_error('Unexpected type for formatValue(): ' . $v . " " . gettype($v), E_USER_ERROR);
   }
 
   return $v;
 }
 
 /**
- * [op_standardize description]
+ * [formatOperator description]
  * @param  [type] $op [description]
  * @return [type]     [description]
  */
-public static function op_standardize($op) {
+public static function formatOperator($op) {
   $op = strtoupper(preg_replace('/\s+/i', ' ', trim($op)));
-  if(!self::op_supported($op)){
+  if(!self::isOperatorSupported($op)){
     trigger_error("illegal operator " . $op, E_USER_ERROR);
   }
   return $op;
@@ -85,11 +85,11 @@ public static function is_wrap_grave_accent($v) {
 }
 
 /**
- * [field_standardize description]
+ * [formatFieldName description]
  * @param  [type] $arg [description]
  * @return [type]      [description]
  */
-public static function field_standardize($arg) {
+public static function formatFieldName($arg) {
   if(func_num_args() > 1) {
     $arg = func_get_args();
   }
@@ -106,11 +106,11 @@ public static function field_standardize($arg) {
 }
 
 /**
- * [equal2is description]
+ * [operatorForNull description]
  * @param  [type] $op [description]
  * @return [type]     [description]
  */
-public static function equal2is($op) {
+public static function operatorForNull($op) {
   if(in_array($op, array('==','='))) {
     $op = 'IS';
   }
@@ -121,28 +121,36 @@ public static function equal2is($op) {
 }
 
 /**
- * [equal2in description]
+ * [operatorForArray description]
  * @param  [type] $op [description]
  * @return [type]     [description]
  */
-public static function equal2in($op) {
-  if(in_array($op, array('==','='))) {
-    $op = 'IN';
+public static function operatorForArray($operator) {
+  if($operator == '=') {
+    $operator = 'IN';
   }
-  elseif(in_array($op, array('!=', '<>'))) {
-    $op = 'NOT IN';
+
+  elseif(in_array($operator, array('!=', '<>'))) {
+    $operator = 'NOT IN';
   }
-  return $op;
+
+  return $operator;
+}
+
+public static function supportedOperators($joins=null) {
+  static $operators = array('=','>=','>','<=','<','<>','!=','<=>','IS','IS NOT','IN','NOT IN','BETWEEN','NOT BETWEEN','REGEXP', 'NOT REGEXP','LIKE','NOT LIKE');
+  if(func_num_args() < 1)
+    return implode($joins, $operators);
+  return $operators;
 }
 
 /**
- * [op_supported description]
- * @param  [type]  $op        [description]
- * @return [type]             [description]
+ * [isOperatorSupported description]
+ * @param  [type]  $operator [description]
+ * @return boolean           [description]
  */
-public static function op_supported($op) {
-  $ops = array('=','>=','>','<=','<','<>','!=','<=>','IS','IS NOT','IN','NOT IN','BETWEEN','NOT BETWEEN','REGEXP', 'NOT REGEXP','LIKE','NOT LIKE');
-  return in_array($op, $ops);
+public static function isOperatorSupported($operator) {
+  return in_array($operator, static::supportedOperators());
 }
 
 }
