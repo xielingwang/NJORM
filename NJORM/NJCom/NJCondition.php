@@ -3,98 +3,80 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-01-13 01:28:33
+ * @Last Modified time: 2015-01-15 01:05:48
  */
 namespace NJORM\NJCom;
 use \NJORM\NJCom\NJStringifiable;
 use \NJORM\NJMisc;
 class NJCondition implements NJStringifiable{
 
-  const TYPE_EXPR = 0;
-  const TYPE_AND = 1;
-  const TYPE_OR = 2;
-
-  protected $_conditions = array();
+  protected $_conditions;
   protected $_parameters;
 
-  protected $_type;
-  protected function __construct() {
+  public function __construct() {
   }
 
   public static function fact($arg) {
     $class = get_called_class();
     $rc = new \ReflectionClass($class);
-    $inst = $rc->newInstanceArgs();
 
     if(!($arg instanceof $class)){
       $arg = $rc->newInstanceArgs();
       $arg->parse(func_get_args());
     }
+    $inst = $rc->newInstanceArgs();
     $inst->addCondition($arg);
 
     return $inst;
   }
 
   protected function call_or() {
-    $this->addCondition('or', $arg);
+    if(func_num_args() < 1) {
+      trigger_error('NJCondition "or" methods expects least 1 parameter.');
+    }
+    $class = get_class($this);
+    if($arg instanceof $class)
+      $this->addCondition('or', $arg);
+    else
+      $this->addCondition('or', self::fact(func_get_args()));
   }
 
   protected function call_and($arg) {
-    $this->addCondition('and', $arg);
+    if(func_num_args() < 1) {
+      trigger_error('NJCondition "or" methods expects least 1 parameter.');
+    }
+    $class = get_class($this);
+    if($arg instanceof $class)
+      $this->addCondition('and', $arg);
+    else
+      $this->addCondition('and', self::fact(func_get_args()));
   }
 
   protected function call_close() {
     return self::fact($this);
   }
 
-  public function __call() {
-    return $this;
-  }
-
-  public function type() {
-    $args = func_get_args();
-    if(count($args)) {
-      $v = array_shift($args);
-      if(!in_array($v, array(self::TYPE_EXPR, self::TYPE_AND, self::TYPE_OR))) {
-        trigger_error('Unexected condition type: ' . $v, E_USER_ERROR);
-      }
-      $this->_type = $v;
+  public function __call($name, $args) {
+    if(in_array($name, array('or', 'and', 'close'))) {
+      call_user_func_array(array($this, 'call_'.$name), $args);
+      return $this;
     }
-    return $this->_type;
+    trigger_error('NJCondition does not undefined method: ' . $name);
   }
 
-  public function add($arg) {
-    if($arg instanceof NJCondition)
-      $this->_conditions[] = $arg;
-    elseif(is_array($arg)) {
-      $this->_conditions[] = static::fact($arg);
+  protected function addCondition() {
+    if(func_num_args() == 1) {
+      $this->_conditions = array(func_get_arg(0));
+    }
+    elseif(func_num_args() == 2) {
+      array_push($this->_conditions, func_get_arg(0), func_get_arg(1));
     }
     else {
-      trigger_error('argument for NJConditon::add() neither an instance of NJCondition or an array');
+      trigger_error('addCondition expects 1 or 2 parameters.');
     }
-    return $this;
   }
 
-  protected function andConditions($arg) {
-    $this->type(self::TYPE_AND);
-    $this->_conditions = array();
-    foreach($arg as $c) {
-      $this->add($c);
-    }
-    return $this;
-  }
-
-  protected function orConditions($arg) {
-    $this->type(self::TYPE_OR);
-    $this->_conditions = array();
-    foreach($arg as $c) {
-      $this->add($c);
-    }
-    return $this;
-  }
-
-  protected function expr($arg) {
-    $this->type(self::TYPE_EXPR);
+  protected function parse($arg) {
     if(strpos($arg[0], '%') !== false) {
       $arg[0] = str_replace('%s', "'%s'", $arg[0]);
       $this->_conditions = call_user_func_array('sprintf', $arg);
@@ -102,10 +84,11 @@ class NJCondition implements NJStringifiable{
     }
 
     do {
+      /*
       if(count($arg) <= 1) {
         $stmt = preg_replace("", replacement, subject)
         $arg = preg_split('/.+['.NJMisc::supportedOperators('|').'].+/i', $stmt);
-      }
+      }*/
 
       if(count($arg) <= 1) {
         $this->_conditions = array_shift($arg);
@@ -163,46 +146,33 @@ class NJCondition implements NJStringifiable{
     return $this;
   }
 
-  protected function andExprStringify($enclose) {
-    $strs = array();
-    foreach($this->_conditions as $c) {
-      $strs[] = $c->stringify($c->type() === self::TYPE_OR);
+  public function stringify() {
+    if(is_array($this->_conditions)) {
+      $class = get_class($this);
+      $strs = array();
+      foreach($this->_conditions as $cond) {
+        if(is_string($cond)) {
+          $strs[] = strtoupper($cond);
+        }
+        elseif($cond instanceof $class) {
+          $strs[] = $cond->stringify();
+        }
+        else {
+          trigger_error('unexpected type for condition.' . gettype($cond));
+        }
+      }
+      $str_c = implode(' ', $strs);
+      if(count($strs) > 1)
+        $str_c = sprintf('(%s)', $str_c);
+      return $str_c;
     }
-    $op = ' AND ';
-    $string = implode($op, $strs);
-    return $enclose ? $string = ('('.$string.')') : $string;
-  }
-
-  protected function orExprStringify($enclose) {
-    $strs = array();
-    foreach($this->_conditions as $c) {
-      $strs[] = $c->stringify($c->type() === self::TYPE_OR);
-    }
-    $op = ' OR ';
-    $string = implode($op, $strs);
-    return $enclose ? $string = ('('.$string.')') : $string;
-  }
-
-  public function stringify($enclose = false) {
-    if($this->_type === self::TYPE_EXPR)
+    if(is_string($this->_conditions) or is_numeric($this->_conditions)) {
       return $this->_conditions;
-    elseif($this->_type === self::TYPE_AND)
-      return $this->andExprStringify($enclose);
-    else 
-      return $this->orExprStringify($enclose);
+    }
+    trigger_error('unexpected type for condtion:' . gettype($this->_conditions));
   }
 
   public function __toString() {
     return "WHERE " . $this->stringify();
-  }
-
-  public static function N() {
-    $c = new self(func_get_args());
-    return $c;
-  }
-
-  public static function O() {
-    $c = new self();
-    return $c->orConditions(func_get_args());
   }
 }

@@ -150,7 +150,7 @@ public static function supportedOperators($joins=null) {
  * @return boolean           [description]
  */
 public static function isOperatorSupported($operator) {
-  return in_array($operator, static::supportedOperators());
+  return in_array($operator, static::supportedOperators(null));
 }
 
 }
