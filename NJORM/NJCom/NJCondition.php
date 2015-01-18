@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-01-15 01:05:48
+ * @Last Modified time: 2015-01-19 01:17:36
  */
 namespace NJORM\NJCom;
 use \NJORM\NJCom\NJStringifiable;
@@ -13,24 +13,67 @@ class NJCondition implements NJStringifiable{
   protected $_conditions;
   protected $_parameters;
 
-  public function __construct() {
-  }
-
+  /**
+   * [fact description]
+   * fact(true) => true
+   * fact("field", 3) => `field` = 3
+   * fact("`field`", 3") => `field` = 3
+   * fact("field", ">", 3) => `field` > 3
+   * fact($cond) => (...)
+   * @param  [type] $arg [description]
+   * @return [type]      [description]
+   */
   public static function fact($arg) {
     $class = get_called_class();
     $rc = new \ReflectionClass($class);
-
-    if(!($arg instanceof $class)){
-      $arg = $rc->newInstanceArgs();
-      $arg->parse(func_get_args());
-    }
     $inst = $rc->newInstanceArgs();
-    $inst->addCondition($arg);
+
+    if(!($arg instanceof $class)) {
+      $inst->parse(func_get_args());
+    }
+    else{
+      $inst->addCondition($arg);
+    }
 
     return $inst;
   }
 
-  protected function call_or() {
+  public static function factX() {
+    $class = get_called_class();
+    $rc = new \ReflectionClass($class);
+    $inst = $rc->newInstanceArgs();
+
+    $op = null;
+    foreach(func_get_args() as $v) {
+      $is_val = true;
+      if(is_array($v)) {
+        $v = $rc->newInstanceArgs()->parse($v);
+      }
+      elseif(!($v instanceof $class)) {
+        if(!in_array(strtolower($v), array('or','and'))) {
+          $v = $rc->newInstanceArgs()->parse($v);
+        }
+        else {
+          $op = strtolower($v);
+          $is_val = false;
+        }
+      }
+
+      if(!$is_val) {
+        continue;
+      }
+
+      if($op)
+        $inst->addCondition($op, $v);
+      else
+        $inst->addCondition($v);
+
+      $op = null;
+    }
+    return $inst;
+  }
+
+  protected function call_or($arg) {
     if(func_num_args() < 1) {
       trigger_error('NJCondition "or" methods expects least 1 parameter.');
     }
@@ -38,107 +81,120 @@ class NJCondition implements NJStringifiable{
     if($arg instanceof $class)
       $this->addCondition('or', $arg);
     else
-      $this->addCondition('or', self::fact(func_get_args()));
+      $this->addCondition('or', call_user_func_array($class.'::fact', func_get_args()));
+    return $this;
   }
 
   protected function call_and($arg) {
     if(func_num_args() < 1) {
-      trigger_error('NJCondition "or" methods expects least 1 parameter.');
+      trigger_error('NJCondition "and" methods expects least 1 parameter.');
     }
     $class = get_class($this);
     if($arg instanceof $class)
       $this->addCondition('and', $arg);
-    else
-      $this->addCondition('and', self::fact(func_get_args()));
+    else 
+      $this->addCondition('and', call_user_func_array($class.'::fact', func_get_args()));
+    return $this;
   }
 
   protected function call_close() {
-    return self::fact($this);
+    $obj = clone $this;
+    $this->_conditions = array($obj);
+    return $this;
   }
 
   public function __call($name, $args) {
     if(in_array($name, array('or', 'and', 'close'))) {
-      call_user_func_array(array($this, 'call_'.$name), $args);
-      return $this;
+      return call_user_func_array(array($this, 'call_'.$name), $args);
     }
     trigger_error('NJCondition does not undefined method: ' . $name);
   }
 
   protected function addCondition() {
-    if(func_num_args() == 1) {
-      $this->_conditions = array(func_get_arg(0));
+    if(is_null($this->_conditions)) {
+      $this->_conditions = array();
     }
-    elseif(func_num_args() == 2) {
-      array_push($this->_conditions, func_get_arg(0), func_get_arg(1));
+    elseif(!is_array($this->_conditions)){
+      $this->call_close();
+    }
+
+    if(!count($this->_conditions)) {
+      $this->_conditions = func_get_args();
     }
     else {
-      trigger_error('addCondition expects 1 or 2 parameters.');
+      $this->_conditions = array_merge($this->_conditions, func_get_args());
     }
+
+    return $this;
   }
 
-  protected function parse($arg) {
-    if(strpos($arg[0], '%') !== false) {
-      $arg[0] = str_replace('%s', "'%s'", $arg[0]);
-      $this->_conditions = call_user_func_array('sprintf', $arg);
+  protected function _parseWithParameters(&$args) {
+    $args[0] = str_replace('%s', "'%s'", $args[0]);
+    $this->_conditions = call_user_func_array('sprintf', $args);
+    // TODO: 2015.1.15 support pdo bind parameters
+  }
+
+  public function parse($args) {
+    if(!is_array($args)) {
+      trigger_error('args must be an array!');
+    }
+
+    if(strpos($args[0], '%') !== false || strpos($args[0], '?') !== false) {
+      $this->_parseWithParameters($args);
       return $this;
     }
 
     do {
-      /*
-      if(count($arg) <= 1) {
-        $stmt = preg_replace("", replacement, subject)
-        $arg = preg_split('/.+['.NJMisc::supportedOperators('|').'].+/i', $stmt);
-      }*/
 
-      if(count($arg) <= 1) {
-        $this->_conditions = array_shift($arg);
+      if(count($args) <= 1) {
+        $this->_conditions = array_shift($args);
         break;
       }
-      if(count($arg) <= 2) {
-        $v = array_pop($arg);
-        $arg[] = '=';
-        $arg[] = $v;
+      if(count($args) <= 2) {
+        $v = array_pop($args);
+        $args[] = '=';
+        $args[] = $v;
       }
-      if(count($arg) >= 3) {
-        $arg[1] = NJMisc::formatOperator($arg[1]);
+      if(count($args) >= 3) {
+        $args[1] = NJMisc::formatOperator($args[1]);
 
         // between
-        if(in_array($arg[1], array('BETWEEN', 'NOT BETWEEN'))) {
-          if(count($arg) < 4) {
+        if(in_array($args[1], array('BETWEEN', 'NOT BETWEEN'))) {
+          if(count($args) < 4) {
             trigger_error('"between" operetaor expr expects 4 arguments');
           }
 
-          $arg[2] = sprintf("%s AND %s", NJMisc::formatValue($arg[2]), NJMisc::formatValue($arg[3]));
+          $args[2] = sprintf("%s AND %s", NJMisc::formatValue($args[2]), NJMisc::formatValue($args[3]));
         }
 
         // IS (NOT) NULL
-        elseif(is_null($arg[2]) || is_bool($arg[2])) {
-          $arg[1] = NJMisc::operatorForNull($arg[1]);
-          if(is_null($arg[2]))
-            $arg[2] = 'NULL';
+        elseif(is_null($args[2]) || is_bool($args[2])) {
+          $args[1] = NJMisc::operatorForNull($args[1]);
+          if(is_null($args[2]))
+            $args[2] = 'NULL';
           else
-            $arg[2] = $arg[2] ? 'TRUE' : 'FALSE';
+            $args[2] = $args[2] ? 'TRUE' : 'FALSE';
         }
 
         // (NOT) IN (...)
-        elseif(is_array($arg[2])) {
-          if(empty($arg[2])) {
-            $arg[1] = NJMisc::operatorForNull($arg[1]);
-            $arg[2] = 'NULL';
+        elseif(is_array($args[2])) {
+          if(empty($args[2])) {
+            $args[1] = NJMisc::operatorForNull($args[1]);
+            $args[2] = 'NULL';
           }
           else {
-            $arg[1] = NJMisc::operatorForArray($arg[1]);
-            $arg[2] = NJMisc::formatValue($arg[2]);
+            $args[1] = NJMisc::operatorForArray($args[1]);
+            $args[2] = NJMisc::formatValue($args[2]);
           }
         }
 
         // A VALUE OR A Field
         else {
-          $arg[2] = NJMisc::formatValue($arg[2]);
+          $args[2] = NJMisc::formatValue($args[2]);
         }
 
-        $arg[0] = NJMisc::formatFieldName($arg[0]);
-        $this->_conditions = sprintf("%s %s %s", $arg[0], $arg[1], $arg[2]);
+        $args[0] = NJMisc::formatFieldName($args[0]);
+        $this->_conditions = sprintf("%s %s %s", $args[0], $args[1], $args[2]);
       }
     }
     while(0);
@@ -155,13 +211,16 @@ class NJCondition implements NJStringifiable{
           $strs[] = strtoupper($cond);
         }
         elseif($cond instanceof $class) {
-          $strs[] = $cond->stringify();
+          $str = $cond->stringify();
+          if($cond->enclosed())
+            $str = '('.$str.')';
+          $strs[] = $str;
         }
         else {
           trigger_error('unexpected type for condition.' . gettype($cond));
         }
       }
-      $str_c = implode(' ', $strs);
+      return implode(' ', $strs);
       if(count($strs) > 1)
         $str_c = sprintf('(%s)', $str_c);
       return $str_c;
@@ -170,6 +229,10 @@ class NJCondition implements NJStringifiable{
       return $this->_conditions;
     }
     trigger_error('unexpected type for condtion:' . gettype($this->_conditions));
+  }
+
+  public function enclosed() {
+    return is_array($this->_conditions) && count($this->_conditions) > 1 && in_array('or', $this->_conditions);
   }
 
   public function __toString() {

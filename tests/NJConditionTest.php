@@ -3,10 +3,18 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:11:15
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-01-13 01:16:12
+ * @Last Modified time: 2015-01-19 01:15:59
  */
 use \NJORM\NJCom\NJCondition as NJCnd;
 class NJConditionTest extends PHPUnit_Framework_TestCase {
+  function testConditionParse() {
+    $cond = new NJCnd();
+    $cond->parse(array("abc", ">", 3));
+    $this->assertEquals("`abc` > 3", $cond->stringify());
+
+    $cond->parse(array("1"));
+    $this->assertEquals("1", $cond->stringify());
+  }
   function testCondition() {
     $cond = NJCnd::fact("abc", ">", 3);
     $this->assertEquals("`abc` > 3", $cond->stringify());
@@ -15,6 +23,7 @@ class NJConditionTest extends PHPUnit_Framework_TestCase {
     $this->assertEquals("`abc` > 3 OR `abc` = 3", $cond->stringify());
 
     $cond->close()->and("1");
+
     $this->assertEquals("(`abc` > 3 OR `abc` = 3) AND 1", $cond->stringify());
 
     $cond->and("`abc` is NULL");
@@ -22,23 +31,22 @@ class NJConditionTest extends PHPUnit_Framework_TestCase {
 
     $cond = NJCnd::fact("`abc` >= %s", 'eee');
     $this->assertEquals("`abc` >= 'eee'", $cond->stringify());
-
-    return compact('cond1', 'cond2', 'cond', 'cond4', 'cond5');
   }
 
   /**
    * @depends testCondition
    */
-  function testComplexCondition($arg) {
-    extract($arg);
+  function testComplexCondition() {
+    $cond1 = NJCnd::fact('abc', '>', 3);
+    $cond2 = NJCnd::fact('abc', '=', 3);
 
-    $conds_1 = NJCnd::fact($cond1, $cond2);
+    $conds_1 = NJCnd::factX($cond1,$cond2);// NJCnd::fact(, $cond2);
     $this->assertEquals("`abc` > 3 AND `abc` = 3", $conds_1->stringify());
 
-    $conds_2 = NJCnd::fact($cond1, 'or', $cond2);
+    $conds_2 = NJCnd::factX($cond1, 'or', $cond2);
     $this->assertEquals("`abc` > 3 OR `abc` = 3", $conds_2->stringify());
 
-    $conds_3 = NJCnd::fact(array('eee', 5), $cond4, $conds_2);
+    $conds_3 = NJCnd::factX(array('eee', 5), $cond4, $conds_2);
     $this->assertEquals("`eee` = 5 AND `abc` >= 'eee' AND (`abc` > 3 OR `abc` = 3)", $conds_3->stringify());
 
     $conds_4 = NJCnd::N(array('eee', 5), $cond4, $conds_2);
