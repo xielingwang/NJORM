@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-01-19 01:17:36
+ * @Last Modified time: 2015-01-30 01:45:20
  */
 namespace NJORM\NJCom;
 use \NJORM\NJCom\NJStringifiable;
@@ -19,7 +19,7 @@ class NJCondition implements NJStringifiable{
    * fact("field", 3) => `field` = 3
    * fact("`field`", 3") => `field` = 3
    * fact("field", ">", 3) => `field` > 3
-   * fact($cond) => (...)
+   * fact("field > ?", 3) => `field` > ? -- 3
    * @param  [type] $arg [description]
    * @return [type]      [description]
    */
@@ -63,6 +63,10 @@ class NJCondition implements NJStringifiable{
         continue;
       }
 
+      if(!$op && !$inst->isEmpty()) {
+        $op = 'and';
+      }
+
       if($op)
         $inst->addCondition($op, $v);
       else
@@ -70,6 +74,7 @@ class NJCondition implements NJStringifiable{
 
       $op = null;
     }
+
     return $inst;
   }
 
@@ -83,6 +88,10 @@ class NJCondition implements NJStringifiable{
     else
       $this->addCondition('or', call_user_func_array($class.'::fact', func_get_args()));
     return $this;
+  }
+
+  public function isEmpty() {
+    return empty($this->_conditions);
   }
 
   protected function call_and($arg) {
@@ -129,17 +138,24 @@ class NJCondition implements NJStringifiable{
   }
 
   protected function _parseWithParameters(&$args) {
+    $pstn = array();
+    preg_match_all(pattern, input, PREG_OFFSET_CAPTURE)
+    preg_match(pattern, subject)
     $args[0] = str_replace('%s', "'%s'", $args[0]);
     $this->_conditions = call_user_func_array('sprintf', $args);
-    // TODO: 2015.1.15 support pdo bind parameters
   }
 
   public function parse($args) {
     if(!is_array($args)) {
+      var_dump($args);
       trigger_error('args must be an array!');
     }
 
-    if(strpos($args[0], '%') !== false || strpos($args[0], '?') !== false) {
+    if((false !== strpos($args[0], '%d')
+          || false !== strpos($args[0], '%f')
+          || false !== strpos($args[0], '%s')
+          || false !== strpos($args[0], '?'))
+      && count($args) > 1) {
       $this->_parseWithParameters($args);
       return $this;
     }
@@ -227,6 +243,22 @@ class NJCondition implements NJStringifiable{
     }
     if(is_string($this->_conditions) or is_numeric($this->_conditions)) {
       return $this->_conditions;
+    }
+    trigger_error('unexpected type for condtion:' . gettype($this->_conditions));
+  }
+  public function parameters() {
+    if(is_array($this->_conditions)) {
+      $class = get_class($this);
+      $params = array();
+      foreach($this->_conditions as $cond) {
+        if($cond instanceof $class) {
+          $params = array_merge($params, $cond->parameters());
+        }
+      }
+      return $params;
+    }
+    if(is_string($this->_conditions) or is_numeric($this->_conditions)) {
+      return $this->_parameters;
     }
     trigger_error('unexpected type for condtion:' . gettype($this->_conditions));
   }

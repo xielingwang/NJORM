@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2015-01-08 01:18:08
- * @Last Modified by:   Amin by
- * @Last Modified time: 2015-01-08 20:20:11
+ * @Last Modified by:   byamin
+ * @Last Modified time: 2015-01-30 00:56:34
  */
 use \NJORM\NJCom\NJValid;
 
@@ -242,6 +242,5 @@ class NJValidTest extends PHPUnit_Framework_TestCase{
     $v = NJValid::V('between', '1996-10-29', '1996-10-31');
     $this->assertTrue($v('1996-10-30'), '1996-10-30 is good.');
     $this->assertTrue($v('1996-11-1'), '1996-11-1 is bad.');
-
   }
 }
