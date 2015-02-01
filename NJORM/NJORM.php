@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-02 01:37:13
+ * @Last Modified time: 2015-02-02 01:49:10
  */
 namespace NJORM;
 
@@ -56,5 +56,9 @@ class NJORM {
       $static = new static();
     }
     return $static;
+  }
+
+  public function __get($name) {
+    
   }
 }
