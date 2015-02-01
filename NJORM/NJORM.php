@@ -2,8 +2,8 @@
 /**
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
- * @Last Modified by:   Amin by
- * @Last Modified time: 2014-12-31 16:46:40
+ * @Last Modified by:   byamin
+ * @Last Modified time: 2015-02-02 01:37:13
  */
 namespace NJORM;
 
@@ -48,5 +48,13 @@ class NJORM {
   public static function registerAutoloader()
   {
     spl_autoload_register(__NAMESPACE__ . "\\NJORM::autoload");
+  }
+
+  public static function instance() {
+    static $static;
+    if(!$static) {
+      $static = new static();
+    }
+    return $static;
   }
 }

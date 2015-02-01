@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:11:15
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-01-30 01:33:54
+ * @Last Modified time: 2015-02-01 02:29:34
  */
 use \NJORM\NJCom\NJCondition as NJCnd;
 class NJConditionTest extends PHPUnit_Framework_TestCase {
@@ -97,7 +97,7 @@ class NJConditionTest extends PHPUnit_Framework_TestCase {
     $this->assertEquals("`key` IN (?,?,?)", $cond2->stringify());
     $this->assertEmpty(array_diff($cond2->parameters(), array(1, 'true', 'on')));
 
-    $cond_1 = NJCnd::factX($cond1, $cond1);
+    $cond_1 = NJCnd::factX($cond1, $cond2);
     $this->assertEquals("`field` = ? AND `key` IN (?,?,?)", $cond_1->stringify());
     $this->assertEmpty(array_diff($cond_1->parameters(), array('good', 1, 'true', 'on')));
 
@@ -107,6 +107,6 @@ class NJConditionTest extends PHPUnit_Framework_TestCase {
 
     $cond3 = NJCnd::fact('`key` = %d AND `val` = ? OR `key` = %d AND `val` = ?', 3, 9, 7, '6');
     $this->assertEquals('`key` = 3 AND `val` = ? OR `key` = 7 AND `val` = ?', $cond3->stringify());
-    $this->assertEmpty(array_diff($cond3->parameters(), array(9)));
+    $this->assertEmpty(array_diff($cond3->parameters(), array(9, '6')));
   }
 }

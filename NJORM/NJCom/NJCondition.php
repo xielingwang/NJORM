@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-01-30 01:45:20
+ * @Last Modified time: 2015-02-01 02:28:13
  */
 namespace NJORM\NJCom;
 use \NJORM\NJCom\NJStringifiable;
@@ -138,11 +138,44 @@ class NJCondition implements NJStringifiable{
   }
 
   protected function _parseWithParameters(&$args) {
-    $pstn = array();
-    preg_match_all(pattern, input, PREG_OFFSET_CAPTURE)
-    preg_match(pattern, subject)
-    $args[0] = str_replace('%s', "'%s'", $args[0]);
-    $this->_conditions = call_user_func_array('sprintf', $args);
+    $format = array_shift($args);
+    $format = preg_replace_callback("/'[^']*[%?][^']*'/", function($matches){
+      $content = str_replace('%', '@#PCNT#@', $matches[0]);
+      return str_replace('?', '@#QUSTN#@', $content);
+    }, $format);
+
+    $format = str_replace('%s', "'%s'", $format);
+    $r = preg_match_all("/%[sdf]/", $format, $matches, PREG_PATTERN_ORDER|PREG_OFFSET_CAPTURE);
+    $pf_idx = array();
+    foreach($matches[0] as $_){
+      $pf_idx[] = $_[1];
+    }
+
+    $bp_idx = array();
+    $r = 0;
+    while(($r = strpos($format, '?', $r)) !== false) {
+      $bp_idx[] = $r++;
+    }
+    $sorted = array_merge($pf_idx, $bp_idx);
+    if(count($args) < count($sorted)) {
+      trigger_error('Too few arguments for NJCondition::parse()');
+    }
+    
+    sort($sorted);
+    $sorted = array_flip($sorted);
+    $pf_args = array();
+    foreach($pf_idx as $idx) {
+      $pf_args[] = $args[$sorted[$idx]];
+    }
+    $this->_parameters = array_diff($args, $pf_args);
+    array_unshift($pf_args, $format);
+
+    $string = call_user_func_array('sprintf', $pf_args);
+    $string = str_replace('@#PCNT#@', '%', $string);
+    $string = str_replace('@#QUSTN#@', '?', $string);
+    $this->_conditions = $string;
+
+    return $this;
   }
 
   public function parse($args) {
@@ -151,13 +184,8 @@ class NJCondition implements NJStringifiable{
       trigger_error('args must be an array!');
     }
 
-    if((false !== strpos($args[0], '%d')
-          || false !== strpos($args[0], '%f')
-          || false !== strpos($args[0], '%s')
-          || false !== strpos($args[0], '?'))
-      && count($args) > 1) {
-      $this->_parseWithParameters($args);
-      return $this;
+    if( preg_match('/%[sdf]|\?/', $args[0]) ) {
+      return $this->_parseWithParameters($args);
     }
 
     do {

@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2015-01-07 00:27:39
- * @Last Modified by:   Amin by
- * @Last Modified time: 2015-01-08 20:18:45
+ * @Last Modified by:   byamin
+ * @Last Modified time: 2015-02-02 01:29:38
  */
 namespace NJORM\NJCom;
 
@@ -103,16 +103,6 @@ class NJValid {
       return $val >= $min;
     });
     $this->addRule('between', function($val, $min, $max){
-      if(static::checkRule('datetime', $val)) {
-        $val = strtotime($val);
-      }
-      if(static::checkRule('datetime', $min)) {
-        $min = strtotime($min);
-      }
-      if(static::checkRule('datetime', $max)) {
-        $max = strtotime($max);
-      }
-
       return static::checkRule('min', $val, $min)
         && static::checkRule('max', $val, $max);
     });
@@ -139,10 +129,20 @@ class NJValid {
       return strlen($val) <= $max;
     });
     $this->addRule('contains', function($val, $needle, $caseinsensitive = false){
-      return ($caseinsensitive
-        ? mb_stripos($val, $needle, 0, mb_detect_encoding($val))
-        : mb_strpos($val, $needle, 0, mb_detect_encoding($val))
-        ) !== false;
+      if(function_exists('mb_detect_encoding')) {
+        $encoding = mb_detect_encoding($val);
+        $encoding || $encoding = 'utf-8';
+        return ($caseinsensitive
+          ? mb_stripos($val, $needle, 0, $encoding)
+          : mb_strpos($val, $needle, 0, $encoding)
+          ) !== false;
+      }
+      else {
+        return ($caseinsensitive
+          ? stripos($val, $needle)
+          : strpos($val, $needle)
+          ) !== false;
+      }
     });
     $this->addRule('startsWith', function($val, $needle, $caseinsensitive=false){
       if(is_array($val)) {
@@ -151,10 +151,20 @@ class NJValid {
           : strcmp(reset($val), $needle)
           ) === 0;
       }
-      return ($caseinsensitive
-        ? mb_stripos($val, $needle, 0, mb_detect_encoding($val))
-        : mb_strpos($val, $needle, 0, mb_detect_encoding($val))
-        ) === 0;
+      if(function_exists('mb_detect_encoding')) {
+        $encoding = mb_detect_encoding($val);
+        $encoding || $encoding = 'utf-8';
+        return ($caseinsensitive
+          ? mb_stripos($val, $needle, 0, $encoding)
+          : mb_strpos($val, $needle, 0, $encoding)
+          ) === 0;
+      }
+      else {
+        return ($caseinsensitive
+          ? stripos($val, $needle)
+          : strpos($val, $needle)
+          ) === 0;
+      }
     });
     $this->addRule('endsWith', function($val, $needle, $caseinsensitive=false){
       if(is_array($val)) {
@@ -164,10 +174,20 @@ class NJValid {
           ) === 0;
       }
       $last = strlen($val) - strlen($needle);
-      return ($caseinsensitive
-        ? mb_strripos($val, $needle, 0, mb_detect_encoding($val))
-        : mb_strrpos($val, $needle, 0, mb_detect_encoding($val))
-        ) === $last;
+      if(function_exists('mb_detect_encoding')) {
+        $encoding = mb_detect_encoding($val);
+        $encoding || $encoding = 'utf-8';
+        return ($caseinsensitive
+          ? mb_strripos($val, $needle, 0, $encoding)
+          : mb_strrpos($val, $needle, 0, $encoding)
+          ) === $last;
+      }
+      else {
+        return ($caseinsensitive
+          ? strripos($val, $needle)
+          : strrpos($val, $needle)
+          ) === $last;
+      }
     });
 
     // regex
@@ -189,10 +209,41 @@ class NJValid {
     });
 
     // datetime
-    $this->addRule('datetime', function($val){
+    /*
+    $this->addRule('date-between', function($val, $min, $max){
+      if(!is_numeric($val)) {
+        $val = strtotime($val);
+      }
+      if(!is_numeric($min)) {
+        $min = strtotime($min);
+      }
+      if(!is_numeric($max)) {
+        $max = strtotime($max);
+      }
+      return static::checkRule('between', $val, $min, $max);
+    });
+    $this->addRule('datetime', function($val, $format=null){
       if(@date_default_timezone_get())
         date_default_timezone_set('Asia/Shanghai');
-      return !!strtotime($val);
+
+      $valid = false;
+      if(is_null($format)) {
+        $format = array(DATE_ATOM, DATE_COOKIE, DATE_ISO8601, DATE_RFC822 , DATE_RFC850, DATE_RFC1036, DATE_RFC1123, DATE_RFC2822, DATE_RFC3339, DATE_RSS, DATE_W3C);
+      }
+      else {
+        $format = array($format);
+      }
+      foreach($format as $fmt) {
+        try {
+          date_create_from_format($fmt, $val);
+          $valid = true;
+        }
+        catch(Exception $e) {
+        }
+        if($valid) break;
+      }
+      return $valid;
     });
+    */
   }
 }
