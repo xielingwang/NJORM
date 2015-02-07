@@ -3,33 +3,46 @@
  * @Author: byamin
  * @Date:   2015-02-04 23:01:49
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-05 08:46:26
+ * @Last Modified time: 2015-02-07 17:52:32
  */
 namespace NJORM;
 
 class NJRelationship {
-  public static function oneOne($t1, $t2, $key_map) {
-    NJTable::$t1()->hasOne($t2, array_values($key_map), array_keys($key_map));
-    NJTable::$t2()->hasOne($t1, array_keys($key_map), array_values($key_map));
+  public static function oneOne($config) {
+    list($t1, $t2) = array_keys($config);
+    list($k1, $k2) = array_values($config);
+    NJTable::$t1()->hasOne($k1, $t2, $k2);
+    NJTable::$t2()->hasOne($k2, $t1, $k1);
   }
-  public static function oneMany($t1, $t2, $key_map) {
-    NJTable::$t1()->hasMany($t2, array_values($key_map), array_keys($key_map));
-    NJTable::$t2()->hasOne($t1, array_keys($key_map), array_values($key_map));
+  public static function oneMany($config) {
+    list($t1, $t2) = array_keys($config);
+    list($k1, $k2) = array_values($config);
+    NJTable::$t1()->hasOne($k1, $t2, $k2);
+    NJTable::$t2()->hasMany($k2, $t1, $k1);
   }
-  public static function manyMany($t1, $t2, $map, $key_map_t1, $key_map_t2) {
-    NJTable::$t1()->hasMany($t2
-      , array_values($key_map_t2)
-      , array_keys($key_map_t1)
-      , $map
-      , array_values($key_map_t1)
-      , array_keys($key_map_t2)
-      );
-    NJTable::$t2()->hasMany($t1
-      , array_values($key_map_t1)
-      , array_keys($key_map_t2)
-      , $map
-      , array_values($key_map_t2)
-      , array_keys($key_map_t1)
-      );
+  public static function manyMany($config, $mconfig=null, $maptable = null) {
+    if(!$mconfig)
+      $mconfig = $config;
+    list($t1,$t2) = array_keys($config);
+    list($k1,$k2) = array_values($config);
+    $t1_mk = $mconfig[$t1];
+    $t2_mk = $mconfig[$t2];
+    $maptable || $maptable = implode('_', array_keys($config));
+
+    // define map table if not exists
+    if(!NJTable::defined($maptable)) {
+      $tb = NJTable::define($maptable);
+      $t1_mk || $t1_mk = NJTable::fk_for_table(NJTable::$t1());
+      $t2_mk || $t2_mk = NJTable::fk_for_table(NJTable::$t2());
+      if(!$tb->defined_primary($t1_mk)) {
+        $tb->primary($t1_mk, $t1_mk);
+      }
+      if(!$tb->defined_primary($t2_mk)) {
+        $tb->primary($t2_mk, $t2_mk);
+      }
+    }
+
+    NJTable::$t1()->hasMany($k1,$t2,$k2,$t1_mk,$t2_mk,$maptable);
+    NJTable::$t2()->hasMany($k2,$t1,$k1,$t2_mk,$t1_mk,$maptable);
   }
 }

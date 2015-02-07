@@ -3,14 +3,15 @@
  * @Author: byamin
  * @Date:   2015-02-02 23:27:30
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-05 08:46:01
+ * @Last Modified time: 2015-02-07 17:50:28
  */
 
 namespace NJORM;
 
+define('FK_FMT', 'id_{tbname}');
 class NJTable {
   protected $_name;
-  protected $_primary;
+  protected $_pri_key;
   protected $_fields;
 
   public function __construct($name) {
@@ -65,15 +66,19 @@ class NJTable {
   public function primary($field, $alias) {
     $this->field($field, $alias);
 
-    if(!$this->_primary)
-      $this->_primary = $field;
-    elseif(is_string($this->_primary)) {
-      $this->_primary = array($this->_primary, $field);
+    if(!$this->_pri_key)
+      $this->_pri_key = $field;
+    elseif(is_string($this->_pri_key)) {
+      $this->_pri_key = array($this->_pri_key, $field);
     }
     else {
-      array_unshift($this->_primary, $field);
+      array_unshift($this->_pri_key, $field);
     }
     return $this;
+  }
+
+  public function defined_primary($field) {
+    return in_array($field, (array)$this->_pri_key);
   }
 
   protected static function check_field_exist($table, $field) {
@@ -87,7 +92,15 @@ class NJTable {
       trigger_error(sprintf('Field "%s" is not in table "%s"', $field, $table->_name));
     }
   }
-  protected static function get_real_field($table, $field) {
+  protected static function get_real_field($table, $field, $foreign_table = null) {
+    if(!$field) {
+      $field = $foreign_table ? static::fk_for_table($foreign_table) : $table->_pri_key;
+    }
+
+    // check field exist
+    static::check_field_exist($table, $field);
+
+    // get field in database
     if(is_array($field) && count($field)==1)
       $field = $field[0];
     if(is_array($field)) {
@@ -106,56 +119,43 @@ class NJTable {
   const TYPE_RELATION_MANY = 2;
   const TYPE_RELATION_MANY_X = 3;
   protected $_has = array();
-  function hasOne($table, $fk=null, $sk=null) {
-    $fk || $fk = static::$table()->_primary;
-    $sk || $sk = $this->_primary;
+  function hasOne($sk, $table, $fk) {
+    $fk || $fk = static::$table()->_pri_key;
+    $sk || $sk = $this->_pri_key;
 
-    static::check_field_exist(static::$table(), $fk);
     $fk = static::get_real_field(static::$table(), $fk);
-
-    static::check_field_exist($this, $sk);
     $sk = static::get_real_field($this, $sk);
 
     // ok
     $this->_has[$table] = array(
-      'type' => TYPE_RELATION_ONE,
+      'type' => static::TYPE_RELATION_ONE,
       'fk' => $fk,
       'sk' => $sk,
       );
 
     return $this;
   }
-  function hasMany($table, $fk = null, $sk = null, $map = null, $msk=null, $mfk=null) {
-    $sk || $sk = $this->_primary;
-    $fk || $fk = static::$table()->_primary;
-
-    static::check_field_exist(static::$table(), $fk);
-    $fk = static::get_real_field(static::$table(), $fk);
-
-    static::check_field_exist($this, $sk);
+  function hasMany($sk, $table, $fk, $msk=null, $mfk=null, $mapTable=null) {
     $sk = static::get_real_field($this, $sk);
 
     if(func_num_args() <= 3) {
+      $fk = static::get_real_field(static::$table(), $fk, $this);
+
       $this->_has[$table] = array(
-        'type' => TYPE_RELATION_MANY,
-        'fk' => $msk,
+        'type' => static::TYPE_RELATION_MANY,
+        'fk' => $fk,
         'sk' => $sk,
         );
       return $this;
     }
     else {
-      $msk || $msk = 'id_'.$this->_name;
-      $mfk || $mfk = 'id_'.static::$table()->_name;
-
-      static::check_field_exist(static::$map(), $msk);
-      $msk = static::get_real_field(static::$map(), $msk);
-
-      static::check_field_exist(static::$map(), $mfk);
-      $mfk = static::get_real_field(static::$map(), $mfk);
+      $fk = static::get_real_field(static::$table(), $fk);
+      $msk = static::get_real_field(static::$mapTable(), $msk, $this);
+      $mfk = static::get_real_field(static::$mapTable(), $mfk, static::$table());
 
       $this->_has[$table] = array(
-        'type' => TYPE_RELATION_MANY_X,
-        'map' => $map,
+        'type' => static::TYPE_RELATION_MANY_X,
+        'map' => $mapTable,
         'sk' => $sk,
         'msk' => $msk,
         'fk' => $fk,
@@ -167,6 +167,9 @@ class NJTable {
 
   // defines
   protected static $_tables = array();
+  static function defined($name) {
+    return array_key_exists($name, static::$_tables);
+  } 
   static function define($name) {
     if(!array_key_exists($name, static::$_tables))
       static::$_tables[$name] = new static($name);
@@ -180,5 +183,8 @@ class NJTable {
       return static::$_tables[$name];
     }
     trigger_error('Table is undefined: ' . $name);
+  }
+  public static function fk_for_table($table) {
+    return strtr(FK_FMT, array('{tbname}' => $table->_name));
   }
 }
