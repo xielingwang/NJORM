@@ -3,10 +3,10 @@
  * @Author: byamin
  * @Date:   2014-12-25 00:56:57
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-01-13 00:11:39
+ * @Last Modified time: 2015-02-10 23:25:30
  */
 namespace NJORM\NJCom;
-class NJOrderBy {
+class NJOrderBy implements NJStringifiable{
   protected $_data = array();
   public function __construct($field = null, $order = 'asc') {
     if(func_num_args() <= 0)
@@ -33,7 +33,7 @@ class NJOrderBy {
     return is_numeric($f) ? $f : '`' . $f . '`';
   }
 
-  public function toString() {
+  public function stringify() {
     $orders = array();
     foreach($this->_data as $field => $v) {
       $orders[] = $this->_formatFieldName($field) . (!$v ? ' DESC' : '');
@@ -42,6 +42,6 @@ class NJOrderBy {
   }
 
   public function __toString() {
-    return "ORDER BY " . $this->toString();
+    return "ORDER BY " . $this->stringify();
   }
 }

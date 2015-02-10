@@ -3,15 +3,14 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-01-13 00:03:44
+ * @Last Modified time: 2015-02-11 00:50:47
  */
 namespace NJORM;
-use \NJORM\NJCom\NJStringifiable;
-use \NJORM\NJCom\NJOrderby;
+use \NJORM\NJCom;
 
-class NJQuery implements NJStringifiable{
-  const QUERY_TYPE_SELECT = 0;
-  const QUERY_TYPE_INSERT = 1;
+class NJQuery implements NJCom\NJStringifiable{
+  const QUERY_TYPE_CREATE = 0;
+  const QUERY_TYPE_SELECT = 1;
   const QUERY_TYPE_UPDATE = 2;
   const QUERY_TYPE_DELETE = 3;
   protected $_table;
@@ -21,78 +20,97 @@ class NJQuery implements NJStringifiable{
     $this->_table = $table;
   }
 
-  protected $_select_arg = array('*');
+  public function stringify() {
+    switch($this->_type) {
+    case static::QUERY_TYPE_SELECT:
+    return $this->sqlSelect();
+    break;
+    case static::QUERY_TYPE_CREATE:
+    return $this->sqlCreate();
+    break;
+    case static::QUERY_TYPE_UPDATE:
+    return $this->sqlUpdate();
+    break;
+    case static::QUERY_TYPE_DELETE:
+    return $this->sqlDelete();
+    break;
+    }
+  }
+
+  // read
+  protected $_select = array(
+    'columns' => array('*'),
+    'limit' => array(),
+    'condition' => null,
+    'orderby' => null,
+    );
   public function select() {
     $this->_type = static::QUERY_TYPE_SELECT;
-    $this->_select_arg = func_get_args();
+    $this->_select['columns'] = func_get_args();
     return $this;
   }
 
-  protected $_limit_arg = array();
   public function limit() {
-    $this->_limit_arg = func_get_args();
+    $this->_select['limit'] = func_get_args();
     return $this;
   }
 
-  protected $_where_arg = array();
-  public function where() {
-    $this->_where_arg = array_merge($this->_where_arg, func_get_args());
+  public function where($arg) {
+    if(!($arg instanceof NJCom\NJCondition))
+      $arg = NJCom\NJCondition::fact(func_get_args());
+    if($this->_select['condition'] instanceof NJCom\NJCondition) {
+      $this->_select['condition']->and($arg);
+    }
+    else {
+      $this->_select['condition'] = $arg;
+    }
     return $this;
   }
 
-  protected $_order_by;
   public function sortAsc() {
-    if(is_null($this->_order_by))
-      $this->_order_by = new NJOrderby();
+    if(is_null($this->_select['orderby']))
+      $this->_select['orderby'] = new NJCom\NJOrderby();
 
     foreach(func_get_args() as $field) {
-      $this->_order_by->add($field, true);
+      $this->_select['orderby']->add($field, true);
     }
     return $this;
   }
 
   public function sortDesc() {
-    if(is_null($this->_order_by))
-      $this->_order_by = new NJOrderby();
+    if(is_null($this->_select['orderby']))
+      $this->_select['orderby'] = new NJCom\NJOrderby();
 
     foreach(func_get_args() as $field) {
-      $this->_order_by->add($field, false);
+      $this->_select['orderby']->add($field, false);
     }
     return $this;
   }
 
-  protected function stringify() {
-    switch($this->_type) {
-    case static::QUERY_TYPE_SELECT:
-    return $this->selectionStringify();
-    break;
-    case static::QUERY_TYPE_INSERT:
-    return $this->insertionStringify();
-    break;
-    case static::QUERY_TYPE_UPDATE:
-    return $this->updationStringify();
-    break;
-    case static::QUERY_TYPE_DELETE:
-    return $this->deletionStringify();
-    break;
-    }
-  }
+  public function sqlSelect() {
+    $strTb =& $this->_table;
+    $string = NJTable::$strTb()->select($this->_select['columns']);
+    $string .= ' '.NJTable::$strTb()->from();
 
-  public function selectionStringify() {
-    $string = call_user_func_array(array($this->_table, 'select'), $this->_select_arg)->selectionString();
-    $string .= ' FROM ' . $this->_table->name;
-
-    if($this->_where_arg) {
-      $string .= ' ' . call_user_func_array(__NAMESPACE__.'\NJCom\NJCondition::N', $this->_where_arg);
+    if($this->_select['condition']) {
+      $this->_select['condition']->setTable(NJTable::$strTb());
+      $string .= ' '.$this->_select['condition'];
     }
 
-    if($this->_order_by) {
-      $string .= ' ' . $this->_order_by->toString();
+    if($this->_select['orderby']) {
+      $string .= ' ' . $this->_select['orderby'];
     }
 
-    if($this->_limit_arg) {
-      $string .= ' ' . call_user_func_array(__NAMESPACE__.'\NJCom\NJLimit::factory', $this->_limit_arg);
+    if($this->_select['limit']) {
+      $string .= ' ' . call_user_func_array(__NAMESPACE__.'\NJCom\NJLimit::factory', $this->_select['limit']);
     }
     return $string;
+  }
+
+  public function fetch() {
+    echo $this->sqlSelect();return;
+    $stmt = NJORM::pdo()->query($this->sqlSelect());
+    $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+    echo json_encode($result);
   }
 }

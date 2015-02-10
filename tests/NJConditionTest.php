@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:11:15
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-01 02:29:34
+ * @Last Modified time: 2015-02-10 23:04:36
  */
 use \NJORM\NJCom\NJCondition as NJCnd;
 class NJConditionTest extends PHPUnit_Framework_TestCase {
@@ -41,7 +41,7 @@ class NJConditionTest extends PHPUnit_Framework_TestCase {
     $cond2 = NJCnd::fact('abc', '=', 3);
     $cond3 = NJCnd::fact('abc', '>=', 'eee');
 
-    $conds_1 = NJCnd::factX($cond1,$cond2);// NJCnd::fact(, $cond2);
+    $conds_1 = NJCnd::factX($cond1,$cond2);
     $this->assertEquals("`abc` > 3 AND `abc` = 3", $conds_1->stringify());
 
     $conds_2 = NJCnd::factX($cond1, 'or', $cond2);

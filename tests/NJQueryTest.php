@@ -2,45 +2,35 @@
 /**
  * @Author: byamin
  * @Date:   2015-01-01 12:21:16
- * @Last Modified by:   Amin by
- * @Last Modified time: 2015-01-06 10:54:37
+ * @Last Modified by:   byamin
+ * @Last Modified time: 2015-02-11 00:47:30
  */
 
 
-use \NJORM\NJTable as NJTbl;
+use \NJORM\NJTable;
 use \NJORM\NJQuery;
 
 class NJQueryTest extends PHPUnit_Framework_TestCase {
-  function testPrepare() {
-    $tbl = new NJTbl('good');
 
-    $tbl->field('field_1', 'f1')->type('int', 11, true)->notnull()->comment('这是个注释');
-    $tbl->field('field_2', 'f2')->type('int', 11);
-    $tbl->field('field_3', 'f3')->type('varchar', 255);
-    $tbl->primaryKey('field_1', 'field_2')->autoIncrement('field_1');
-
-    $tbl->field('created_time', 'ct')->type('int', 11, true)->comment('创建时间');
-    $tbl->field('updated_time', 'ut')->type('int', 11, true)->comment('更新时间')->default(0)->notnull();
-
-    $sql = "CREATE TABLE `test_good`(
-`field_1` INT(11) unsigned NOT NULL AUTO_INCREMENT COMMENT '这是个注释',
-`field_2` INT(11),
-`field_3` VARCHAR(255),
-`created_time` INT(11) unsigned COMMENT '创建时间',
-`updated_time` INT(11) unsigned NOT NULL DEFAULT 0 COMMENT '更新时间',
-PRIMARY KEY (`field_1`,`field_2`)
-);";
-
-  $this->assertEquals($sql, $tbl->showCreateTable());
-  return $tbl;
+  public function setUp(){
+    NJTable::define('rct_ec_cards', 'cards')
+      ->primary('ID', 'id')
+      ->field('card_author', 'author')
+      ->field('card_name', 'name')
+      ->field('card_theme', 'theme');
   }
 
-  /**
-   * @depends testPrepare
-   */
-  function testNJQuery($tbl) {
-    $query = (new NJQuery($tbl));
-    $query->select('f1', 'f2', 'ct')->limit(5,100)->where(array('f1', '>', '1'), array('f2', 2))->sortAsc('ct');
-    $this->assertEquals('SELECT `field_1` `f1`,`field_2` `f2`,`created_time` `ct` FROM `good` WHERE `f1` > 1 AND `f2` = 2 `ct` LIMIT 5,100', $query->stringify());
+  function testNJQuery() {
+    $query = new NJQuery('cards');
+    $query
+    ->select('author', 'name', 'theme')
+    ->limit(5,100)
+    ->where('author', '>', 1)
+    ->where('theme', 'hello')
+    ->sortAsc('theme');
+
+    $this->assertEquals('SELECT `card_author` `author`,`card_name` `name`,`card_theme` `theme` FROM `rct_ec_cards` WHERE `card_author`>1 AND `card_theme`=\'hello\' ORDER BY `theme` LIMIT 5,100', $query->sqlSelect());
+
+    $query->fetch();
   }
 }

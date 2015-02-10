@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-02-02 23:27:30
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-07 17:50:28
+ * @Last Modified time: 2015-02-11 00:45:53
  */
 
 namespace NJORM;
@@ -22,8 +22,22 @@ class NJTable {
     return $this->columns($name);
   }
 
-  public function columns($cols='*', $ta=null, $da=null) {
-    $ta === true && $ta = $this->_name;
+  public function name($alias = null) {
+    if($alias) {
+      return sprintf("`%s` `%s`", $this->_name, $alias);
+    }
+
+    return sprintf("`%s`", $this->_name);
+  }
+
+  public function from() {
+    return 'FROM ' . call_user_func_array(array($this, 'name'), func_get_args());
+  }
+  public function select() {
+    return 'SELECT ' . call_user_func_array(array($this, 'columns'), func_get_args());
+  }
+  public function columns($cols='*', $tb_alias=null, $db_alias=null) {
+    $tb_alias === true && $tb_alias = $this->_name;
     if(is_string($cols)) {
       $cols = explode(',', $cols);
     }
@@ -44,11 +58,11 @@ class NJTable {
         trigger_error(sprintf('Undefined field - "%s"', $col));
       }
 
-      if($ta) {
-        $col = sprintf('`%s`.%s', $ta, $col);
+      if($tb_alias) {
+        $col = sprintf('`%s`.%s', $tb_alias, $col);
       }
-      if($da) {
-        $col = sprintf('`%s`.%s', $da, $col);
+      if($db_alias) {
+        $col = sprintf('`%s`.%s', $db_alias, $col);
       }
 
       $newcols[] = $col;
@@ -56,14 +70,18 @@ class NJTable {
     return implode(',', $newcols);
   }
 
-  public function field($field, $alias) {
+  public function getField($field) {
+    return static::get_real_field($this, $field);
+  }
+
+  public function field($field, $alias = null) {
     if(!$this->_fields)
       $this->_fields = array();
     $this->_fields[$field] = $alias;
     return $this;
   }
 
-  public function primary($field, $alias) {
+  public function primary($field, $alias = null) {
     $this->field($field, $alias);
 
     if(!$this->_pri_key)
@@ -167,12 +185,18 @@ class NJTable {
 
   // defines
   protected static $_tables = array();
+  protected static $_aliases = array();
   static function defined($name) {
-    return array_key_exists($name, static::$_tables);
+    return array_key_exists($name, static::$_tables)
+      || array_key_exists($name, static::$_aliases);
   } 
-  static function define($name) {
-    if(!array_key_exists($name, static::$_tables))
+  static function define($name, $alias=null) {
+    if(!array_key_exists($name, static::$_tables)) {
       static::$_tables[$name] = new static($name);
+      if($alias) {
+        static::$_aliases[$alias] =& static::$_tables[$name];
+      }
+    }
     else
       trigger_error('Table has been exists: ' . $name);
 
@@ -181,6 +205,9 @@ class NJTable {
   static function __callStatic($name, $arguments) {
     if(array_key_exists($name, static::$_tables)){
       return static::$_tables[$name];
+    }
+    if(array_key_exists($name, static::$_aliases)){
+      return static::$_aliases[$name];
     }
     trigger_error('Table is undefined: ' . $name);
   }

@@ -3,12 +3,19 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-01 02:28:13
+ * @Last Modified time: 2015-02-11 00:55:10
  */
 namespace NJORM\NJCom;
-use \NJORM\NJCom\NJStringifiable;
-use \NJORM\NJMisc;
+use NJORM\NJMisc;
+use NJORM\NJTable;
 class NJCondition implements NJStringifiable{
+
+  protected $_table;
+  function setTable($table) {
+    if(is_string($table))
+      $table = NJTable::$table();
+    $this->_table = $table;
+  }
 
   protected $_conditions;
   protected $_parameters;
@@ -29,7 +36,12 @@ class NJCondition implements NJStringifiable{
     $inst = $rc->newInstanceArgs();
 
     if(!($arg instanceof $class)) {
-      $inst->parse(func_get_args());
+      if(is_array($arg)) {
+        $inst->parse($arg);
+      }
+      else{
+        $inst->parse(func_get_args());
+      }
     }
     else{
       $inst->addCondition($arg);
@@ -237,8 +249,11 @@ class NJCondition implements NJStringifiable{
           $args[2] = NJMisc::formatValue($args[2]);
         }
 
+        if($this->_table) {
+          echo $args[0] = $this->_table->getField($args[0]);
+        }
         $args[0] = NJMisc::formatFieldName($args[0]);
-        $this->_conditions = sprintf("%s %s %s", $args[0], $args[1], $args[2]);
+        $this->_conditions = sprintf("%s%s%s", $args[0], $args[1], $args[2]);
       }
     }
     while(0);
