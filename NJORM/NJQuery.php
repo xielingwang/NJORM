@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-11 00:50:47
+ * @Last Modified time: 2015-02-11 01:19:22
  */
 namespace NJORM;
 use \NJORM\NJCom;
@@ -17,6 +17,8 @@ class NJQuery implements NJCom\NJStringifiable{
   protected $_type;
 
   public function __construct($table) {
+    if(is_string($table))
+      $table = NJTable::$table();
     $this->_table = $table;
   }
 
@@ -56,6 +58,7 @@ class NJQuery implements NJCom\NJStringifiable{
   }
 
   public function where($arg) {
+    NJCom\NJCondition::setTable($this->_table);
     if(!($arg instanceof NJCom\NJCondition))
       $arg = NJCom\NJCondition::fact(func_get_args());
     if($this->_select['condition'] instanceof NJCom\NJCondition) {
@@ -88,12 +91,10 @@ class NJQuery implements NJCom\NJStringifiable{
   }
 
   public function sqlSelect() {
-    $strTb =& $this->_table;
-    $string = NJTable::$strTb()->select($this->_select['columns']);
-    $string .= ' '.NJTable::$strTb()->from();
+    $string = $this->_table->select($this->_select['columns']);
+    $string .= ' '.$this->_table->from();
 
     if($this->_select['condition']) {
-      $this->_select['condition']->setTable(NJTable::$strTb());
       $string .= ' '.$this->_select['condition'];
     }
 
@@ -108,8 +109,8 @@ class NJQuery implements NJCom\NJStringifiable{
   }
 
   public function fetch() {
-    echo $this->sqlSelect();return;
-    $stmt = NJORM::pdo()->query($this->sqlSelect());
+    $sql = $this->sqlSelect();
+    $stmt = NJORM::pdo()->query($sql);
     $result = $stmt->fetch(\PDO::FETCH_ASSOC);
     echo json_encode($result);
   }

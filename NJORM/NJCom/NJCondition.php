@@ -3,18 +3,18 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-11 00:55:10
+ * @Last Modified time: 2015-02-11 01:10:31
  */
 namespace NJORM\NJCom;
 use NJORM\NJMisc;
 use NJORM\NJTable;
 class NJCondition implements NJStringifiable{
 
-  protected $_table;
-  function setTable($table) {
+  protected static $_table;
+  static function setTable($table) {
     if(is_string($table))
       $table = NJTable::$table();
-    $this->_table = $table;
+    static::$_table = $table;
   }
 
   protected $_conditions;
@@ -249,8 +249,8 @@ class NJCondition implements NJStringifiable{
           $args[2] = NJMisc::formatValue($args[2]);
         }
 
-        if($this->_table) {
-          echo $args[0] = $this->_table->getField($args[0]);
+        if(static::$_table) {
+          $args[0] = static::$_table->getField($args[0]);
         }
         $args[0] = NJMisc::formatFieldName($args[0]);
         $this->_conditions = sprintf("%s%s%s", $args[0], $args[1], $args[2]);

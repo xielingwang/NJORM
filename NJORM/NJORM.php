@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-11 00:13:34
+ * @Last Modified time: 2015-02-11 01:18:40
  */
 namespace NJORM;
 
@@ -61,14 +61,19 @@ class NJORM {
   public static function pdo() {
     static $pdo;
     if(!$pdo){
-      $dsn = 'mysql:dbname=test;unix_socket=/private/tmp/mysql.sock';
-      $username = 'root';
-      $password = 'root';
-      $options = array(
+      try {
+        $dsn = 'mysql:dbname=test;unix_socket=/private/tmp/mysql.sock';
+        $username = 'root';
+        $password = 'root';
+        $options = array(
           1002 => 'SET NAMES utf8',
-      );
+        );
 
-      $this->dbh = new \PDO($dsn, $username, $password, $options);
+        $pdo = new \PDO($dsn, $username, $password, $options);
+      }
+      catch(\PDOException $e) {
+        die($e->getMessage());
+      }
     }
     return $pdo;
   } 
