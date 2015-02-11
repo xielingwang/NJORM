@@ -1,9 +1,9 @@
 <?php
 /**
- * @Author: byamin
+ * @name: byamin
  * @Date:   2015-01-01 12:21:16
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-11 00:47:30
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2015-02-11 15:42:37
  */
 
 
@@ -13,24 +13,25 @@ use \NJORM\NJQuery;
 class NJQueryTest extends PHPUnit_Framework_TestCase {
 
   public function setUp(){
-    NJTable::define('rct_ec_cards', 'cards')
-      ->primary('ID', 'id')
-      ->field('card_author', 'author')
-      ->field('card_name', 'name')
-      ->field('card_theme', 'theme');
+    NJTable::define('qn_users', 'cards')
+      ->primary('user_id', 'uid')
+      ->field('user_name', 'name')
+      ->field('user_pass', 'pass')
+      ->field('user_email', 'email');
   }
 
   function testNJQuery() {
     $query = new NJQuery('cards');
     $query
-    ->select('author', 'name', 'theme')
-    ->limit(5,100)
-    ->where('author', '>', 1)
-    ->where('theme', 'hello')
-    ->sortAsc('theme');
+    ->select('name', 'pass', 'email')
+    ->limit(0,2)
+    ->where('uid', '>', 1)
+    ->where('email', '0222')
+    ->sortAsc('email');
 
-    $this->assertEquals('SELECT `card_author` `author`,`card_name` `name`,`card_theme` `theme` FROM `rct_ec_cards` WHERE `card_author`>1 AND `card_theme`=\'hello\' ORDER BY `theme` LIMIT 5,100', $query->sqlSelect());
+    $this->assertEquals('SELECT `user_name` `name`,`user_pass` `pass`,`user_email` `email` FROM `qn_users` WHERE `user_id` > 1 AND `user_email` = \'0222\' ORDER BY `email` LIMIT 2', $query->sqlSelect());
 
-    $query->fetch();
+    $model = $query->fetch();
+    $this->assertEquals('gogog', $model['name']);
   }
 }

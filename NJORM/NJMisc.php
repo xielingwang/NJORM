@@ -38,7 +38,7 @@ public static function formatValue($v) {
   }
 
   // numeric
-  elseif(is_numeric($v)) {
+  elseif(is_int($v) || is_float($v)) {
     return $v;
   }
 

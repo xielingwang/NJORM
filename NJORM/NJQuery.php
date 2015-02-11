@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-11 01:19:22
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2015-02-11 14:24:52
  */
 namespace NJORM;
 use \NJORM\NJCom;
@@ -112,6 +112,6 @@ class NJQuery implements NJCom\NJStringifiable{
     $sql = $this->sqlSelect();
     $stmt = NJORM::pdo()->query($sql);
     $result = $stmt->fetch(\PDO::FETCH_ASSOC);
-    echo json_encode($result);
+    return new NJModel($this->_table, $result);
   }
 }

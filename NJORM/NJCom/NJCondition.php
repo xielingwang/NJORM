@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-11 01:10:31
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2015-02-11 15:35:24
  */
 namespace NJORM\NJCom;
 use NJORM\NJMisc;
@@ -253,7 +253,7 @@ class NJCondition implements NJStringifiable{
           $args[0] = static::$_table->getField($args[0]);
         }
         $args[0] = NJMisc::formatFieldName($args[0]);
-        $this->_conditions = sprintf("%s%s%s", $args[0], $args[1], $args[2]);
+        $this->_conditions = sprintf("%s %s %s", $args[0], $args[1], $args[2]);
       }
     }
     while(0);

@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2014-12-25 00:56:57
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-10 23:25:30
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2015-02-11 15:28:32
  */
 namespace NJORM\NJCom;
 class NJOrderBy implements NJStringifiable{
@@ -16,11 +16,11 @@ class NJOrderBy implements NJStringifiable{
     call_user_func_array(array($this, 'add'), array($field, $order));
   }
 
-  protected function asc($field) {
+  public function asc($field) {
     return $this->add($field, true);
   }
 
-  protected function desc($field) {
+  public function desc($field) {
     return $this->add($field, false);
   }
 

@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2014-12-21 16:11:15
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-10 23:04:36
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2015-02-11 15:35:07
  */
 use \NJORM\NJCom\NJCondition as NJCnd;
 class NJConditionTest extends PHPUnit_Framework_TestCase {

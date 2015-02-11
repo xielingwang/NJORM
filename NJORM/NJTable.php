@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2015-02-02 23:27:30
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-11 00:45:53
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2015-02-11 15:18:04
  */
 
 namespace NJORM;
@@ -99,7 +99,7 @@ class NJTable {
     return in_array($field, (array)$this->_pri_key);
   }
 
-  protected static function check_field_exist($table, $field) {
+  public static function check_field_exist($table, $field) {
     if(is_array($field)) {
       foreach ($field as $f) {
         static::check_field_exist($table, $f);
