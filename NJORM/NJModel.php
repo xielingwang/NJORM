@@ -2,8 +2,8 @@
 /**
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
- * @Last Modified by:   Amin by
- * @Last Modified time: 2015-02-11 15:47:53
+ * @Last Modified by:   byamin
+ * @Last Modified time: 2015-02-12 00:45:05
  */
 namespace NJORM;
 
@@ -35,7 +35,7 @@ class NJModel implements \Countable,\JsonSerializable,\ArrayAccess {
 
   protected function setData() {
     if(func_num_args() >= 2) {
-      // NJTable::check_field_exist($this->_table,func_get_arg(0));
+      // TODO: check data
       $this->_data[func_get_arg(0)] = func_get_arg(1);
     }
     else {
@@ -105,10 +105,10 @@ class NJModel implements \Countable,\JsonSerializable,\ArrayAccess {
   }
   public function offsetUnset($offset){
     if(array_key_exists($offset, $this->_data)){
-      unset($offset, $this->_data);
+      unset($this->_data[$offset]);
     }
     if(array_key_exists($offset, $this->_modified)){
-      unset($offset, $this->_modified);
+      unset($this->_modified[$offset]);
     }
   }
 }

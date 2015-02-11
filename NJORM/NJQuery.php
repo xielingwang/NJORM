@@ -2,13 +2,13 @@
 /**
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
- * @Last Modified by:   Amin by
- * @Last Modified time: 2015-02-11 14:24:52
+ * @Last Modified by:   byamin
+ * @Last Modified time: 2015-02-12 00:44:34
  */
 namespace NJORM;
 use \NJORM\NJCom;
 
-class NJQuery implements NJCom\NJStringifiable{
+class NJQuery implements NJCom\NJStringifiable,\Countable,\ArrayAccess{
   const QUERY_TYPE_CREATE = 0;
   const QUERY_TYPE_SELECT = 1;
   const QUERY_TYPE_UPDATE = 2;
@@ -108,10 +108,51 @@ class NJQuery implements NJCom\NJStringifiable{
     return $string;
   }
 
+  public function sqlCount() {
+    return '';
+  }
+
   public function fetch() {
     $sql = $this->sqlSelect();
     $stmt = NJORM::pdo()->query($sql);
     $result = $stmt->fetch(\PDO::FETCH_ASSOC);
     return new NJModel($this->_table, $result);
+  }
+
+  // NJModel
+  protected $_model;
+  /* Countable */
+  public function count() {
+    // TODO
+    $this->sqlCount();
+    return count(array_merge($this->_data, $this->_modified));
+  }
+
+  /* ArrayAccess */
+  public function offsetExists($offset) {
+    if(!$this->_model) {
+      $this->_model = $this->fetch();
+    }
+    return isset($this->_model[$offset]);
+  }
+  public function offsetGet($offset){
+    if(!$this->_model) {
+      $this->_model = $this->fetch();
+    }
+    return $this->_model[$offset];
+  }
+  public function offsetSet($offset, $value){
+    if(!$this->_model) {
+      $this->_model = $this->fetch();
+    }
+    return $this->_model[$offset] = $value;
+  }
+  public function offsetUnset($offset){
+    if(!$this->_model) {
+      $this->_model = $this->fetch();
+    }
+    if(isset($this->_model[$offset])){
+      unset($this->_model[$offset]);
+    }
   }
 }
