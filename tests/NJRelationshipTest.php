@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-02-04 23:22:54
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-14 02:13:19
+ * @Last Modified time: 2015-02-14 02:17:55
  */
 use NJORM\NJSql\NJTable;
 use NJORM\NJModel;
@@ -192,5 +192,12 @@ class NJRelationshipTest extends PHPUnit_Framework_TestCase {
 
     $posts = $user->post('mt', '>', 500)->select('uid,tl,cnt,mt');
     $this->assertEquals('SELECT `author` `uid`,`title` `tl`,`content` `cnt`,`modified_at` `mt` FROM `post` WHERE `author` = 3 AND `modified_at` > 500', $posts->sqlSelect(), 'message');
+
+    $post = new NJModel(NJTable::post(), array(
+      'uid' => 5,
+      'pid' => 56,
+      'tl' => 'etetttttttttttttt',
+      ));
+    $this->assertEquals('SELECT `ID` `id`,`username` `un`,`password` `pwd`,`last_login` `ll`,`create_at` `ct` FROM `user` WHERE `ID` = 5 LIMIT 1', $post->user->sqlSelect());
   }
 }
