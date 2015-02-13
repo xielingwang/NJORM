@@ -3,9 +3,9 @@
  * @Author: byamin
  * @Date:   2014-12-26 00:35:38
  * @Last Modified by:   Amin by
- * @Last Modified time: 2015-02-11 15:31:26
+ * @Last Modified time: 2015-02-13 17:14:37
  */
-namespace NJORM\NJCom;
+namespace NJORM\NJSql;
 class NJGroupBy extends NJOrderBy{
   protected $_condition;
 

@@ -3,10 +3,10 @@
  * @Author: byamin
  * @Date:   2015-02-02 23:27:30
  * @Last Modified by:   Amin by
- * @Last Modified time: 2015-02-11 15:18:04
+ * @Last Modified time: 2015-02-13 20:38:12
  */
 
-namespace NJORM;
+namespace NJORM\NJSql;
 
 define('FK_FMT', 'id_{tbname}');
 class NJTable {
@@ -42,7 +42,7 @@ class NJTable {
       $cols = explode(',', $cols);
     }
     if(in_array('*', $cols)) {
-      array_splice($cols, array_search('*', $cols), 1, array_keys($this->_fields));
+      array_splice($cols, array_search('*', $cols), 1, array_values($this->_fields));
       $cols = array_unique($cols);
     }
     $newcols = array();
@@ -71,7 +71,11 @@ class NJTable {
   }
 
   public function getField($field) {
-    return static::get_real_field($this, $field);
+    if(array_key_exists($field, $this->_fields))
+      return $field;
+    if($f = array_search($field, $this->_fields))
+      return $f;
+    trigger_error(sprintf('NJTable::getField("%s") error for table: %s', $this->_name, $field));
   }
 
   public function field($field, $alias = null) {
@@ -126,8 +130,8 @@ class NJTable {
         $f = static::get_real_field($table, $f);
       }
     }
-    elseif(in_array($field, $table->_fields)) {
-      $field = array_search($field, $table->_fields);
+    elseif(array_key_exists($field, $table->_fields)) {
+      $field = $table->_fields[$field];
     }
     return $field;
   }
@@ -137,6 +141,13 @@ class NJTable {
   const TYPE_RELATION_MANY = 2;
   const TYPE_RELATION_MANY_X = 3;
   protected $_has = array();
+  function rel($table) {
+    if(!array_key_exists($table, $this->_has)) {
+      trigger_error(sprintf('Undefined relationship "" for "%s"', $table, $this->_name));
+    }
+    return $this->_has[$table];
+  }
+
   function hasOne($sk, $table, $fk) {
     $fk || $fk = static::$table()->_pri_key;
     $sk || $sk = $this->_pri_key;
@@ -189,7 +200,7 @@ class NJTable {
   static function defined($name) {
     return array_key_exists($name, static::$_tables)
       || array_key_exists($name, static::$_aliases);
-  } 
+  }
   static function define($name, $alias=null) {
     if(!array_key_exists($name, static::$_tables)) {
       static::$_tables[$name] = new static($name);

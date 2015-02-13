@@ -2,11 +2,11 @@
 /**
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-02 23:27:52
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2015-02-13 17:21:40
  */
 namespace NJORM;
-use NJORM\NJCom\NJField;
+use NJORM\NJSql\NJField;
 interface INJTable {
   function name();
 }

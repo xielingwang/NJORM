@@ -2,19 +2,16 @@
 /**
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-12 00:45:05
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2015-02-13 20:41:13
  */
 namespace NJORM;
-
-if (!interface_exists('JsonSerializable')) {
-  interface JsonSerializable {
-    function jsonSerialize();
-  }
-}
+use \NJORM\NJSql\NJTable;
+use \NJORM\NJQuery;
+use \Countable, \ArrayAccess;
 
 // Iterator, ArrayAccess, Countable, JsonSerializable
-class NJModel implements \Countable,\JsonSerializable,\ArrayAccess {
+class NJModel implements Countable, ArrayAccess {
   // data
   protected $_table;
   protected $_data = array();
@@ -82,6 +79,34 @@ class NJModel implements \Countable,\JsonSerializable,\ArrayAccess {
   }
   public function saved() {
 
+  }
+
+  // __get
+  function __get($name) {
+    $rel = $this->_table->rel($name);
+    switch($rel['type']) {
+      case NJTable::TYPE_RELATION_ONE:
+      return $this->getRelOne($rel, $name);
+      break;
+      case NJTable::TYPE_RELATION_MANY:
+      return $this->getRelMany($rel, $name);
+      break;
+      case NJTable::TYPE_RELATION_MANY_X:
+      return $this->getRelManyX($rel, $name);
+      break;
+    }
+  }
+  function __call($name, $arguments) {
+    return call_user_func_array(array($this->$name, 'where'), $arguments);
+  }
+  function getRelOne($rel, $table) {
+    return (new NJQuery($table))->where($rel['fk'], $this[$rel['sk']]);
+  }
+  function getRelMany($rel) {
+    
+  }
+  function getRelManyX($rel) {
+    
   }
 
   /* JsonSerializable */

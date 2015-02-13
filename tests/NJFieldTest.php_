@@ -2,11 +2,11 @@
 /**
  * @Author: byamin
  * @Date:   2014-12-27 23:54:52
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-01-01 10:22:27
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2015-02-13 17:20:08
  */
 
-use \NJORM\NJCom\NJField;
+use \NJORM\NJSql\NJField;
 class NJFieldTest extends PHPUnit_Framework_TestCase {
   function testTypeFormat() {
     $ret = NJField::format_type('int');

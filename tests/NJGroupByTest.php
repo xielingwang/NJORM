@@ -3,10 +3,10 @@
  * @Author: byamin
  * @Date:   2014-12-25 01:06:58
  * @Last Modified by:   Amin by
- * @Last Modified time: 2015-02-11 15:32:35
+ * @Last Modified time: 2015-02-13 17:41:44
  */
-use \NJORM\NJCom\NJGroupBy as NJGB;
-use \NJORM\NJCom\NJCondition as NJCnd;
+use \NJORM\NJSql\NJGroupBy as NJGB;
+use \NJORM\NJSql\NJCondition as NJCnd;
 class NJOrderByTest extends PHPUnit_Framework_TestCase {
   function testOrder() {
     $o = new NJGB("field");
@@ -20,6 +20,6 @@ class NJOrderByTest extends PHPUnit_Framework_TestCase {
 
     $o->having('field2', 3);
 
-    $this->assertEquals('GROUP BY `field`, `field2` DESC, 1 DESC HAVING `field2`=3', (string)$o);
+    $this->assertEquals('GROUP BY `field`, `field2` DESC, 1 DESC HAVING `field2` = 3', (string)$o);
   }
 }

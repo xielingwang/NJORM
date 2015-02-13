@@ -2,13 +2,14 @@
 /**
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-12 00:44:34
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2015-02-13 20:45:34
  */
 namespace NJORM;
-use \NJORM\NJCom;
+use \NJORM\NJSql;
+use \NJORM\NJInterface\NJStringifiable, \Countable, \ArrayAccess;
 
-class NJQuery implements NJCom\NJStringifiable,\Countable,\ArrayAccess{
+class NJQuery implements NJStringifiable, Countable, ArrayAccess {
   const QUERY_TYPE_CREATE = 0;
   const QUERY_TYPE_SELECT = 1;
   const QUERY_TYPE_UPDATE = 2;
@@ -18,7 +19,7 @@ class NJQuery implements NJCom\NJStringifiable,\Countable,\ArrayAccess{
 
   public function __construct($table) {
     if(is_string($table))
-      $table = NJTable::$table();
+      $table = NJSql\NJTable::$table();
     $this->_table = $table;
   }
 
@@ -48,7 +49,11 @@ class NJQuery implements NJCom\NJStringifiable,\Countable,\ArrayAccess{
     );
   public function select() {
     $this->_type = static::QUERY_TYPE_SELECT;
-    $this->_select['columns'] = func_get_args();
+    $tmp = array();
+    foreach(func_get_args() as $arg) {
+      $tmp = array_merge($tmp, explode(',', $arg));
+    }
+    $this->_select['columns'] = array_unique($tmp);
     return $this;
   }
 
@@ -58,10 +63,10 @@ class NJQuery implements NJCom\NJStringifiable,\Countable,\ArrayAccess{
   }
 
   public function where($arg) {
-    NJCom\NJCondition::setTable($this->_table);
-    if(!($arg instanceof NJCom\NJCondition))
-      $arg = NJCom\NJCondition::fact(func_get_args());
-    if($this->_select['condition'] instanceof NJCom\NJCondition) {
+    NJSql\NJCondition::setTable($this->_table);
+    if(!($arg instanceof NJSql\NJCondition))
+      $arg = NJSql\NJCondition::fact(func_get_args());
+    if($this->_select['condition'] instanceof NJSql\NJCondition) {
       $this->_select['condition']->and($arg);
     }
     else {
@@ -72,7 +77,7 @@ class NJQuery implements NJCom\NJStringifiable,\Countable,\ArrayAccess{
 
   public function sortAsc() {
     if(is_null($this->_select['orderby']))
-      $this->_select['orderby'] = new NJCom\NJOrderby();
+      $this->_select['orderby'] = new NJSql\NJOrderby();
 
     foreach(func_get_args() as $field) {
       $this->_select['orderby']->add($field, true);
@@ -82,7 +87,7 @@ class NJQuery implements NJCom\NJStringifiable,\Countable,\ArrayAccess{
 
   public function sortDesc() {
     if(is_null($this->_select['orderby']))
-      $this->_select['orderby'] = new NJCom\NJOrderby();
+      $this->_select['orderby'] = new NJSql\NJOrderby();
 
     foreach(func_get_args() as $field) {
       $this->_select['orderby']->add($field, false);
@@ -103,7 +108,7 @@ class NJQuery implements NJCom\NJStringifiable,\Countable,\ArrayAccess{
     }
 
     if($this->_select['limit']) {
-      $string .= ' ' . call_user_func_array(__NAMESPACE__.'\NJCom\NJLimit::factory', $this->_select['limit']);
+      $string .= ' ' . call_user_func_array(__NAMESPACE__.'\NJSql\NJLimit::factory', $this->_select['limit']);
     }
     return $string;
   }

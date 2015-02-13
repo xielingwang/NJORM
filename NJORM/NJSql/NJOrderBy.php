@@ -3,10 +3,11 @@
  * @Author: byamin
  * @Date:   2014-12-25 00:56:57
  * @Last Modified by:   Amin by
- * @Last Modified time: 2015-02-11 15:28:32
+ * @Last Modified time: 2015-02-13 17:40:52
  */
-namespace NJORM\NJCom;
-class NJOrderBy implements NJStringifiable{
+namespace NJORM\NJSql;
+use NJORM\NJInterface;
+class NJOrderBy implements NJInterface\NJStringifiable{
   protected $_data = array();
   public function __construct($field = null, $order = 'asc') {
     if(func_num_args() <= 0)

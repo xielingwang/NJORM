@@ -2,10 +2,10 @@
 /**
  * @Author: byamin
  * @Date:   2015-01-07 00:27:39
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-02 01:29:38
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2015-02-13 17:21:34
  */
-namespace NJORM\NJCom;
+namespace NJORM;
 
 class NJValid {
   protected static function instance() {

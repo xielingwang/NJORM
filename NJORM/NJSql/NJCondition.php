@@ -3,12 +3,13 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
  * @Last Modified by:   Amin by
- * @Last Modified time: 2015-02-11 15:35:24
+ * @Last Modified time: 2015-02-13 20:38:31
  */
-namespace NJORM\NJCom;
+namespace NJORM\NJSql;
 use NJORM\NJMisc;
-use NJORM\NJTable;
-class NJCondition implements NJStringifiable{
+use NJORM\NJSql\NJTable;
+use NJORM\NJInterface;
+class NJCondition implements NJInterface\NJStringifiable{
 
   protected static $_table;
   static function setTable($table) {

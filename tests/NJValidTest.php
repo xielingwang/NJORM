@@ -2,10 +2,10 @@
 /**
  * @Author: byamin
  * @Date:   2015-01-08 01:18:08
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-02 01:26:06
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2015-02-13 17:21:28
  */
-use \NJORM\NJCom\NJValid;
+use \NJORM\NJValid;
 
 class NJValidTest extends PHPUnit_Framework_TestCase{
   function testInteger() {

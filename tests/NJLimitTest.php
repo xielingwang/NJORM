@@ -2,10 +2,10 @@
 /**
  * @Author: byamin
  * @Date:   2014-12-20 13:00:34
- * @Last Modified by:   byamin
- * @Last Modified time: 2014-12-26 02:04:28
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2015-02-13 17:20:17
  */
-use \NJORM\NJCom\NJLimit as NJLMT;
+use \NJORM\NJSql\NJLimit as NJLMT;
 class NJLimitTest extends PHPUnit_Framework_TestCase {
   public function testLimit() {
     $l = new NJLMT(1,3);

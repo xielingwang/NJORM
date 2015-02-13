@@ -3,24 +3,27 @@
  * @Author: Amin by
  * @Date:   2015-02-11 14:25:48
  * @Last Modified by:   Amin by
- * @Last Modified time: 2015-02-11 15:48:45
+ * @Last Modified time: 2015-02-13 18:52:45
  */
 
-use NJORM\NJTable;
+use NJORM\NJSql\NJTable;
 use NJORM\NJModel;
 
 class NJModelTest extends PHPUnit_Framework_TestCase{
 
   public function setUp(){
-    NJTable::define('qn_users', 'users')
-      ->primary('user_id', 'uid')
-      ->field('user_name', 'name')
-      ->field('user_pass', 'pass')
-      ->field('user_email', 'email');
+    if(!NJTable::defined('qn_users')) {
+      NJTable::define('qn_users', 'users')
+        ->primary('user_id', 'uid')
+        ->field('user_name', 'name')
+        ->field('user_pass', 'pass')
+        ->field('user_email', 'email');
+    }
   }
 
   function testModel() {
     $data = array(
+      'uid' => 5,
       'name' => 'uname',
       'pass' => '0987445',
       'email' => 'gogog',

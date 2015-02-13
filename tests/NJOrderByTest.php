@@ -3,9 +3,9 @@
  * @Author: byamin
  * @Date:   2014-12-25 01:06:58
  * @Last Modified by:   Amin by
- * @Last Modified time: 2015-02-11 15:26:21
+ * @Last Modified time: 2015-02-13 17:20:39
  */
-use \NJORM\NJCom\NJOrderBy as NJOB;
+use \NJORM\NJSql\NJOrderBy as NJOB;
 class NJOrderTest extends PHPUnit_Framework_TestCase {
   function testOrder() {
     $o = new NJOB("field");

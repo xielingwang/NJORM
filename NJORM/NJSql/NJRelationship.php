@@ -2,10 +2,10 @@
 /**
  * @Author: byamin
  * @Date:   2015-02-04 23:01:49
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-07 17:52:32
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2015-02-13 20:15:56
  */
-namespace NJORM;
+namespace NJORM\NJSql;
 
 class NJRelationship {
   public static function oneOne($config) {
@@ -17,8 +17,8 @@ class NJRelationship {
   public static function oneMany($config) {
     list($t1, $t2) = array_keys($config);
     list($k1, $k2) = array_values($config);
-    NJTable::$t1()->hasOne($k1, $t2, $k2);
-    NJTable::$t2()->hasMany($k2, $t1, $k1);
+    NJTable::$t1()->hasMany($k1, $t2, $k2);
+    NJTable::$t2()->hasOne($k2, $t1, $k1);
   }
   public static function manyMany($config, $mconfig=null, $maptable = null) {
     if(!$mconfig)

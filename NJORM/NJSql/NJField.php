@@ -1,6 +1,11 @@
 <?php
-
-namespace NJORM\NJCom;
+/**
+ * @Author: Amin by
+ * @Date:   2015-01-13 13:09:41
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2015-02-13 17:18:05
+ */
+namespace NJORM\NJSql;
 use \NJORM\NJMisc;
 class NJField {
   protected $_name;

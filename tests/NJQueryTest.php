@@ -3,25 +3,27 @@
  * @name: byamin
  * @Date:   2015-01-01 12:21:16
  * @Last Modified by:   Amin by
- * @Last Modified time: 2015-02-11 15:42:37
+ * @Last Modified time: 2015-02-13 18:35:08
  */
 
 
-use \NJORM\NJTable;
+use \NJORM\NJSql\NJTable;
 use \NJORM\NJQuery;
 
 class NJQueryTest extends PHPUnit_Framework_TestCase {
 
   public function setUp(){
-    NJTable::define('qn_users', 'cards')
-      ->primary('user_id', 'uid')
-      ->field('user_name', 'name')
-      ->field('user_pass', 'pass')
-      ->field('user_email', 'email');
+    if(!NJTable::defined('qn_users')) {
+      NJTable::define('qn_users', 'users')
+        ->primary('user_id', 'uid')
+        ->field('user_name', 'name')
+        ->field('user_pass', 'pass')
+        ->field('user_email', 'email');
+    }
   }
 
   function testNJQuery() {
-    $query = new NJQuery('cards');
+    $query = new NJQuery('users');
     $query
     ->select('name', 'pass', 'email')
     ->limit(0,2)

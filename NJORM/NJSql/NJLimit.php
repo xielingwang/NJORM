@@ -3,9 +3,9 @@
  * @Author: byamin
  * @Date:   2014-12-26 01:41:57
  * @Last Modified by:   Amin by
- * @Last Modified time: 2015-01-06 10:51:08
+ * @Last Modified time: 2015-02-13 17:14:33
  */
-namespace NJORM\NJCom;
+namespace NJORM\NJSql;
 class NJLimit {
   const TYPE_COMMA = true;
   const TYPE_OFFSET = false;
