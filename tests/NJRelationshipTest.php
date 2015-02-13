@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2015-02-04 23:22:54
- * @Last Modified by:   Amin by
- * @Last Modified time: 2015-02-13 20:43:41
+ * @Last Modified by:   byamin
+ * @Last Modified time: 2015-02-14 02:13:19
  */
 use NJORM\NJSql\NJTable;
 use NJORM\NJModel;
@@ -174,9 +174,23 @@ class NJRelationshipTest extends PHPUnit_Framework_TestCase {
           'll' => 14366555454,
           'ct' => 11366534225
           ));
-    $this->assertEquals('SELECT `user_id` `uid`,`firstname` `fn`,`lastname` `ln`,`address` `addr`,`wanted` `wtd`,`birthday` `bd` FROM `userdetail` WHERE `user_id` = 3', $user->detail->sqlSelect(), 'message');
+    $this->assertEquals('SELECT `user_id` `uid`,`firstname` `fn`,`lastname` `ln`,`address` `addr`,`wanted` `wtd`,`birthday` `bd` FROM `userdetail` WHERE `user_id` = 3 LIMIT 1', $user->detail->sqlSelect(), 'message');
 
     $detail = $user->detail('wtd', '>', 500)->select('uid,fn,ln,bd');
-    $this->assertEquals('SELECT `user_id` `uid`,`firstname` `fn`,`lastname` `ln`,`birthday` `bd` FROM `userdetail` WHERE `user_id` = 3 AND `wanted` > 500', $detail->sqlSelect(), 'message');
+    $this->assertEquals('SELECT `user_id` `uid`,`firstname` `fn`,`lastname` `ln`,`birthday` `bd` FROM `userdetail` WHERE `user_id` = 3 AND `wanted` > 500 LIMIT 1', $detail->sqlSelect(), 'message');
+  }
+
+  public function testModelHasMany() {
+    $user = new NJModel(NJTable::user(), array(
+          'id' => 3,
+          'un' => 'username',
+          'pwd' => 'erewdfssreww',
+          'll' => 14366555454,
+          'ct' => 11366534225
+          ));
+    $this->assertEquals('SELECT `ID` `pid`,`author` `uid`,`title` `tl`,`content` `cnt`,`create_at` `ct`,`id_category` `cateid`,`modified_at` `mt` FROM `post` WHERE `author` = 3', $user->post->sqlSelect(), 'message');
+
+    $posts = $user->post('mt', '>', 500)->select('uid,tl,cnt,mt');
+    $this->assertEquals('SELECT `author` `uid`,`title` `tl`,`content` `cnt`,`modified_at` `mt` FROM `post` WHERE `author` = 3 AND `modified_at` > 500', $posts->sqlSelect(), 'message');
   }
 }

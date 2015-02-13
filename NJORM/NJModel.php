@@ -2,8 +2,8 @@
 /**
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
- * @Last Modified by:   Amin by
- * @Last Modified time: 2015-02-13 20:41:13
+ * @Last Modified by:   byamin
+ * @Last Modified time: 2015-02-14 02:10:02
  */
 namespace NJORM;
 use \NJORM\NJSql\NJTable;
@@ -100,12 +100,12 @@ class NJModel implements Countable, ArrayAccess {
     return call_user_func_array(array($this->$name, 'where'), $arguments);
   }
   function getRelOne($rel, $table) {
+    return (new NJQuery($table))->where($rel['fk'], $this[$rel['sk']])->limit(1);
+  }
+  function getRelMany($rel, $table) {
     return (new NJQuery($table))->where($rel['fk'], $this[$rel['sk']]);
   }
-  function getRelMany($rel) {
-    
-  }
-  function getRelManyX($rel) {
+  function getRelManyX($rel, $table) {
     
   }
 
