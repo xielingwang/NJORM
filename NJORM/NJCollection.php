@@ -1,9 +1,9 @@
 <?php
 /**
- * @Author: Amin by
- * @Date:   2014-12-15 10:22:32
+ * @Author: byamin
+ * @Date:   2015-02-14 11:57:17
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-14 14:03:19
+ * @Last Modified time: 2015-02-14 14:02:59
  */
 namespace NJORM;
 use \NJORM\NJSql\NJTable;
@@ -11,11 +11,10 @@ use \NJORM\NJQuery;
 use \Countable, \ArrayAccess;
 
 // Iterator, ArrayAccess, Countable, JsonSerializable
-class NJModel implements Countable, ArrayAccess {
+class NJCollection implements Countable, ArrayAccess {
   // data
   protected $_table;
-  protected $_data = array();
-  protected $_modified = array();
+  protected $_list = array();
 
   public function __construct($table, $data=null) {
     if(is_string($table)) {
@@ -29,54 +28,45 @@ class NJModel implements Countable, ArrayAccess {
 
   protected function setData() {
     if(func_num_args() >= 2) {
-      // TODO: check data
-      $this->_data[func_get_arg(0)] = func_get_arg(1);
+      $val = func_get_arg(1);
+      if(is_array($val)) {
+        $val = new NJModel($this->_table, $val);
+      }
+      if($val instanceof NJModel) {
+        $this->_list[func_get_arg(0)] = $val;
+      }
+      else {
+        trigger_error('Argument 2 expects an array or a NJModel for NJCollection::setData()');
+      }
     }
     else {
       $data = func_get_arg(0);
       if(is_array($data)) {
-        $this->_data = array();
+        $this->_list = array();
         foreach($data as $k => $v) {
           $this->setData($k, $v);
         }
       }
       else {
-        trigger_error('Expects an array for NJModel::setData()!');
-      }
-    }
-    return $this;
-  }
-
-  protected function setModified() {
-    if(func_num_args() >= 2) {
-      $this->_modified[func_get_arg(0)] = func_get_arg(1);
-    }
-    else {
-      $data = func_get_arg(0);
-      if(is_array($data)) {
-        $this->_modified = array();
-        foreach($data as $k => $v) {
-          $this->setModified($k, $v);
-        }
-      }
-      else {
-        trigger_error('NJModel::setModified error!');
+        trigger_error('Expects an array for NJCollection::setData()');
       }
     }
     return $this;
   }
   protected function getValue($key) {
-    if(array_key_exists($key, $this->_modified))
-      return $this->_modified[$key];
-    elseif(array_key_exists($key, $this->_data))
-      return $this->_data[$key];
+    if(array_key_exists($key, $this->_list))
+      return $this->_list[$key];
     trigger_error(sprintf('Undefined index "%s" in model!', $key));
   }
   public function save() {
 
   }
   public function saved() {
-    return empty($this->_modified);
+    foreach($this->_list as $model) {
+      if(!$model->saved())
+        return false;
+    }
+    return true;
   }
 
   // __get
@@ -112,12 +102,12 @@ class NJModel implements Countable, ArrayAccess {
 
   /* Countable */
   public function count() {
-    return count(array_merge($this->_data, $this->_modified));
+    return count(array_merge($this->_list, $this->_modified));
   }
 
   /* ArrayAccess */
   public function offsetExists($offset) {
-    return array_key_exists($offset, $this->_data) 
+    return array_key_exists($offset, $this->_list) 
     || array_key_exists($offset, $this->_modified);
   }
   public function offsetGet($offset){
@@ -127,11 +117,8 @@ class NJModel implements Countable, ArrayAccess {
     return $this->setModified($offset, $value);
   }
   public function offsetUnset($offset){
-    if(array_key_exists($offset, $this->_data)){
-      unset($this->_data[$offset]);
-    }
-    if(array_key_exists($offset, $this->_modified)){
-      unset($this->_modified[$offset]);
+    if(array_key_exists($offset, $this->_list)){
+      unset($this->_list[$offset]);
     }
   }
 }
