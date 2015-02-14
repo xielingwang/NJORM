@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-02-14 11:57:17
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-14 14:02:59
+ * @Last Modified time: 2015-02-14 14:25:09
  */
 namespace NJORM;
 use \NJORM\NJSql\NJTable;
@@ -88,7 +88,7 @@ class NJCollection implements Countable, ArrayAccess {
     return call_user_func_array(array($this->$name, 'where'), $arguments);
   }
   function getRelOne($rel, $table) {
-    return (new NJQuery($table))->where($rel['fk'], $this[$rel['sk']])->limit(1);
+    return (new NJQuery($table))->where($rel['fk'], $this[$rel['sk']])->limit($this->count());
   }
   function getRelMany($rel, $table) {
     return (new NJQuery($table))->where($rel['fk'], $this[$rel['sk']]);
@@ -102,19 +102,23 @@ class NJCollection implements Countable, ArrayAccess {
 
   /* Countable */
   public function count() {
-    return count(array_merge($this->_list, $this->_modified));
+    return count($this->_list);
   }
 
   /* ArrayAccess */
   public function offsetExists($offset) {
-    return array_key_exists($offset, $this->_list) 
-    || array_key_exists($offset, $this->_modified);
+    return array_key_exists($offset, $this->_list);
   }
   public function offsetGet($offset){
-    return $this->getValue($offset);
+    if(is_numeric($offset))
+      return $this->getValue($offset);
+    $arr = array();
+    foreach($this->_list as $model)
+      $arr[] = $model[$offset];
+    return $arr;
   }
   public function offsetSet($offset, $value){
-    return $this->setModified($offset, $value);
+    trigger_error('It is no way to add any model for NJCollection!');
   }
   public function offsetUnset($offset){
     if(array_key_exists($offset, $this->_list)){

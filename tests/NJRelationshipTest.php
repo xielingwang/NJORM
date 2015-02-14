@@ -3,10 +3,11 @@
  * @Author: byamin
  * @Date:   2015-02-04 23:22:54
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-14 02:17:55
+ * @Last Modified time: 2015-02-14 14:25:40
  */
 use NJORM\NJSql\NJTable;
 use NJORM\NJModel;
+use NJORM\NJCollection;
 use NJORM\NJSql\NJRelationship;
 
 class NJRelationshipTest extends PHPUnit_Framework_TestCase {
@@ -166,7 +167,7 @@ class NJRelationshipTest extends PHPUnit_Framework_TestCase {
     $this->assertEquals('id_user', $rel['mfk']);
   }
 
-  public function testModelHasOne() {
+  public function testNJModelHasOne() {
     $user = new NJModel(NJTable::user(), array(
           'id' => 3,
           'un' => 'username',
@@ -180,7 +181,7 @@ class NJRelationshipTest extends PHPUnit_Framework_TestCase {
     $this->assertEquals('SELECT `user_id` `uid`,`firstname` `fn`,`lastname` `ln`,`birthday` `bd` FROM `userdetail` WHERE `user_id` = 3 AND `wanted` > 500 LIMIT 1', $detail->sqlSelect(), 'message');
   }
 
-  public function testModelHasMany() {
+  public function testNJModelHasMany() {
     $user = new NJModel(NJTable::user(), array(
           'id' => 3,
           'un' => 'username',
@@ -199,5 +200,30 @@ class NJRelationshipTest extends PHPUnit_Framework_TestCase {
       'tl' => 'etetttttttttttttt',
       ));
     $this->assertEquals('SELECT `ID` `id`,`username` `un`,`password` `pwd`,`last_login` `ll`,`create_at` `ct` FROM `user` WHERE `ID` = 5 LIMIT 1', $post->user->sqlSelect());
+  }
+
+  public function testNJCollectionHasOne() {
+    $users = new NJCollection(NJTable::user(), [[
+              'id' => 3,
+              'un' => 'username-3',
+              'pwd' => 'erewdfssreww-3',
+              'll' => 14366555454,
+              'ct' => 11366534225
+              ],[
+              'id' => 4,
+              'un' => 'username-4',
+              'pwd' => 'erewdfssreww-4',
+              'll' => 14366555454,
+              'ct' => 11366534225
+              ],[
+              'id' => 5,
+              'un' => 'username-5',
+              'pwd' => 'erewdfssreww-5',
+              'll' => 14366555454,
+              'ct' => 11366534225
+              ]]);
+    $this->assertEquals('SELECT `user_id` `uid`,`firstname` `fn`,`lastname` `ln`,`address` `addr`,`wanted` `wtd`,`birthday` `bd` FROM `userdetail` WHERE `user_id` IN (3,4,5) LIMIT 3', $users->detail->sqlSelect(), 'message');
+    $detail = $users->detail('wtd', '>', 500)->select('uid,fn,ln,bd');
+    $this->assertEquals('SELECT `user_id` `uid`,`firstname` `fn`,`lastname` `ln`,`birthday` `bd` FROM `userdetail` WHERE `user_id` IN (3,4,5) AND `wanted` > 500 LIMIT 3', $detail->sqlSelect(), 'message');
   }
 }
