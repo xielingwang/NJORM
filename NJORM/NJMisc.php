@@ -138,9 +138,28 @@ public static function operatorForArray($operator) {
 }
 
 public static function supportedOperators($joins=null) {
-  static $operators = array('=','>=','>','<=','<','<>','!=','<=>','IS','IS NOT','IN','NOT IN','BETWEEN','NOT BETWEEN','REGEXP', 'NOT REGEXP','LIKE','NOT LIKE');
-  if(func_num_args() < 1)
+  static $operators;
+  if(!$operators) {
+    $operators = array_merge(static::specialOperators(), static::normalOperators());
+  }
+  if(!is_null($joins)) {
     return implode($joins, $operators);
+  }
+  return $operators;
+}
+
+public static function specialOperators($joins=null) {
+  static $operators = array('IN','NOT IN','BETWEEN','NOT BETWEEN');
+  if(!is_null($joins)) {
+    return implode($joins, $operators);
+  }
+  return $operators;
+}
+public static function normalOperators($joins=null) {
+  static $operators = array('=','>=','>','<=','<','<>','!=','<=>','IS','IS NOT','REGEXP', 'NOT REGEXP','LIKE','NOT LIKE');
+  if(!is_null($joins)) {
+    return implode($joins, $operators);
+  }
   return $operators;
 }
 
@@ -150,7 +169,7 @@ public static function supportedOperators($joins=null) {
  * @return boolean           [description]
  */
 public static function isOperatorSupported($operator) {
-  return in_array($operator, static::supportedOperators(null));
+  return in_array($operator, static::supportedOperators());
 }
 
 }

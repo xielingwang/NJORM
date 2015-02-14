@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-15 00:01:40
+ * @Last Modified time: 2015-02-15 02:19:28
  */
 namespace NJORM\NJSql;
 use NJORM\NJMisc;
@@ -150,6 +150,30 @@ class NJCondition implements NJInterface\NJStringifiable{
     return $this;
   }
 
+  protected function _resolveSubConditions() {
+    if(is_array($this->_conditions)) {
+      return $this;
+    }
+    echo $sqlcnd = $this->_conditions;
+    echo PHP_EOL;
+    $sqlcnd = str_replace(array("\'","''"), array("@#QUOTE1#@","@#QUOTE2#@"), $sqlcnd);
+    $ret = preg_match_all("/'[^']+'/i", $sqlcnd, $strs);
+    if($ret) {
+      foreach($strs as &$str) {
+        $sqlcnd = str_replace($str, '%s',$sqlcnd);
+        $str = str_replace(array("@#QUOTE1#@","@#QUOTE2#@"), array("\'","''"), $str);
+      }
+      echo $sqlcnd;
+      print_r($strs);
+    }
+    $regexOp = str_replace(' ', '\s+', NJMisc::normalOperators('|'));
+    $regexOp = sprintf('/(`?\w+`?)\s*(%s)\s*(\S+)/i', $regexOp);
+    echo $regexOp;
+    // preg_match_all(, subject, matches)
+    echo $regexOp;
+    // echo $sqlcnd . PHP_EOL;
+  }
+
   protected function _parseWithParameters(&$args) {
     $format = array_shift($args);
     $format = preg_replace_callback("/'[^']*[%?][^']*'/", function($matches){
@@ -187,6 +211,7 @@ class NJCondition implements NJInterface\NJStringifiable{
     $string = str_replace('@#PCNT#@', '%', $string);
     $string = str_replace('@#QUSTN#@', '?', $string);
     $this->_conditions = $string;
+    $this->_resolveSubConditions();
 
     return $this;
   }
@@ -203,8 +228,9 @@ class NJCondition implements NJInterface\NJStringifiable{
 
     do {
 
-      if(count($args) <= 1) {
+      if(count($args) <= 1) { 
         $this->_conditions = array_shift($args);
+        $this->_resolveSubConditions();
         break;
       }
       if(count($args) <= 2) {

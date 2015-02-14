@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2014-12-21 16:11:15
- * @Last Modified by:   Amin by
- * @Last Modified time: 2015-02-13 17:20:01
+ * @Last Modified by:   byamin
+ * @Last Modified time: 2015-02-15 02:02:37
  */
 use \NJORM\NJSql\NJCondition as NJCnd;
 class NJConditionTest extends PHPUnit_Framework_TestCase {
@@ -86,19 +86,24 @@ class NJConditionTest extends PHPUnit_Framework_TestCase {
     $cond = NJCnd::fact("field1", "like", "abc%");
     $this->assertEquals("`field1` LIKE 'abc%'", $cond->stringify());
     $this->assertEquals("WHERE `field1` LIKE 'abc%'", (string)$cond);
+
+    $cnd = NJCnd::fact("field = 'field >= \'a''%' AND field = 'field2 >= \'a''%' AND a between 1 AND 4");
+    $this->assertEquals("`field` = 'field >= \'a''%'", $cnd->stringify());
+
+
   }
 
   function testConditionWithBindParameters() {
-    $cond1 = NJCnd::fact("`field` = ?", "good");
+    $cond1 = NJCnd::fact("field = ?", "good");
     $this->assertEquals("`field` = ?", $cond1->stringify());
     $this->assertEmpty(array_diff($cond1->parameters(), array("good")));
 
-    $cond2 = NJCnd::fact("`key` IN (?,?,?)", 1, 'true', 'on');
+    $cond2 = NJCnd::fact("key IN (?,?,?)", 1, 'true', 'on');
     $this->assertEquals("`key` IN (?,?,?)", $cond2->stringify());
     $this->assertEmpty(array_diff($cond2->parameters(), array(1, 'true', 'on')));
 
     $cond_1 = NJCnd::factX($cond1, $cond2);
-    $this->assertEquals("`field` = ? AND `key` IN (?,?,?)", $cond_1->stringify());
+    $this->assertEquals("field = ? AND key IN (?,?,?)", $cond_1->stringify());
     $this->assertEmpty(array_diff($cond_1->parameters(), array('good', 1, 'true', 'on')));
 
     $cond3 = NJCnd::fact('`key` = %d OR `val` = ?', 3, 9);
