@@ -2,8 +2,8 @@
 /**
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
- * @Last Modified by:   Amin by
- * @Last Modified time: 2015-02-13 17:07:07
+ * @Last Modified by:   byamin
+ * @Last Modified time: 2015-02-14 21:39:36
  */
 namespace NJORM;
 
@@ -23,10 +23,10 @@ class NJORM {
     static $pdo;
     if(!$pdo){
       try {
-        $dsn = sprintf("mysql:dbname=%s;host:%s", 'qndb', 'localhost');
-        // $dsn = 'mysql:dbname=test;unix_socket=/private/tmp/mysql.sock';
+        // $dsn = sprintf("mysql:dbname=%s;host:%s", 'qndb', 'localhost');
+        $dsn = 'mysql:dbname=test;unix_socket=/private/tmp/mysql.sock';
         $username = 'root';
-        $password = 'password';
+        $password = 'root';
         $options = array(
           1002 => 'SET NAMES utf8',
         );

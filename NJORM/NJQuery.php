@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
- * @Last Modified by:   Amin by
- * @Last Modified time: 2015-02-13 20:45:34
+ * @Last Modified by:   byamin
+ * @Last Modified time: 2015-02-14 23:55:00
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -36,6 +36,26 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
     break;
     case static::QUERY_TYPE_DELETE:
     return $this->sqlDelete();
+    break;
+    }
+  }
+  public function __toString() {
+    return $this->stringify();
+  }
+
+  public function params() {
+    switch($this->_type) {
+    case static::QUERY_TYPE_SELECT:
+    return $this->paramSelect();
+    break;
+    case static::QUERY_TYPE_CREATE:
+    return $this->paramCreate();
+    break;
+    case static::QUERY_TYPE_UPDATE:
+    return $this->paramUpdate();
+    break;
+    case static::QUERY_TYPE_DELETE:
+    return $this->paramDelete();
     break;
     }
   }
@@ -95,7 +115,15 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
     return $this;
   }
 
-  public function sqlSelect() {
+  protected function paramSelect() {
+    $parameters = array();
+    if($this->_select['condition']) {
+      $parameters = array_merge($parameters, $this->_select['condition']->parameters());
+    }
+    return $parameters;
+  }
+
+  protected function sqlSelect() {
     $string = $this->_table->select($this->_select['columns']);
     $string .= ' '.$this->_table->from();
 
@@ -117,10 +145,62 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
     return '';
   }
 
-  public function fetch() {
-    $sql = $this->sqlSelect();
-    $stmt = NJORM::pdo()->query($sql);
+  protected function getPDOParamDataType($val) {
+    if(is_null($val))
+      return \PDO::PARAM_NULL;
+    elseif(is_bool($val))
+      return \PDO::PARAM_BOOL;
+    elseif(is_int($val) || is_float($val))
+      return \PDO::PARAM_INT;
+    elseif(is_string($val))
+      return \PDO::PARAM_STR;
+    else
+      return \PDO::PARAM_LOB;
+  }
+
+  public function fetch($getMany=false) {
+    $sql = $this->stringify();
+
+    // type: prepare/execute
+    if($params = $this->params()) {
+      $stmt = NJORM::pdo()->prepare($sql);
+      foreach($params as $k => &$p) {
+        $stmt->bindParam($k+1, $p, $this->getPDOParamDataType($p));
+      }
+      if(!$stmt->execute()) {
+        echo $stmt->queryString.PHP_EOL;
+        echo $stmt->errorCode().PHP_EOL;
+        print_r($stmt->errorInfo());
+        throw new \Exception("bindParam Error");
+      }
+    }
+
+    // type: query
+    else {
+      $stmt = NJORM::pdo()->query($sql);
+    }
+
+    // get many
+    if($getMany) {
+      return $this->fetchMany($stmt);
+    }
+
+    // get one
+    return $this->fetchOne($stmt);
+  }
+
+  public function fetchMany($stmt) {
+
+  }
+
+  public function fetchOne($stmt) {
     $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+    if($result === false) {
+      echo $stmt->queryString.PHP_EOL;
+      echo $stmt->errorCode().PHP_EOL;
+      print_r($stmt->errorInfo());
+      throw new \Exception('sql execute error!');
+    }
     return new NJModel($this->_table, $result);
   }
 

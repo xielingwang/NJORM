@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
- * @Last Modified by:   Amin by
- * @Last Modified time: 2015-02-13 20:38:31
+ * @Last Modified by:   byamin
+ * @Last Modified time: 2015-02-15 00:01:40
  */
 namespace NJORM\NJSql;
 use NJORM\NJMisc;
@@ -19,7 +19,7 @@ class NJCondition implements NJInterface\NJStringifiable{
   }
 
   protected $_conditions;
-  protected $_parameters;
+  protected $_parameters = array();
 
   /**
    * [fact description]
