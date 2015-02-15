@@ -3,10 +3,17 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:11:15
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-15 02:02:37
+ * @Last Modified time: 2015-02-16 00:21:33
  */
 use \NJORM\NJSql\NJCondition as NJCnd;
 class NJConditionTest extends PHPUnit_Framework_TestCase {
+
+  function testCondition11(){
+
+    $cnd = NJCnd::fact("b not  in (2,  '3' , ? ) or field = 'field >= \'a''%' AND a between ? AND 4 and field  = 'field2   >= \'a''%'", 4, 2);
+    $this->assertEquals("`b` NOT IN (2,'3',?) OR `field` = 'field >= ''a''%' AND `a` BETWEEN ? AND 4 AND `field` = 'field2   >= ''a''%'", $cnd->stringify());
+  }
+
   function testConditionParse() {
     $cond = new NJCnd();
     $cond->parse(array("abc", ">", 3));
@@ -26,16 +33,13 @@ class NJConditionTest extends PHPUnit_Framework_TestCase {
 
     $this->assertEquals("(`abc` > 3 OR `abc` = 3) AND 1", $cond->stringify());
 
-    $cond->and("`abc` is NULL");
-    $this->assertEquals("(`abc` > 3 OR `abc` = 3) AND 1 AND `abc` is NULL", $cond->stringify());
+    $cond->and("`abc` is null");
+    $this->assertEquals("(`abc` > 3 OR `abc` = 3) AND 1 AND `abc` IS NULL", $cond->stringify());
 
     $cond = NJCnd::fact("`abc` >= %s", 'eee');
     $this->assertEquals("`abc` >= 'eee'", $cond->stringify());
   }
 
-  /**
-   * @depends testCondition
-   */
   function testComplexCondition() {
     $cond1 = NJCnd::fact('abc', '>', 3);
     $cond2 = NJCnd::fact('abc', '=', 3);
@@ -67,11 +71,11 @@ class NJConditionTest extends PHPUnit_Framework_TestCase {
     $cond = NJCnd::fact("field", array());
     $this->assertEquals('`field` IS NULL', $cond->stringify());
 
-    $cond = NJCnd::fact("field", array(1,2,3,4));
+    $cond = NJCnd::fact("field", 'in', array(1,2,3,4));
     $this->assertEquals('`field` IN (1,2,3,4)', $cond->stringify());
 
     $cond = NJCnd::fact("field", array(1,2,3,4,"s'3"));
-    $this->assertEquals("`field` IN (1,2,3,4,'s\'3')", $cond->stringify());
+    $this->assertEquals("`field` IN (1,2,3,4,'s''3')", $cond->stringify());
   }
   function testAdvanceCondition2() {
     $cond = NJCnd::fact("field", 'between', 3, 5);
@@ -87,10 +91,8 @@ class NJConditionTest extends PHPUnit_Framework_TestCase {
     $this->assertEquals("`field1` LIKE 'abc%'", $cond->stringify());
     $this->assertEquals("WHERE `field1` LIKE 'abc%'", (string)$cond);
 
-    $cnd = NJCnd::fact("field = 'field >= \'a''%' AND field = 'field2 >= \'a''%' AND a between 1 AND 4");
-    $this->assertEquals("`field` = 'field >= \'a''%'", $cnd->stringify());
-
-
+    $cnd = NJCnd::fact("b in (2,  '3' , ? ) or field = 'field >= \'a''%' AND a between ? AND 4 and field  = 'field2   >= \'a''%'", 4, 2);
+    $this->assertEquals("`b` IN (2,'3',?) OR `field` = 'field >= ''a''%' AND `a` BETWEEN ? AND 4 AND `field` = 'field2   >= ''a''%'", $cnd->stringify());
   }
 
   function testConditionWithBindParameters() {
@@ -103,7 +105,7 @@ class NJConditionTest extends PHPUnit_Framework_TestCase {
     $this->assertEmpty(array_diff($cond2->parameters(), array(1, 'true', 'on')));
 
     $cond_1 = NJCnd::factX($cond1, $cond2);
-    $this->assertEquals("field = ? AND key IN (?,?,?)", $cond_1->stringify());
+    $this->assertEquals("`field` = ? AND `key` IN (?,?,?)", $cond_1->stringify());
     $this->assertEmpty(array_diff($cond_1->parameters(), array('good', 1, 'true', 'on')));
 
     $cond3 = NJCnd::fact('`key` = %d OR `val` = ?', 3, 9);

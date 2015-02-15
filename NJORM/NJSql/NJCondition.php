@@ -3,11 +3,12 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-15 02:19:28
+ * @Last Modified time: 2015-02-16 00:18:29
  */
 namespace NJORM\NJSql;
 use NJORM\NJMisc;
 use NJORM\NJSql\NJTable;
+use NJORM\NJValid;
 use NJORM\NJInterface;
 class NJCondition implements NJInterface\NJStringifiable{
 
@@ -133,6 +134,10 @@ class NJCondition implements NJInterface\NJStringifiable{
   }
 
   protected function addCondition() {
+    foreach(func_get_args() as $arg) {
+      if(is_array($arg))
+        throw new \Exception("eeee");
+    }
     if(is_null($this->_conditions)) {
       $this->_conditions = array();
     }
@@ -151,35 +156,121 @@ class NJCondition implements NJInterface\NJStringifiable{
   }
 
   protected function _resolveSubConditions() {
-    if(is_array($this->_conditions)) {
+    if(!is_string($this->_conditions)) {
       return $this;
     }
-    echo $sqlcnd = $this->_conditions;
-    echo PHP_EOL;
-    $sqlcnd = str_replace(array("\'","''"), array("@#QUOTE1#@","@#QUOTE2#@"), $sqlcnd);
-    $ret = preg_match_all("/'[^']+'/i", $sqlcnd, $strs);
-    if($ret) {
-      foreach($strs as &$str) {
-        $sqlcnd = str_replace($str, '%s',$sqlcnd);
-        $str = str_replace(array("@#QUOTE1#@","@#QUOTE2#@"), array("\'","''"), $str);
+
+    // 1.Preprocession
+    $sqlcnd = $this->_conditions;
+    $sqlcnd = str_replace(array("\'","''"), "@##QUTESC##@", $sqlcnd);
+    if(preg_match_all("/'([^']+)'/i", $sqlcnd, $matches, PREG_SET_ORDER)) {
+      foreach($matches as $m) {
+        $sqlcnd = str_replace($m[0],'@##STRNG##@',$sqlcnd);
+        $strings[] = str_replace("@##QUTESC##@", "'", $m[1]);
       }
-      echo $sqlcnd;
-      print_r($strs);
     }
+
+    // 2.Explode Conditions
+    $matched = array();
+    $arrConds = array();
+    $arrLinkers = array();
+
+    // 2.1.Deal with Normal Operators
     $regexOp = str_replace(' ', '\s+', NJMisc::normalOperators('|'));
     $regexOp = sprintf('/(`?\w+`?)\s*(%s)\s*(\S+)/i', $regexOp);
-    echo $regexOp;
-    // preg_match_all(, subject, matches)
-    echo $regexOp;
-    // echo $sqlcnd . PHP_EOL;
+    if(preg_match_all($regexOp, $sqlcnd, $matches,PREG_SET_ORDER|PREG_OFFSET_CAPTURE)) {
+      foreach($matches as $m) {
+        $matched[] = $m[0][0];
+        $arrConds[$m[0][1]] = array($m[1][0],$m[2][0],$m[3][0]);
+      }
+    }
+
+    // 2.2.DEAL WITH (NOT) BETWEEN
+    $regexOp = '/(`?\w+`?)\s((?:not\s+)?BETWEEN)\s+(\S+)\s+AND\s+(\S+)/i';
+    if(preg_match_all($regexOp, $sqlcnd, $matches,PREG_SET_ORDER|PREG_OFFSET_CAPTURE)) {
+      foreach($matches as $m) {
+        $matched[] = $m[0][0];
+        $arrConds[$m[0][1]] = array($m[1][0],$m[2][0],$m[3][0],$m[4][0]);
+      }
+    }
+
+    // 2.2.DEAL WITH (NOT) IN
+    $regexOp = '/(`?\w+`?)\s((?:not\s+)?IN)\s+\(([^\)]+)\)/i';
+    if(preg_match_all($regexOp, $sqlcnd, $matches,PREG_SET_ORDER|PREG_OFFSET_CAPTURE)) {
+      foreach($matches as $m) {
+        $matched[] = $m[0][0];
+        $m3 = array_map(function($v){
+          return trim($v);
+        }, explode(',',$m[3][0]));
+        $arrConds[$m[0][1]] = array($m[1][0],$m[2][0],$m3);
+      }
+    }
+
+    // 3. Strings and Pramaters
+    // 3.1. No need to change
+    if(empty($matched)) {
+      return $this;
+    }
+
+    // 3.2 place back the strings and allocate the parameters
+    $this->_conditions = null;
+
+    $arrLinkers = array_filter(explode(' ', str_replace($matched, '', $sqlcnd)));
+    ksort($arrConds);
+    $_parameters = $this->_parameters;
+
+    $argsForAddCond = array();
+    foreach ($arrConds as $cond) {
+      $params = array();
+      $njcond = $this->_putBackStringsAndParameters($cond, $strings, $_parameters);
+      if(empty($argsForAddCond) || empty($arrConds))
+        $argsForAddCond[] = array($njcond);
+      else
+        $argsForAddCond[] = array(array_shift($arrLinkers), $njcond);
+    }
+    foreach($argsForAddCond as $args) {
+      call_user_func_array(array($this, 'addCondition'), $args);
+    }
+    return $this;
+  }
+
+  protected function _putBackStringsAndParameters($cond, &$strngs, &$parameters, $returnObject=true) {
+    $isfloat = NJValid::V('float');
+
+    $ps = array();
+    $cnd = array();
+    foreach($cond as $var) {
+      if(is_array($var)) {
+        list($var, $_ps) = $this->_putBackStringsAndParameters($var, $strngs, $parameters, false);
+        $ps = array_merge($ps, $_ps);
+      }
+      elseif($var == '@##STRNG##@') {
+        $var = array_shift($strngs);
+      }
+      elseif($isfloat($var)) {
+        $var = floatval($var);
+      }
+      elseif(strtolower($var) == 'null') {
+        $var = null;
+      }
+      elseif($var == '?') {
+        $ps[] = array_shift($parameters);
+      }
+      $cnd[] = $var;
+    }
+    if(!$returnObject)
+      return array($cnd, $ps);
+
+    $ret = static::fact($cnd)->_setParameters($ps);
+    return $ret;
   }
 
   protected function _parseWithParameters(&$args) {
-    $format = array_shift($args);
+    // 1.transfer % to @#PCNT#@ and ? to @#QUSTN#@
     $format = preg_replace_callback("/'[^']*[%?][^']*'/", function($matches){
-      $content = str_replace('%', '@#PCNT#@', $matches[0]);
-      return str_replace('?', '@#QUSTN#@', $content);
-    }, $format);
+      return str_replace(array('%','?'), array('@#PCNT#@','@#QUSTN#@'), $matches[0]);
+    }, array_shift($args));
+    // echo $format.PHP_EOL;
 
     $format = str_replace('%s', "'%s'", $format);
     $r = preg_match_all("/%[sdf]/", $format, $matches, PREG_PATTERN_ORDER|PREG_OFFSET_CAPTURE);
@@ -207,9 +298,7 @@ class NJCondition implements NJInterface\NJStringifiable{
     $this->_parameters = array_diff($args, $pf_args);
     array_unshift($pf_args, $format);
 
-    $string = call_user_func_array('sprintf', $pf_args);
-    $string = str_replace('@#PCNT#@', '%', $string);
-    $string = str_replace('@#QUSTN#@', '?', $string);
+    $string = str_replace(array('@#PCNT#@','@#QUSTN#@'), array('%','?'), call_user_func_array('sprintf', $pf_args));
     $this->_conditions = $string;
     $this->_resolveSubConditions();
 
@@ -218,8 +307,7 @@ class NJCondition implements NJInterface\NJStringifiable{
 
   public function parse($args) {
     if(!is_array($args)) {
-      var_dump($args);
-      trigger_error('args must be an array!');
+      trigger_error('args for NJCondition::parse() expects an array!');
     }
 
     if( preg_match('/%[sdf]|\?/', $args[0]) ) {
@@ -228,7 +316,7 @@ class NJCondition implements NJInterface\NJStringifiable{
 
     do {
 
-      if(count($args) <= 1) { 
+      if(count($args) <= 1) {
         $this->_conditions = array_shift($args);
         $this->_resolveSubConditions();
         break;
@@ -303,6 +391,8 @@ class NJCondition implements NJInterface\NJStringifiable{
           $strs[] = $str;
         }
         else {
+          // echo "unexpected type\n";
+          // var_export($cond);
           trigger_error('unexpected type for condition.' . gettype($cond));
         }
       }
@@ -315,6 +405,10 @@ class NJCondition implements NJInterface\NJStringifiable{
       return $this->_conditions;
     }
     trigger_error('unexpected type for condtion:' . gettype($this->_conditions));
+  }
+  protected function _setParameters($ps) {
+    $this->_parameters = $ps;
+    return $this;
   }
   public function parameters() {
     if(is_array($this->_conditions)) {

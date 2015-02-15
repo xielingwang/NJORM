@@ -38,7 +38,7 @@ public static function formatValue($v) {
   }
 
   // numeric
-  elseif(is_int($v) || is_float($v)) {
+  elseif(is_int($v) || is_float($v) || $v === '?') {
     return $v;
   }
 
@@ -51,7 +51,7 @@ public static function formatValue($v) {
   elseif(is_string($v)) {
     if(strpos($v, '`') !== false)
       return $v;
-    return "'" . addslashes($v) . "'";
+    return "'" . str_replace("'","''",$v) . "'";
   }
 
   // how to support object/resource
@@ -81,7 +81,8 @@ public static function formatOperator($op) {
  * @return boolean    [description]
  */
 public static function is_wrap_grave_accent($v) {
-  return strpos('`', $v) === 0 && strrpos('`', $v) === (strlen($v)-1);
+  $v = trim($v);
+  return strpos($v, '`') === 0 && strpos(strrev($v), '`') === 0;
 }
 
 /**

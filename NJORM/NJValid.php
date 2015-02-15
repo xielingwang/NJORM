@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2015-01-07 00:27:39
- * @Last Modified by:   Amin by
- * @Last Modified time: 2015-02-13 17:21:34
+ * @Last Modified by:   byamin
+ * @Last Modified time: 2015-02-15 23:16:36
  */
 namespace NJORM;
 
@@ -72,7 +72,9 @@ class NJValid {
       return !static::checkRule('in', $val, $arr, $caseinsensitive);
     });
     $this->addRule('array', 'is_array');
-    $this->addRule('integer', 'is_int');
+    $this->addRule('integer', function($val){
+      return !!filter_var($val, FILTER_VALIDATE_INT, FILTER_FLAG_ALLOW_THOUSAND);
+    });
     $this->addRule('float', function($val){
       return !!filter_var($val, FILTER_VALIDATE_FLOAT, FILTER_FLAG_ALLOW_THOUSAND);
     });
@@ -87,10 +89,7 @@ class NJValid {
     });
     $this->addRule('numeric', 'is_numeric');
     $this->addRule('positive', function($val){
-      if(!is_numeric($val)) {
-        trigger_error(sprintf('"%s" is not a numeric.', $val));
-      }
-      return $val > 0;
+      return is_numeric($val) && $val > 0;
     });
     $this->addRule('negative', function($val){
       return !self::checkRule('positive', $val) && $val;

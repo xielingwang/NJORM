@@ -2,17 +2,28 @@
 /**
  * @Author: byamin
  * @Date:   2015-01-08 01:18:08
- * @Last Modified by:   Amin by
- * @Last Modified time: 2015-02-13 17:21:28
+ * @Last Modified by:   byamin
+ * @Last Modified time: 2015-02-15 23:16:05
  */
 use \NJORM\NJValid;
 
 class NJValidTest extends PHPUnit_Framework_TestCase{
-  function testInteger() {
+  function testNumeric() {
     $v = NJValid::V('integer');
-    $this->assertFalse($v('eee'), 'eee not integer');
-    $this->assertTrue($v(1111), '1111 is integer');
+    $this->assertFalse($v('eee'), 'eee is not integer');
+    $this->assertFalse($v(1111.22), '1111.22 is not integer');
+    $this->assertFalse($v('1111.22'), "'1111.22' is not integer");
+    $this->assertFalse($v('01111'), "'01111' is not integer");
+    $this->assertTrue($v('1111'), "'1111' is integer");
     $this->assertTrue($v(56677777755), '"1111" is not integer');
+
+    $v = NJValid::V('float');
+    $this->assertFalse($v('eee'), 'eee is not float');
+    $this->assertTrue($v(1111.22), '1111.22 is not float');
+    $this->assertTrue($v('1111.22'), "'1111.22' is not float");
+    $this->assertTrue($v('01111'), "'01111' is not float");
+    $this->assertTrue($v('1111'), "'1111' is float");
+    $this->assertTrue($v(56677777755), '"1111" is not float');
   }
   function testInCaseSensitive() {
 
