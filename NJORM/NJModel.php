@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-14 14:03:19
+ * @Last Modified time: 2015-02-16 00:57:13
  */
 namespace NJORM;
 use \NJORM\NJSql\NJTable;
@@ -15,23 +15,37 @@ class NJModel implements Countable, ArrayAccess {
   // data
   protected $_table;
   protected $_data = array();
-  protected $_modified = array();
+  private $_modified = array();
 
   public function __construct($table, $data=null) {
+    // set table
     if(is_string($table)) {
       $table = NJTable::$table();
     }
     $this->_table = $table;
+
+    // set collection data
     if($data) {
       $this->setData($data);
     }
   }
 
+  /**
+   * setData: set list data for NJModel
+   * 
+   * C1.setData(array(array(),array(),...))
+   * C2.setData(array($njmodel,$njmodel,...))
+   * C3.setData($offset, $njmodel)
+   * C4.setData($offset, array())
+   */
   protected function setData() {
+    // Case 1: two or more arguments, implements C3/C4
     if(func_num_args() >= 2) {
       // TODO: check data
       $this->_data[func_get_arg(0)] = func_get_arg(1);
     }
+
+    // Case 2: one argument, implements C1/C2
     else {
       $data = func_get_arg(0);
       if(is_array($data)) {
@@ -44,6 +58,12 @@ class NJModel implements Countable, ArrayAccess {
         trigger_error('Expects an array for NJModel::setData()!');
       }
     }
+
+    // Case 3: none of arguments, what a pity
+    else {
+      trigger_error('Expects at least one arguments for NJModel::setData()');
+    }
+
     return $this;
   }
 
