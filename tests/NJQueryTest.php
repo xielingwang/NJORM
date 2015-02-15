@@ -3,7 +3,7 @@
  * @name: byamin
  * @Date:   2015-01-01 12:21:16
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-15 00:00:53
+ * @Last Modified time: 2015-02-16 00:26:14
  */
 
 
@@ -43,7 +43,7 @@ class NJQueryTest extends PHPUnit_Framework_TestCase {
     $query
     ->select('name', 'pass', 'email')
     ->limit(2)
-    ->where('`user_id` > ? AND `user_email` = ?', 1, '0222')
+    ->where('uid > ? AND email = ?', 1, '0222')
     ->sortAsc('email');
 
     $this->assertEquals('SELECT `user_name` `name`,`user_pass` `pass`,`user_email` `email` FROM `qn_users` WHERE `user_id` > ? AND `user_email` = ? ORDER BY `email` LIMIT 2', (string)$query);
@@ -60,7 +60,7 @@ class NJQueryTest extends PHPUnit_Framework_TestCase {
     $query
     ->select('name', 'pass', 'email')
     ->limit(2)
-    ->where('`user_balance` BETWEEN ? AND ?', 0.4, 0.6);
+    ->where('balance between ? and ?', 0.4, 0.6);
 
     $this->assertEquals('SELECT `user_name` `name`,`user_pass` `pass`,`user_email` `email` FROM `qn_users` WHERE `user_balance` BETWEEN ? AND ? LIMIT 2', (string)$query);
     $param = $query->params();
