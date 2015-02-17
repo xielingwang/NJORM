@@ -2,11 +2,12 @@
 /**
  * @Author: byamin
  * @Date:   2015-02-02 23:27:30
- * @Last Modified by:   Amin by
- * @Last Modified time: 2015-02-13 20:38:12
+ * @Last Modified by:   byamin
+ * @Last Modified time: 2015-02-17 20:26:00
  */
 
 namespace NJORM\NJSql;
+use NJORM\NJMisc;
 
 define('FK_FMT', 'id_{tbname}');
 class NJTable {
@@ -28,46 +29,6 @@ class NJTable {
     }
 
     return sprintf("`%s`", $this->_name);
-  }
-
-  public function from() {
-    return 'FROM ' . call_user_func_array(array($this, 'name'), func_get_args());
-  }
-  public function select() {
-    return 'SELECT ' . call_user_func_array(array($this, 'columns'), func_get_args());
-  }
-  public function columns($cols='*', $tb_alias=null, $db_alias=null) {
-    $tb_alias === true && $tb_alias = $this->_name;
-    if(is_string($cols)) {
-      $cols = explode(',', $cols);
-    }
-    if(in_array('*', $cols)) {
-      array_splice($cols, array_search('*', $cols), 1, array_values($this->_fields));
-      $cols = array_unique($cols);
-    }
-    $newcols = array();
-    $flip_fields = array_flip($this->_fields);
-    foreach($cols as $col) {
-      if(array_key_exists($col, $this->_fields)) {
-        $col = sprintf("`%s`", $col);
-      }
-      elseif(array_key_exists($col, $flip_fields)) {
-        $col = sprintf("`%s` `%s`", $flip_fields[$col], $col);
-      }
-      else {
-        trigger_error(sprintf('Undefined field - "%s"', $col));
-      }
-
-      if($tb_alias) {
-        $col = sprintf('`%s`.%s', $tb_alias, $col);
-      }
-      if($db_alias) {
-        $col = sprintf('`%s`.%s', $db_alias, $col);
-      }
-
-      $newcols[] = $col;
-    }
-    return implode(',', $newcols);
   }
 
   public function getField($field) {
@@ -224,5 +185,94 @@ class NJTable {
   }
   public static function fk_for_table($table) {
     return strtr(FK_FMT, array('{tbname}' => $table->_name));
+  }
+
+  // SQL generator
+  public function columns($cols='*', $whichTable=null, $whichDB=null) {
+    $whichTable === true && $whichTable = $this->_name;
+    if(is_string($cols)) {
+      $cols = explode(',', $cols);
+    }
+    if(in_array('*', $cols)) {
+      array_splice($cols, array_search('*', $cols), 1, array_values($this->_fields));
+      $cols = array_unique($cols);
+    }
+    $newcols = array();
+    $flip_fields = array_flip($this->_fields);
+    foreach($cols as $col) {
+      if(array_key_exists($col, $this->_fields)) {
+        $col = sprintf("`%s`", $col);
+      }
+      elseif(array_key_exists($col, $flip_fields)) {
+        $col = sprintf("`%s` `%s`", $flip_fields[$col], $col);
+      }
+      else {
+        trigger_error(sprintf('Undefined field - "%s"', $col));
+      }
+
+      // in which table?
+      if($whichTable) {
+        $col = sprintf('`%s`.%s', $whichTable, $col);
+      }
+
+      // in which database?
+      if($whichDB) {
+        $col = sprintf('`%s`.%s', $whichDB, $col);
+      }
+
+      $newcols[] = $col;
+    }
+    return implode(',', $newcols);
+  }
+
+  public function values($values) {
+    return $this->valuesIns($values);
+  }
+
+  protected function valuesIns($values) {
+    // translate one record to multiple records
+    if(!is_array(current($values))) {
+      return $this->valuesIns(array($values));
+    }
+
+    $inputKeys = array();
+    foreach ($values as $val) {
+      $inputKeys = array_merge($inputKeys, array_keys($val));
+    }
+    $flip_fields = array_flip($this->_fields);
+
+    // unique fields and remove that field not in table fields or field aliases
+    $fields = array();
+    foreach (array_unique($inputKeys) as $col) {
+      if(array_key_exists($col, $flip_fields))
+        $fields[] = $flip_fields[$col];
+      elseif(array_key_exists($col, $this->_fields)) {
+        $fields[] = $col;
+      }
+    }
+    $engraved_fields = array_map(function($f){return '`'.$f.'`';}, $fields);
+
+    // values
+    $fmted_vals = array();
+    foreach ($values as $val) {
+      $tmpArr = array();
+      foreach($fields as $field) {
+        if(array_key_exists($field, $val)){
+          $v = $val[$field];
+        }
+        elseif(array_key_exists($this->_fields[$field], $val)) {
+          $v = $val[$this->_fields[$field]];
+        }
+        else {
+          $v = NULL;
+        }
+        $tmpArr[] = NJMisc::formatValue($v);
+      }
+      $fmted_vals[] = '('.implode(',', $tmpArr).')';
+    }
+
+    return sprintf('(%s) VALUES %s'
+      , implode(',', $engraved_fields)
+      , implode(',', $fmted_vals));
   }
 }

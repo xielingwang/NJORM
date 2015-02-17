@@ -2,15 +2,15 @@
 /**
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-17 14:27:45
+ * @Last Modified by:   AminBy
+ * @Last Modified time: 2015-02-17 20:49:31
  */
 namespace NJORM;
 use \NJORM\NJSql;
 use \NJORM\NJInterface\NJStringifiable, \Countable, \ArrayAccess;
 
 class NJQuery implements NJStringifiable, Countable, ArrayAccess {
-  const QUERY_TYPE_CREATE = 0;
+  const QUERY_TYPE_INSERT = 0;
   const QUERY_TYPE_SELECT = 1;
   const QUERY_TYPE_UPDATE = 2;
   const QUERY_TYPE_DELETE = 3;
@@ -18,6 +18,7 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
   protected $_type;
 
   public function __construct($table) {
+    $this->_type = static::QUERY_TYPE_SELECT;
     if(is_string($table))
       $table = NJSql\NJTable::$table();
     $this->_table = $table;
@@ -27,12 +28,6 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
     switch($this->_type) {
     case static::QUERY_TYPE_SELECT:
     return $this->sqlSelect();
-    break;
-    case static::QUERY_TYPE_CREATE:
-    return $this->sqlCreate();
-    break;
-    case static::QUERY_TYPE_UPDATE:
-    return $this->sqlUpdate();
     break;
     case static::QUERY_TYPE_DELETE:
     return $this->sqlDelete();
@@ -48,7 +43,7 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
     case static::QUERY_TYPE_SELECT:
     return $this->paramSelect();
     break;
-    case static::QUERY_TYPE_CREATE:
+    case static::QUERY_TYPE_INSERT:
     return $this->paramCreate();
     break;
     case static::QUERY_TYPE_UPDATE:
@@ -129,9 +124,14 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
     return $parameters;    
   }
 
+  protected function paramCreate(){
+    return array();
+  }
+
   protected function sqlSelect() {
-    $sql = $this->_table->select($this->_sel_cols);
-    $sql .= ' '.$this->_table->from();
+    $sql = sprintf('SELECT %s FROM %s'
+      , $this->_table->columns($this->_sel_cols)
+      , $this->_table->name());
 
     if($this->_cond_where) {
       $sql .= ' '.(string)$this->_cond_where;
@@ -157,40 +157,10 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
     return $sql;
   }
 
-  protected function getPDOParamDataType($val) {
-    if(is_null($val))
-      return \PDO::PARAM_NULL;
-    elseif(is_bool($val))
-      return \PDO::PARAM_BOOL;
-    elseif(is_int($val) || is_float($val))
-      return \PDO::PARAM_INT;
-    elseif(is_string($val))
-      return \PDO::PARAM_STR;
-    else
-      return \PDO::PARAM_LOB;
-  }
-
   public function fetch($getMany=false) {
     $sql = $this->stringify();
 
-    // type: prepare/execute
-    if($params = $this->params()) {
-      $stmt = NJORM::pdo()->prepare($sql);
-      foreach($params as $k => &$p) {
-        $stmt->bindParam($k+1, $p, $this->getPDOParamDataType($p));
-      }
-      if(!$stmt->execute()) {
-        echo $stmt->queryString.PHP_EOL;
-        echo $stmt->errorCode().PHP_EOL;
-        print_r($stmt->errorInfo());
-        throw new \Exception("bindParam Error");
-      }
-    }
-
-    // type: query
-    else {
-      $stmt = NJORM::pdo()->query($sql);
-    }
+    $stmt = NJSql\NJDb::execute($sql, $this->params());
 
     // get many
     if($getMany) {
@@ -206,14 +176,20 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
   }
 
   public function fetchOne($stmt) {
-    $result = $stmt->fetch(\PDO::FETCH_ASSOC);
-    if($result === false) {
-      echo $stmt->queryString.PHP_EOL;
-      echo $stmt->errorCode().PHP_EOL;
-      print_r($stmt->errorInfo());
-      throw new \Exception('sql execute error!');
+    if($stmt) {
+      $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+      if(intval($stmt->errorCode())) {
+        echo $stmt->queryString.PHP_EOL;
+        echo $stmt->errorCode().PHP_EOL;
+        print_r($stmt->errorInfo());
+        throw new \Exception('sql execute error!');
+      }
+      if($result === false) {
+        return null;
+      }
+      return new NJModel($this->_table, $result);
     }
-    return new NJModel($this->_table, $result);
+    return null;
   }
 
   // NJModel
@@ -253,9 +229,27 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
     }
   }
 
+  // insert
+  public function sqlInsert($values) {
+    $sql = 'INSERT INTO '.$this->_table->name();
+
+    $sql .= $this->_table->values($values);
+
+    return $sql;
+  }
+
+  public function insert() {
+    $this->_type = static::QUERY_TYPE_INSERT;
+    $sql = call_user_func_array(array($this, 'sqlInsert'), func_get_args());
+
+    $stmt = NJSql\NJDb::execute($sql, $this->params());
+
+    return NJORM::pdo()->lastInsertId();
+  }
+
   // delete
   public function sqlDelete() {
-    $sql = 'DELETE '.$this->_table->from();
+    $sql = 'DELETE FROM '.$this->_table->name();
 
     if($this->_cond_where) {
       $sql .= ' '.(string)$this->_cond_where;
@@ -276,24 +270,7 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
     $this->_type = static::QUERY_TYPE_DELETE;
     $sql = $this->stringify();
 
-    // type: prepare/execute
-    if($params = $this->params()) {
-      $stmt = NJORM::pdo()->prepare($sql);
-      foreach($params as $k => &$p) {
-        $stmt->bindParam($k+1, $p, $this->getPDOParamDataType($p));
-      }
-      if(!$stmt->execute()) {
-        echo $stmt->queryString.PHP_EOL;
-        echo $stmt->errorCode().PHP_EOL;
-        print_r($stmt->errorInfo());
-        throw new \Exception("bindParam Error");
-      }
-    }
-
-    // type: query
-    else {
-      $stmt = NJORM::pdo()->query($sql);
-    }
+    $stmt = NJSql\NJDb::execute($sql, $this->params());
 
     return true;
   }
