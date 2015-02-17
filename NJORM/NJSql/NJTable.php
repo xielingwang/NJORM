@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2015-02-02 23:27:30
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-17 20:26:00
+ * @Last Modified by:   AminBy
+ * @Last Modified time: 2015-02-17 21:31:46
  */
 
 namespace NJORM\NJSql;
@@ -225,8 +225,29 @@ class NJTable {
     return implode(',', $newcols);
   }
 
-  public function values($values) {
+  public function values($values, $update=false) {
+    if($update)
+      return $this->valuesUpd($values);
     return $this->valuesIns($values);
+  }
+
+  protected function valuesUpd($values) {
+    if(is_array(current($values))) {
+      trigger_error('Update values expect scalars!');
+    }
+
+    $flip_fields = array_flip($this->_fields);
+    $tmpArr = array();
+    foreach($values as $col => $v) {
+      if(array_key_exists($col, $flip_fields)) {
+        $col = $flip_fields[$col];
+      }
+      elseif(!array_key_exists($col, $this->_fields)) {
+        continue;
+      }
+      $tmpArr[] = NJMisc::wrap_grave_accent($col).'='.NJMisc::formatValue($v);
+    }
+    return implode(',', $tmpArr);
   }
 
   protected function valuesIns($values) {
@@ -250,7 +271,7 @@ class NJTable {
         $fields[] = $col;
       }
     }
-    $engraved_fields = array_map(function($f){return '`'.$f.'`';}, $fields);
+    $engraved_fields = array_map(array('\NJORM\NJMisc','wrap_grave_accent'), $fields);
 
     // values
     $fmted_vals = array();

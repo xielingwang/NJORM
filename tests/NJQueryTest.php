@@ -3,7 +3,7 @@
  * @name: byamin
  * @Date:   2015-01-01 12:21:16
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-17 20:50:56
+ * @Last Modified time: 2015-02-17 21:29:26
  */
 
 
@@ -89,7 +89,7 @@ class NJQueryTest extends PHPUnit_Framework_TestCase {
     $data = array(
       'name' => 'insert-name',
       'pass' => 'insert-pass',
-      'balance' => floatval(rand(10000,9999)) / 100,
+      'balance' => floatval(rand(1000,99999)) / 100,
       'email' => 'insert-email',
       );
     $this->assertEquals("INSERT INTO `qn_users`(`user_name`,`user_pass`,`user_balance`,`user_email`) VALUES ('insert-name','insert-pass',".$data['balance'].",'insert-email')"
@@ -107,6 +107,22 @@ class NJQueryTest extends PHPUnit_Framework_TestCase {
     $this->assertEquals('insert-pass', $db_user['pass']);
     $this->assertEquals('insert-email', $db_user['email']);
     $this->assertEquals($data['balance'], $db_user['balance']);
+  }
+
+  function testQueryUpdate() {
+    $query = (new NJQuery('users'))
+    ->where('uid', 13)
+    ->limit(5);
+    $data = array(
+      'email' => 'insert-email'.rand(100,999),
+      );
+    $this->assertEquals("UPDATE `qn_users` SET `user_email`='{$data['email']}' WHERE `user_id` = 13 LIMIT 5", $query->sqlUpdate($data));
+
+    $query->update($data);
+
+    $model = (new NJQuery('users'))
+    ->where('uid', 13)->fetch();
+    $this->assertEquals($data['email'], $model['email']);
   }
 
   function testNJDelete() {

@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-17 20:49:31
+ * @Last Modified time: 2015-02-17 21:31:31
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -24,16 +24,23 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
     $this->_table = $table;
   }
 
-  public function stringify() {
+  public function stringify(){
     switch($this->_type) {
     case static::QUERY_TYPE_SELECT:
     return $this->sqlSelect();
+    break;
+    case static::QUERY_TYPE_INSERT:
+    return $this->sqlCreate();
+    break;
+    case static::QUERY_TYPE_UPDATE:
+    return $this->sqlUpdate();
     break;
     case static::QUERY_TYPE_DELETE:
     return $this->sqlDelete();
     break;
     }
   }
+
   public function __toString() {
     return $this->stringify();
   }
@@ -107,6 +114,13 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
     }
     return $this;
   }
+  protected function paramUpdate() {
+    $parameters = array();
+    if($this->_cond_where) {
+      $parameters = array_merge($parameters, $this->_cond_where->parameters());
+    }
+    return $parameters;
+  }
 
   protected function paramSelect() {
     $parameters = array();
@@ -158,7 +172,7 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
   }
 
   public function fetch($getMany=false) {
-    $sql = $this->stringify();
+    $sql = $this->sqlSelect();
 
     $stmt = NJSql\NJDb::execute($sql, $this->params());
 
@@ -247,6 +261,34 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
     return NJORM::pdo()->lastInsertId();
   }
 
+  public function sqlUpdate($data){
+    $sql = 'UPDATE '.$this->_table->name()
+      .' SET '.$this->_table->values($data, true);
+
+    if($this->_cond_where) {
+      $sql .= ' '.(string)$this->_cond_where;
+    }
+
+    if($this->_cond_sort) {
+      $sql .= ' '.(string)$this->_cond_sort;
+    }
+
+    if($this->_cond_limit) {
+      $sql .= ' LIMIT '.$this->_cond_limit->limit();
+    }
+
+    return $sql;
+  }
+
+  public function update($data){
+    $this->_type = static::QUERY_TYPE_UPDATE;
+    $sql = $this->sqlUpdate($data);
+
+    $stmt = NJSql\NJDb::execute($sql, $this->params());
+
+    return true;
+  }
+
   // delete
   public function sqlDelete() {
     $sql = 'DELETE FROM '.$this->_table->name();
@@ -268,7 +310,7 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
 
   public function delete() {
     $this->_type = static::QUERY_TYPE_DELETE;
-    $sql = $this->stringify();
+    $sql = $this->sqlDelete();
 
     $stmt = NJSql\NJDb::execute($sql, $this->params());
 

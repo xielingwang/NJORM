@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2014-12-26 01:41:57
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-17 14:17:01
+ * @Last Modified by:   AminBy
+ * @Last Modified time: 2015-02-17 21:12:16
  */
 namespace NJORM\NJSql;
 class NJLimit {
@@ -31,7 +31,7 @@ class NJLimit {
 
   public function limit() {
     if(func_num_args() < 1) {
-      trigger_error('NJLimit::limit() expects 1 or 2 parameters.');
+      return is_null($this->_limit) ? 0 : $this->_limit;
     }
 
     if(func_num_args() > 1) {
