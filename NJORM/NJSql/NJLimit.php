@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2014-12-26 01:41:57
- * @Last Modified by:   Amin by
- * @Last Modified time: 2015-02-13 17:14:33
+ * @Last Modified by:   byamin
+ * @Last Modified time: 2015-02-17 14:17:01
  */
 namespace NJORM\NJSql;
 class NJLimit {
@@ -14,10 +14,12 @@ class NJLimit {
   protected $_offset;
   protected $_type;
 
-  public static function factory(){
+  public static function factory($args){
     $class = get_called_class();
     $rc = new \ReflectionClass($class);
-    return $rc->newInstanceArgs(func_get_args());
+    if(!is_array($args))
+      $args = func_get_args();
+    return $rc->newInstanceArgs($args);
   }
 
   public function __construct() {

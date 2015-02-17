@@ -3,7 +3,7 @@
  * @name: byamin
  * @Date:   2015-01-01 12:21:16
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-16 00:26:14
+ * @Last Modified time: 2015-02-17 14:26:51
  */
 
 
@@ -69,5 +69,14 @@ class NJQueryTest extends PHPUnit_Framework_TestCase {
 
     $model = $query->fetch();
     $this->assertEquals('gogog', $model['name']);
+  }
+
+  function testNJDelete() {
+    $query = new NJQuery('users');
+    $query->where('email = %s', 'abc@abc.com')
+    ->limit(3,4);
+    $this->assertEquals("DELETE FROM `qn_users` WHERE `user_email` = 'abc@abc.com' LIMIT 3,4", $query->sqlDelete());
+
+    $query->delete();
   }
 }

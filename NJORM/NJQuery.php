@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-14 23:55:00
+ * @Last Modified time: 2015-02-17 14:27:45
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -61,24 +61,22 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
   }
 
   // read
-  protected $_select = array(
-    'columns' => array('*'),
-    'limit' => array(),
-    'condition' => null,
-    'orderby' => null,
-    );
+  protected $_sel_cols = array('*');
+  protected $_cond_limit = null;
+  protected $_cond_where = null;
+  protected $_cond_sort = null;
   public function select() {
     $this->_type = static::QUERY_TYPE_SELECT;
     $tmp = array();
     foreach(func_get_args() as $arg) {
       $tmp = array_merge($tmp, explode(',', $arg));
     }
-    $this->_select['columns'] = array_unique($tmp);
+    $this->_sel_cols = array_unique($tmp);
     return $this;
   }
 
   public function limit() {
-    $this->_select['limit'] = func_get_args();
+    $this->_cond_limit = NJSql\NJLimit::factory(func_get_args());
     return $this;
   }
 
@@ -86,63 +84,77 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
     NJSql\NJCondition::setTable($this->_table);
     if(!($arg instanceof NJSql\NJCondition))
       $arg = NJSql\NJCondition::fact(func_get_args());
-    if($this->_select['condition'] instanceof NJSql\NJCondition) {
-      $this->_select['condition']->and($arg);
+    if($this->_cond_where instanceof NJSql\NJCondition) {
+      $this->_cond_where->and($arg);
     }
     else {
-      $this->_select['condition'] = $arg;
+      $this->_cond_where = $arg;
     }
     return $this;
   }
 
   public function sortAsc() {
-    if(is_null($this->_select['orderby']))
-      $this->_select['orderby'] = new NJSql\NJOrderby();
+    if(is_null($this->_cond_sort))
+      $this->_cond_sort = new NJSql\NJOrderby();
 
     foreach(func_get_args() as $field) {
-      $this->_select['orderby']->add($field, true);
+      $this->_cond_sort->add($field, true);
     }
     return $this;
   }
 
   public function sortDesc() {
-    if(is_null($this->_select['orderby']))
-      $this->_select['orderby'] = new NJSql\NJOrderby();
+    if(is_null($this->_cond_sort))
+      $this->_cond_sort = new NJSql\NJOrderby();
 
     foreach(func_get_args() as $field) {
-      $this->_select['orderby']->add($field, false);
+      $this->_cond_sort->add($field, false);
     }
     return $this;
   }
 
   protected function paramSelect() {
     $parameters = array();
-    if($this->_select['condition']) {
-      $parameters = array_merge($parameters, $this->_select['condition']->parameters());
+    if($this->_cond_where) {
+      $parameters = array_merge($parameters, $this->_cond_where->parameters());
     }
     return $parameters;
   }
 
+  protected function paramDelete() {
+    $parameters = array();
+    if($this->_cond_where) {
+      $parameters = array_merge($parameters, $this->_cond_where->parameters());
+    }
+    return $parameters;    
+  }
+
   protected function sqlSelect() {
-    $string = $this->_table->select($this->_select['columns']);
-    $string .= ' '.$this->_table->from();
+    $sql = $this->_table->select($this->_sel_cols);
+    $sql .= ' '.$this->_table->from();
 
-    if($this->_select['condition']) {
-      $string .= ' '.$this->_select['condition'];
+    if($this->_cond_where) {
+      $sql .= ' '.(string)$this->_cond_where;
     }
 
-    if($this->_select['orderby']) {
-      $string .= ' ' . $this->_select['orderby'];
+    if($this->_cond_sort) {
+      $sql .= ' '.(string)$this->_cond_sort;
     }
 
-    if($this->_select['limit']) {
-      $string .= ' ' . call_user_func_array(__NAMESPACE__.'\NJSql\NJLimit::factory', $this->_select['limit']);
+    if($this->_cond_limit) {
+      $sql .= ' '.(string)$this->_cond_limit;
     }
-    return $string;
+    return $sql;
   }
 
   public function sqlCount() {
-    return '';
+    $sql = 'SELECT COUNT(*) ';
+
+    if($this->_cond_where) {
+      $sql .= ' '.(string)$this->_cond_where;
+    }
+
+    return $sql;
   }
 
   protected function getPDOParamDataType($val) {
@@ -239,5 +251,50 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
     if(isset($this->_model[$offset])){
       unset($this->_model[$offset]);
     }
+  }
+
+  // delete
+  public function sqlDelete() {
+    $sql = 'DELETE '.$this->_table->from();
+
+    if($this->_cond_where) {
+      $sql .= ' '.(string)$this->_cond_where;
+    }
+
+    if($this->_cond_sort) {
+      $sql .= ' '.(string)$this->_cond_sort;
+    }
+
+    if($this->_cond_limit) {
+      $sql .= ' '.(string)$this->_cond_limit;
+    }
+
+    return $sql;
+  }
+
+  public function delete() {
+    $this->_type = static::QUERY_TYPE_DELETE;
+    $sql = $this->stringify();
+
+    // type: prepare/execute
+    if($params = $this->params()) {
+      $stmt = NJORM::pdo()->prepare($sql);
+      foreach($params as $k => &$p) {
+        $stmt->bindParam($k+1, $p, $this->getPDOParamDataType($p));
+      }
+      if(!$stmt->execute()) {
+        echo $stmt->queryString.PHP_EOL;
+        echo $stmt->errorCode().PHP_EOL;
+        print_r($stmt->errorInfo());
+        throw new \Exception("bindParam Error");
+      }
+    }
+
+    // type: query
+    else {
+      $stmt = NJORM::pdo()->query($sql);
+    }
+
+    return true;
   }
 }

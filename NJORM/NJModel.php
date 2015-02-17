@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-16 00:57:13
+ * @Last Modified time: 2015-02-17 14:20:46
  */
 namespace NJORM;
 use \NJORM\NJSql\NJTable;
@@ -46,7 +46,7 @@ class NJModel implements Countable, ArrayAccess {
     }
 
     // Case 2: one argument, implements C1/C2
-    else {
+    elseif(func_num_args() > 0) {
       $data = func_get_arg(0);
       if(is_array($data)) {
         $this->_data = array();
