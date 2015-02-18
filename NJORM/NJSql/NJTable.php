@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-02-02 23:27:30
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-18 08:29:56
+ * @Last Modified time: 2015-02-19 04:02:38
  */
 
 namespace NJORM\NJSql;
@@ -43,7 +43,8 @@ class NJTable {
   public function field($field, $alias = null) {
     if(!$this->_fields)
       $this->_fields = array();
-    // for $this->valid()
+
+    // for static::valid()
     $this->_prev_field = $field;
     $this->_fields[$field] = $alias;
     return $this;
@@ -60,9 +61,19 @@ class NJTable {
     if(empty($valids)) {
       trigger_error('NJTable::valid() expects more than 1 arguments.');
     }
-    foreach($valids as &$v) {
-      if(!($v instanceof NJValid)) {
-        $v = NJValid::V($v);
+    foreach($valids as &$_vld) {
+      $vld = $_vld;
+      if(!($vld instanceof NJValid)) {
+        if(!is_array($vld)) {
+          $vld = array($vld);
+        }
+        $tmp = array($this->primary(), $this->_fields[$this->_prev_field], $this->_name);
+        $_vld = function ($data) use ($vld,$tmp) {
+          array_unshift($tmp, $data);
+          $vld = array_merge($vld, $tmp);
+          print_r($vld);
+          return NJValid::V($vld);
+        };
       }
     }
     if(!array_key_exists($this->_prev_field, $this->_validation)){
@@ -74,18 +85,24 @@ class NJTable {
       );
     return $this;
   }
-  public function validCheck($field, $val, $isUpdate) {
+  public function validCheck($field, $val, $data, $isUpdate) {
     if(!array_key_exists($field, $this->_validation))
       return;
     foreach($this->_validation[$field] as $vld) {
       foreach($vld['valids'] as $v) {
-        if(!$v($val))
+        $v = $v($data);
+        if(!$v($val)) {
           return $vld['msg'];
+        }
       }
     }
   }
 
-  public function primary($field, $alias = null) {
+  public function primary($field=null, $alias = null) {
+    if(!func_num_args()){
+      return $this->_fields[$this->_pri_key];
+    }
+
     $this->field($field, $alias);
 
     if(!$this->_pri_key)
@@ -289,7 +306,7 @@ class NJTable {
       elseif(!array_key_exists($col, $this->_fields)) {
         continue;
       }
-      if($ret = $this->validCheck($col, $v, true)) {
+      if($ret = $this->validCheck($col, $v, $values, true)) {
         // throw new NJException
         trigger_error($ret);
       }
@@ -335,7 +352,7 @@ class NJTable {
         else {
           $v = NULL;
         }
-        if($ret = $this->validCheck($field, $v, true)) {
+        if($ret = $this->validCheck($field, $v, $val, true)) {
           // throw new NJException
           trigger_error($ret);
         }

@@ -3,7 +3,7 @@
  * @Author: AminBy
  * @Date:   2015-02-17 22:21:26
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-18 08:31:39
+ * @Last Modified time: 2015-02-19 03:44:42
  */
 
 use \NJORM\NJSql\NJTable;
@@ -13,11 +13,13 @@ class NJQueryWithValidTest extends PHPUnit_Framework_TestCase {
 
   public function setUp(){
     if(!NJTable::defined('qn_users')) {
+
       NJTable::define('qn_users', 'users')
         ->primary('user_id', 'uid')
 
         ->field('user_name', 'name')
-        ->valid('用户名称7-30个字符', 'notEmpty', ['lengthBetween', 7,30])
+        ->valid('用户名称{1-0}-{1-1}个字符', 'notEmpty', ['lengthBetween', 7,30])
+        ->valid('用户名称要唯一', 'unique')
 
         ->field('user_pass', 'pass')
 
@@ -31,7 +33,7 @@ class NJQueryWithValidTest extends PHPUnit_Framework_TestCase {
   public function testQN(){
     $query = new NJQuery('users');
     $query->sqlInsert(array(
-      'name' => 'qwer1111',
+      'name' => 'insert-name',
       'balance' => '0.22',
       ));
   }

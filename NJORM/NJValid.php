@@ -3,9 +3,10 @@
  * @Author: byamin
  * @Date:   2015-01-07 00:27:39
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-17 22:46:35
+ * @Last Modified time: 2015-02-19 03:46:53
  */
 namespace NJORM;
+use NJORM\NJSql;
 
 class NJValid {
   protected static function instance() {
@@ -29,10 +30,12 @@ class NJValid {
   public function rule($rule) {
     $args = func_get_args();
     array_shift($args);
-    return function ($val=null) use ($rule, $args) {
+    return function () use ($rule, $args) {
       if(!func_num_args())
         return $args;
-      array_unshift($args, $rule, $val);
+
+      $args = array_merge(func_get_args(), $args);
+      array_unshift($args, $rule);
       return call_user_func_array(__CLASS__.'::checkRule', $args);
     };
   }
@@ -209,6 +212,16 @@ class NJValid {
     });
     $this->addRule('ip', function($val){
       return !!filter_var($val, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4|FILTER_FLAG_IPV6);
+    });
+
+    // njsql/njtable
+    $this->addRule('unique', function($val, $data, $field, $table) {
+      $query = new NJQuery($table);
+      $query->where($field, $val);
+      if($priVal) {
+        $query->where($prikey, $priVal);
+      }
+      return $query->count() <= 0;
     });
 
     // datetime

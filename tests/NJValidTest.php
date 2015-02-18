@@ -2,10 +2,11 @@
 /**
  * @Author: byamin
  * @Date:   2015-01-08 01:18:08
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-15 23:16:05
+ * @Last Modified by:   AminBy
+ * @Last Modified time: 2015-02-19 02:18:04
  */
 use \NJORM\NJValid;
+use \NJORM\NJSql\NJTable;
 
 class NJValidTest extends PHPUnit_Framework_TestCase{
   function testNumeric() {
@@ -253,5 +254,19 @@ class NJValidTest extends PHPUnit_Framework_TestCase{
     $v = NJValid::V('between', '1996-10-29', '1996-10-31');
     $this->assertTrue($v('1996-10-30'), '1996-10-30 is good.');
     $this->assertTrue($v('1996-11-1'), '1996-11-1 is bad.');
+  }
+
+  function testUnique() {
+    if(!NJTable::defined('qn_users')) {
+      NJTable::define('qn_users', 'users')
+        ->primary('user_id', 'uid')
+        ->field('user_name', 'name')
+        ->field('user_pass', 'pass')
+        ->field('user_balance', 'balance')
+        ->field('user_email', 'email');
+    }
+    $v = NJValid::V('unique', 'name', 'users');
+    $this->assertFalse($v('gogog'), '"gogog" is existed!');
+    $this->assertTrue($v('gogog1'), '"gogog1" is not existed!');
   }
 }

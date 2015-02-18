@@ -3,7 +3,7 @@
  * @name: byamin
  * @Date:   2015-01-01 12:21:16
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-17 22:21:07
+ * @Last Modified time: 2015-02-18 09:08:12
  */
 
 
@@ -132,5 +132,11 @@ class NJQueryTest extends PHPUnit_Framework_TestCase {
     $this->assertEquals("DELETE FROM `qn_users` WHERE `user_email` = 'abc@abc.com' LIMIT 3,4", $query->sqlDelete());
 
     $query->delete();
+  }
+
+  function testQueryCount() {
+    $query = new NJQuery('users');
+    $query->where('balance', 100);
+    $this->assertEquals('SELECT COUNT(*) FROM `qn_users` WHERE `user_balance` = 100', $query->sqlCount());
   }
 }

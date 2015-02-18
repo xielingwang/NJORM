@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-17 21:31:31
+ * @Last Modified time: 2015-02-19 02:25:16
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -161,16 +161,6 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
     return $sql;
   }
 
-  public function sqlCount() {
-    $sql = 'SELECT COUNT(*) ';
-
-    if($this->_cond_where) {
-      $sql .= ' '.(string)$this->_cond_where;
-    }
-
-    return $sql;
-  }
-
   public function fetch($getMany=false) {
     $sql = $this->sqlSelect();
 
@@ -210,9 +200,31 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
   protected $_model;
   /* Countable */
   public function count() {
-    // TODO
-    $this->sqlCount();
-    return count(array_merge($this->_data, $this->_modified));
+    if($this->_model) {
+      return $this->_model->count();
+    }
+
+    $sql = $this->sqlCount();
+    $stmt = NJSql\NJDb::execute($sql, $this->params());
+
+    if($stmt) {
+      $result = $stmt->fetch(\PDO::FETCH_ASSOC);
+      return $result['c'];
+    }
+    return 0;
+  }
+
+  public function sqlCount() {
+    $this->_type = static::QUERY_TYPE_SELECT;
+    $sql = sprintf('SELECT %s FROM %s'
+      , 'COUNT(*) `c`'
+      , $this->_table->name());
+
+    if($this->_cond_where) {
+      $sql .= ' '.(string)$this->_cond_where;
+    }
+
+    return $sql;
   }
 
   /* ArrayAccess */
@@ -245,6 +257,7 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
 
   // insert
   public function sqlInsert($values) {
+    $this->_type = static::QUERY_TYPE_INSERT;
     $sql = 'INSERT INTO '.$this->_table->name();
 
     $sql .= $this->_table->values($values);
@@ -253,7 +266,6 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
   }
 
   public function insert() {
-    $this->_type = static::QUERY_TYPE_INSERT;
     $sql = call_user_func_array(array($this, 'sqlInsert'), func_get_args());
 
     $stmt = NJSql\NJDb::execute($sql, $this->params());
@@ -262,6 +274,7 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
   }
 
   public function sqlUpdate($data){
+    $this->_type = static::QUERY_TYPE_UPDATE;
     $sql = 'UPDATE '.$this->_table->name()
       .' SET '.$this->_table->values($data, true);
 
@@ -281,7 +294,6 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
   }
 
   public function update($data){
-    $this->_type = static::QUERY_TYPE_UPDATE;
     $sql = $this->sqlUpdate($data);
 
     $stmt = NJSql\NJDb::execute($sql, $this->params());
@@ -291,6 +303,7 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
 
   // delete
   public function sqlDelete() {
+    $this->_type = static::QUERY_TYPE_DELETE;
     $sql = 'DELETE FROM '.$this->_table->name();
 
     if($this->_cond_where) {
@@ -309,7 +322,6 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
   }
 
   public function delete() {
-    $this->_type = static::QUERY_TYPE_DELETE;
     $sql = $this->sqlDelete();
 
     $stmt = NJSql\NJDb::execute($sql, $this->params());

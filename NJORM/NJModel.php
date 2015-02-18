@@ -2,8 +2,8 @@
 /**
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-17 14:20:46
+ * @Last Modified by:   AminBy
+ * @Last Modified time: 2015-02-19 03:38:47
  */
 namespace NJORM;
 use \NJORM\NJSql\NJTable;
@@ -85,6 +85,7 @@ class NJModel implements Countable, ArrayAccess {
     }
     return $this;
   }
+
   protected function getValue($key) {
     if(array_key_exists($key, $this->_modified))
       return $this->_modified[$key];
@@ -92,6 +93,11 @@ class NJModel implements Countable, ArrayAccess {
       return $this->_data[$key];
     trigger_error(sprintf('Undefined index "%s" in model!', $key));
   }
+
+  public function pri_key_value() {
+    return $this[$this->_table->primary()];
+  }
+
   public function save() {
 
   }
