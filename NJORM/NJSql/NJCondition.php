@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-16 00:18:29
+ * @Last Modified by:   AminBy
+ * @Last Modified time: 2015-02-17 22:41:29
  */
 namespace NJORM\NJSql;
 use NJORM\NJMisc;
@@ -34,8 +34,7 @@ class NJCondition implements NJInterface\NJStringifiable{
    */
   public static function fact($arg) {
     $class = get_called_class();
-    $rc = new \ReflectionClass($class);
-    $inst = $rc->newInstanceArgs();
+    $inst = new $class;
 
     if(!($arg instanceof $class)) {
       if(is_array($arg)) {
@@ -54,8 +53,7 @@ class NJCondition implements NJInterface\NJStringifiable{
 
   public static function factX() {
     $class = get_called_class();
-    $rc = new \ReflectionClass($class);
-    $inst = $rc->newInstanceArgs();
+    $inst = new $class;
 
     $op = null;
     foreach(func_get_args() as $v) {

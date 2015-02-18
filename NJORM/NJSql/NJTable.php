@@ -3,11 +3,12 @@
  * @Author: byamin
  * @Date:   2015-02-02 23:27:30
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-17 21:31:46
+ * @Last Modified time: 2015-02-18 08:29:56
  */
 
 namespace NJORM\NJSql;
 use NJORM\NJMisc;
+use NJORM\NJValid;
 
 define('FK_FMT', 'id_{tbname}');
 class NJTable {
@@ -42,8 +43,46 @@ class NJTable {
   public function field($field, $alias = null) {
     if(!$this->_fields)
       $this->_fields = array();
+    // for $this->valid()
+    $this->_prev_field = $field;
     $this->_fields[$field] = $alias;
     return $this;
+  }
+
+  private $_prev_field;
+  protected $_validation = array();
+  public function valid($message) {
+    if(!$this->_prev_field) {
+      trigger_error('Field should be define first!');
+    }
+    $valids = func_get_args();
+    array_shift($valids);
+    if(empty($valids)) {
+      trigger_error('NJTable::valid() expects more than 1 arguments.');
+    }
+    foreach($valids as &$v) {
+      if(!($v instanceof NJValid)) {
+        $v = NJValid::V($v);
+      }
+    }
+    if(!array_key_exists($this->_prev_field, $this->_validation)){
+      $this->_validation[$this->_prev_field] = array();
+    }
+    $this->_validation[$this->_prev_field][] = array(
+      'msg' => $message,
+      'valids' => $valids,
+      );
+    return $this;
+  }
+  public function validCheck($field, $val, $isUpdate) {
+    if(!array_key_exists($field, $this->_validation))
+      return;
+    foreach($this->_validation[$field] as $vld) {
+      foreach($vld['valids'] as $v) {
+        if(!$v($val))
+          return $vld['msg'];
+      }
+    }
   }
 
   public function primary($field, $alias = null) {
@@ -102,14 +141,14 @@ class NJTable {
   const TYPE_RELATION_MANY = 2;
   const TYPE_RELATION_MANY_X = 3;
   protected $_has = array();
-  function rel($table) {
+  public function rel($table) {
     if(!array_key_exists($table, $this->_has)) {
       trigger_error(sprintf('Undefined relationship "" for "%s"', $table, $this->_name));
     }
     return $this->_has[$table];
   }
 
-  function hasOne($sk, $table, $fk) {
+  public function hasOne($sk, $table, $fk) {
     $fk || $fk = static::$table()->_pri_key;
     $sk || $sk = $this->_pri_key;
 
@@ -125,7 +164,7 @@ class NJTable {
 
     return $this;
   }
-  function hasMany($sk, $table, $fk, $msk=null, $mfk=null, $mapTable=null) {
+  public function hasMany($sk, $table, $fk, $msk=null, $mfk=null, $mapTable=null) {
     $sk = static::get_real_field($this, $sk);
 
     if(func_num_args() <= 3) {
@@ -158,11 +197,16 @@ class NJTable {
   // defines
   protected static $_tables = array();
   protected static $_aliases = array();
-  static function defined($name) {
+  public static function defined($name) {
     return array_key_exists($name, static::$_tables)
       || array_key_exists($name, static::$_aliases);
   }
-  static function define($name, $alias=null) {
+  public static function redefine($name, $alias=null) {
+    if(!array_key_exists($name, static::$_tables))
+      unset(static::$_tables);
+    return static::define($name, $alias);
+  } 
+  public static function define($name, $alias=null) {
     if(!array_key_exists($name, static::$_tables)) {
       static::$_tables[$name] = new static($name);
       if($alias) {
@@ -174,7 +218,7 @@ class NJTable {
 
     return static::$_tables[$name];
   }
-  static function __callStatic($name, $arguments) {
+  public static function __callStatic($name, $arguments) {
     if(array_key_exists($name, static::$_tables)){
       return static::$_tables[$name];
     }
@@ -227,11 +271,11 @@ class NJTable {
 
   public function values($values, $update=false) {
     if($update)
-      return $this->valuesUpd($values);
-    return $this->valuesIns($values);
+      return $this->values4update($values);
+    return $this->values4insert($values);
   }
 
-  protected function valuesUpd($values) {
+  protected function values4update($values) {
     if(is_array(current($values))) {
       trigger_error('Update values expect scalars!');
     }
@@ -245,15 +289,19 @@ class NJTable {
       elseif(!array_key_exists($col, $this->_fields)) {
         continue;
       }
+      if($ret = $this->validCheck($col, $v, true)) {
+        // throw new NJException
+        trigger_error($ret);
+      }
       $tmpArr[] = NJMisc::wrap_grave_accent($col).'='.NJMisc::formatValue($v);
     }
     return implode(',', $tmpArr);
   }
 
-  protected function valuesIns($values) {
+  protected function values4insert($values) {
     // translate one record to multiple records
     if(!is_array(current($values))) {
-      return $this->valuesIns(array($values));
+      return $this->values4insert(array($values));
     }
 
     $inputKeys = array();
@@ -286,6 +334,10 @@ class NJTable {
         }
         else {
           $v = NULL;
+        }
+        if($ret = $this->validCheck($field, $v, true)) {
+          // throw new NJException
+          trigger_error($ret);
         }
         $tmpArr[] = NJMisc::formatValue($v);
       }

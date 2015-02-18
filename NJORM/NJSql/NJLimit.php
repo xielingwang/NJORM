@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-26 01:41:57
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-17 21:12:16
+ * @Last Modified time: 2015-02-17 22:44:19
  */
 namespace NJORM\NJSql;
 class NJLimit {
@@ -16,10 +16,10 @@ class NJLimit {
 
   public static function factory($args){
     $class = get_called_class();
-    $rc = new \ReflectionClass($class);
+    $inst = new $class;
     if(!is_array($args))
       $args = func_get_args();
-    return $rc->newInstanceArgs($args);
+    return call_user_func_array(array($inst, 'limit'), $args);
   }
 
   public function __construct() {

@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2015-01-07 00:27:39
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-15 23:16:36
+ * @Last Modified by:   AminBy
+ * @Last Modified time: 2015-02-17 22:46:35
  */
 namespace NJORM;
 
@@ -20,14 +20,18 @@ class NJValid {
     static::instance()->addRule($rule, $callable);
   }
 
-  public static function V() {
-    return call_user_func_array(array(static::instance(), 'rule'), func_get_args());
+  public static function V($args) {
+    if(!is_array($args))
+      $args = func_get_args();
+    return call_user_func_array(array(static::instance(), 'rule'), $args);
   }
 
   public function rule($rule) {
     $args = func_get_args();
     array_shift($args);
-    return function ($val) use ($rule, $args) {
+    return function ($val=null) use ($rule, $args) {
+      if(!func_num_args())
+        return $args;
       array_unshift($args, $rule, $val);
       return call_user_func_array(__CLASS__.'::checkRule', $args);
     };

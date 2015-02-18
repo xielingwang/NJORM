@@ -3,7 +3,7 @@
  * @name: byamin
  * @Date:   2015-01-01 12:21:16
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-17 21:29:26
+ * @Last Modified time: 2015-02-17 22:21:07
  */
 
 
@@ -125,7 +125,7 @@ class NJQueryTest extends PHPUnit_Framework_TestCase {
     $this->assertEquals($data['email'], $model['email']);
   }
 
-  function testNJDelete() {
+  function testQueryDelete() {
     $query = new NJQuery('users');
     $query->where('email', 'abc@abc.com')
     ->limit(3,4);
