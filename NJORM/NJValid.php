@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-01-07 00:27:39
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-19 03:46:53
+ * @Last Modified time: 2015-02-20 01:59:00
  */
 namespace NJORM;
 use NJORM\NJSql;
@@ -216,11 +216,13 @@ class NJValid {
 
     // njsql/njtable
     $this->addRule('unique', function($val, $data, $field, $table) {
+      $table = NJSql\NJTable::factory($table);
       $query = new NJQuery($table);
-      $query->where($field, $val);
-      if($priVal) {
-        $query->where($prikey, $priVal);
+      $prikey = $table->primary();
+      if(array_key_exists($prikey, $data) && $priVal = $data[$prikey]) {
+        $query->where($prikey, '!=', $priVal);
       }
+      $query->where($field, $val);
       return $query->count() <= 0;
     });
 

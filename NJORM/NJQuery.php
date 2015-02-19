@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-19 02:25:16
+ * @Last Modified time: 2015-02-19 13:11:40
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -19,7 +19,7 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
 
   public function __construct($table) {
     $this->_type = static::QUERY_TYPE_SELECT;
-    if(is_string($table))
+    if(!($table instanceof NJSql\NJTable))
       $table = NJSql\NJTable::$table();
     $this->_table = $table;
   }

@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-02-02 23:27:30
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-19 04:02:38
+ * @Last Modified time: 2015-02-20 02:05:37
  */
 
 namespace NJORM\NJSql;
@@ -67,11 +67,10 @@ class NJTable {
         if(!is_array($vld)) {
           $vld = array($vld);
         }
-        $tmp = array($this->primary(), $this->_fields[$this->_prev_field], $this->_name);
+        $tmp = array($this->_fields[$this->_prev_field], $this->_name);
         $_vld = function ($data) use ($vld,$tmp) {
           array_unshift($tmp, $data);
           $vld = array_merge($vld, $tmp);
-          print_r($vld);
           return NJValid::V($vld);
         };
       }
@@ -89,12 +88,17 @@ class NJTable {
     if(!array_key_exists($field, $this->_validation))
       return;
     foreach($this->_validation[$field] as $vld) {
-      foreach($vld['valids'] as $v) {
+      $msg = $vld['msg'];
+      $error = false;
+      foreach($vld['valids'] as $k=>$v) {
         $v = $v($data);
+        $msg = preg_replace("/\{{$k}-(\d+)\}/i", "E", $msg);
         if(!$v($val)) {
-          return $vld['msg'];
+          $error = true;
         }
       }
+      if($error)
+        return $msg;
     }
   }
 
@@ -235,14 +239,20 @@ class NJTable {
 
     return static::$_tables[$name];
   }
-  public static function __callStatic($name, $arguments) {
+  public static function factory($name) {
+    $class = get_called_class();
+    if($name instanceof $class)
+      return $name;
     if(array_key_exists($name, static::$_tables)){
       return static::$_tables[$name];
     }
     if(array_key_exists($name, static::$_aliases)){
       return static::$_aliases[$name];
     }
-    trigger_error('Table is undefined: ' . $name);
+    trigger_error('Table is undefined: ' . $name);    
+  }
+  public static function __callStatic($name, $arguments) {
+    return static::factory($name);
   }
   public static function fk_for_table($table) {
     return strtr(FK_FMT, array('{tbname}' => $table->_name));
@@ -287,8 +297,16 @@ class NJTable {
   }
 
   public function values($values, $update=false) {
-    if($update)
+    // update
+    if($update) {
       return $this->values4update($values);
+    }
+
+    // insert
+    foreach((string)$this->primary() as $key){
+      if(array_key_exists($key, $values))
+        unset($values[$key]);
+    }
     return $this->values4insert($values);
   }
 
