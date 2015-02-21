@@ -2,16 +2,20 @@
 /**
  * @Author: byamin
  * @Date:   2014-12-21 16:11:15
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-16 00:21:33
+ * @Last Modified by:   AminBy
+ * @Last Modified time: 2015-02-22 01:36:42
  */
 use \NJORM\NJSql\NJCondition as NJCnd;
 class NJConditionTest extends PHPUnit_Framework_TestCase {
 
   function testCondition11(){
 
-    $cnd = NJCnd::fact("b not  in (2,  '3' , ? ) or field = 'field >= \'a''%' AND a between ? AND 4 and field  = 'field2   >= \'a''%'", 4, 2);
-    $this->assertEquals("`b` NOT IN (2,'3',?) OR `field` = 'field >= ''a''%' AND `a` BETWEEN ? AND 4 AND `field` = 'field2   >= ''a''%'", $cnd->stringify());
+    $cnd = NJCnd::fact(array(
+        'b' => 2,
+        'c' => 'abc',
+        'd' => '2.33'
+        ));
+    $this->assertEquals("`b` = 2 AND `c` = 'abc' AND `d` = '2.33'", $cnd->stringify());
   }
 
   function testConditionParse() {
@@ -45,16 +49,16 @@ class NJConditionTest extends PHPUnit_Framework_TestCase {
     $cond2 = NJCnd::fact('abc', '=', 3);
     $cond3 = NJCnd::fact('abc', '>=', 'eee');
 
-    $conds_1 = NJCnd::factX($cond1,$cond2);
+    $conds_1 = NJCnd::fact($cond1,$cond2);
     $this->assertEquals("`abc` > 3 AND `abc` = 3", $conds_1->stringify());
 
-    $conds_2 = NJCnd::factX($cond1, 'or', $cond2);
+    $conds_2 = NJCnd::fact($cond1, 'or', $cond2);
     $this->assertEquals("`abc` > 3 OR `abc` = 3", $conds_2->stringify());
 
-    $conds_3 = NJCnd::factX(array('eee', 5), $cond3, $conds_2);
+    $conds_3 = NJCnd::fact(array('eee', 5), $cond3, $conds_2);
     $this->assertEquals("`eee` = 5 AND `abc` >= 'eee' AND (`abc` > 3 OR `abc` = 3)", $conds_3->stringify());
 
-    $conds_4 = NJCnd::factX(array('eee', 5), $cond3, $conds_1);
+    $conds_4 = NJCnd::fact(array('eee', 5), $cond3, $conds_1);
     $this->assertEquals("`eee` = 5 AND `abc` >= 'eee' AND `abc` > 3 AND `abc` = 3", $conds_4->stringify());
   }
 
@@ -104,7 +108,7 @@ class NJConditionTest extends PHPUnit_Framework_TestCase {
     $this->assertEquals("`key` IN (?,?,?)", $cond2->stringify());
     $this->assertEmpty(array_diff($cond2->parameters(), array(1, 'true', 'on')));
 
-    $cond_1 = NJCnd::factX($cond1, $cond2);
+    $cond_1 = NJCnd::fact($cond1, $cond2);
     $this->assertEquals("`field` = ? AND `key` IN (?,?,?)", $cond_1->stringify());
     $this->assertEmpty(array_diff($cond_1->parameters(), array('good', 1, 'true', 'on')));
 

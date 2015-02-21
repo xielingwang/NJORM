@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-17 22:41:29
+ * @Last Modified time: 2015-02-22 01:35:58
  */
 namespace NJORM\NJSql;
 use NJORM\NJMisc;
@@ -33,12 +33,25 @@ class NJCondition implements NJInterface\NJStringifiable{
    * @return [type]      [description]
    */
   public static function fact($arg) {
-    $class = get_called_class();
+    $class = __CLASS__;
     $inst = new $class;
+
+    if(($arg instanceof $class || is_array($arg)) and func_num_args() > 1){
+      return call_user_func_array(__CLASS__.'::factX', func_get_args());
+    }
 
     if(!($arg instanceof $class)) {
       if(is_array($arg)) {
-        $inst->parse($arg);
+        if(!is_int(current(array_keys($arg)))) {
+          $arr = array();
+          foreach ($arg as $key => $val) {
+            $arr[] = $class::fact($key, $val);
+          }
+          $inst = call_user_func_array(__CLASS__.'::factX', $arr);
+        }
+        else {
+          $inst->parse($arg);
+        }
       }
       else{
         $inst->parse(func_get_args());
@@ -51,19 +64,19 @@ class NJCondition implements NJInterface\NJStringifiable{
     return $inst;
   }
 
-  public static function factX() {
-    $class = get_called_class();
+  protected static function factX() {
+    $class = __CLASS__;
     $inst = new $class;
 
     $op = null;
     foreach(func_get_args() as $v) {
       $is_val = true;
       if(is_array($v)) {
-        $v = $rc->newInstanceArgs()->parse($v);
+        $v = $class::fact($v);
       }
       elseif(!($v instanceof $class)) {
         if(!in_array(strtolower($v), array('or','and'))) {
-          $v = $rc->newInstanceArgs()->parse($v);
+          $v = $class::fact($v);
         }
         else {
           $op = strtolower($v);
@@ -134,7 +147,7 @@ class NJCondition implements NJInterface\NJStringifiable{
   protected function addCondition() {
     foreach(func_get_args() as $arg) {
       if(is_array($arg))
-        throw new \Exception("eeee");
+        throw new \Exception("error arguments for addCondition");
     }
     if(is_null($this->_conditions)) {
       $this->_conditions = array();
@@ -306,6 +319,14 @@ class NJCondition implements NJInterface\NJStringifiable{
   public function parse($args) {
     if(!is_array($args)) {
       trigger_error('args for NJCondition::parse() expects an array!');
+    }
+    if(preg_match('/\D+/', implode('', array_keys($args)))) {
+      $tmpargs = array();
+      foreach($args as $key => $val) {
+        $tmpargs[] = array($key, $val);
+      }
+      $args = $tmpargs;
+      print_r($args);
     }
 
     if( preg_match('/%[sdf]|\?/', $args[0]) ) {
