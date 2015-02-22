@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-22 01:39:16
+ * @Last Modified time: 2015-02-22 19:53:39
  */
 namespace NJORM\NJSql;
 use NJORM\NJMisc;
@@ -38,12 +38,14 @@ class NJCondition implements NJInterface\NJStringifiable{
     $class = __CLASS__;
     $inst = new $class;
 
+    // case like: fact(array, njcond, array)
     if(($arg instanceof $class || is_array($arg)) and func_num_args() > 1){
       return call_user_func_array(__CLASS__.'::factX', func_get_args());
     }
 
     if(!($arg instanceof $class)) {
       if(is_array($arg)) {
+        // case like: fact(array('c' => 1, 'd' => 2))
         if(!is_int(current(array_keys($arg)))) {
           $arr = array();
           foreach ($arg as $key => $val) {
@@ -51,14 +53,17 @@ class NJCondition implements NJInterface\NJStringifiable{
           }
           $inst = call_user_func_array(__CLASS__.'::factX', $arr);
         }
+        // case like: fact(array('c', '>', '2'))
         else {
           $inst->parse($arg);
         }
       }
+      // case like: fact('c', '>', 3)
       else{
         $inst->parse(func_get_args());
       }
     }
+    // case like: fact($njcond)
     else{
       $inst->addCondition($arg);
     }
@@ -278,41 +283,46 @@ class NJCondition implements NJInterface\NJStringifiable{
     return $ret;
   }
 
+  // supported %s, %d, %f, %l
   protected function _parseWithParameters(&$args) {
     // 1.transfer % to @#PCNT#@ and ? to @#QUSTN#@
     $format = preg_replace_callback("/'[^']*[%?][^']*'/", function($matches){
       return str_replace(array('%','?'), array('@#PCNT#@','@#QUSTN#@'), $matches[0]);
     }, array_shift($args));
-    // echo $format.PHP_EOL;
 
+    // 2.capture printf arguments and their offset
     $format = str_replace('%s', "'%s'", $format);
-    $r = preg_match_all("/%[sdf]/", $format, $matches, PREG_PATTERN_ORDER|PREG_OFFSET_CAPTURE);
-    $pf_idx = array();
+    $r = preg_match_all("/%[sdfl]/", $format, $matches, PREG_PATTERN_ORDER|PREG_OFFSET_CAPTURE);
+    $offsetPtf = array();
     foreach($matches[0] as $_){
-      $pf_idx[] = $_[1];
+      $offsetPtf[] = $_[1];
     }
 
-    $bp_idx = array();
+    // 3.catpure question marks and their offset
+    $offsetQM = array();
     $r = 0;
     while(($r = strpos($format, '?', $r)) !== false) {
-      $bp_idx[] = $r++;
+      $offsetQM[] = $r++;
     }
-    $sorted = array_merge($pf_idx, $bp_idx);
-    if(count($args) < count($sorted)) {
+
+    // 4. process the sprintf arguments and bindPara parameters
+    $offsetMarks = array_merge($offsetPtf, $offsetQM);
+    if(count($args) < count($offsetMarks)) {
       trigger_error('Too few arguments for NJCondition::parse()');
     }
-    
-    sort($sorted);
-    $sorted = array_flip($sorted);
-    $pf_args = array();
-    foreach($pf_idx as $idx) {
-      $pf_args[] = $args[$sorted[$idx]];
+    sort($offsetMarks);
+    $offsetMarks = array_flip($offsetMarks);
+    $args4sprintf = array();
+    foreach($offsetPtf as $idx) {
+      $args4sprintf[] = $args[$offsetMarks[$idx]];
     }
-    $this->_parameters = array_diff($args, $pf_args);
-    array_unshift($pf_args, $format);
 
-    $string = str_replace(array('@#PCNT#@','@#QUSTN#@'), array('%','?'), call_user_func_array('sprintf', $pf_args));
-    $this->_conditions = $string;
+    // 5.get parameters and condition statement
+    $this->_parameters = array_diff($args, $args4sprintf);
+    array_unshift($args4sprintf, $format);
+    $this->_conditions = str_replace(array('@#PCNT#@','@#QUSTN#@'), array('%','?'), call_user_func_array('sprintf', $args4sprintf));
+
+    // 6.resolve sub condition statements
     $this->_resolveSubConditions();
 
     return $this;
@@ -321,14 +331,6 @@ class NJCondition implements NJInterface\NJStringifiable{
   public function parse($args) {
     if(!is_array($args)) {
       trigger_error('args for NJCondition::parse() expects an array!');
-    }
-    if(preg_match('/\D+/', implode('', array_keys($args)))) {
-      $tmpargs = array();
-      foreach($args as $key => $val) {
-        $tmpargs[] = array($key, $val);
-      }
-      $args = $tmpargs;
-      print_r($args);
     }
 
     if( preg_match('/%[sdf]|\?/', $args[0]) ) {
