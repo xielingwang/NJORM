@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-22 01:35:58
+ * @Last Modified time: 2015-02-22 01:39:16
  */
 namespace NJORM\NJSql;
 use NJORM\NJMisc;
@@ -29,7 +29,9 @@ class NJCondition implements NJInterface\NJStringifiable{
    * fact("`field`", 3") => `field` = 3
    * fact("field", ">", 3) => `field` > 3
    * fact("field > ?", 3) => `field` > ? -- 3
+   * fact(array("a" => 2, "b" => 3, "c" => "d")) => `a` = 2 AND `b` = 3 `c` = 'd'
    * @param  [type] $arg [description]
+   * @see  factX
    * @return [type]      [description]
    */
   public static function fact($arg) {

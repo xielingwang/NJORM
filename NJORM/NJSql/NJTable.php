@@ -3,14 +3,15 @@
  * @Author: byamin
  * @Date:   2015-02-02 23:27:30
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-20 02:05:37
+ * @Last Modified time: 2015-02-22 19:19:05
  */
 
 namespace NJORM\NJSql;
 use NJORM\NJMisc;
 use NJORM\NJValid;
 
-define('FK_FMT', 'id_{tbname}');
+if(!defined('FK_FMT'))
+  define('FK_FMT', 'id_{tbname}');
 class NJTable {
   protected $_name;
   protected $_pri_key;
@@ -303,7 +304,7 @@ class NJTable {
     }
 
     // insert
-    foreach((string)$this->primary() as $key){
+    foreach((array)$this->primary() as $key){
       if(array_key_exists($key, $values))
         unset($values[$key]);
     }

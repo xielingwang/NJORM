@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-19 03:38:47
+ * @Last Modified time: 2015-02-22 01:49:06
  */
 namespace NJORM;
 use \NJORM\NJSql\NJTable;
@@ -99,7 +99,12 @@ class NJModel implements Countable, ArrayAccess {
   }
 
   public function save() {
-
+    $this->_modified[$this->_table->primary] = $this->pri_key_value();
+    if((new NJQuery($this->_table))->update($this->_modified)){
+      $this->_data = array_merge($this->_data, $this->_modified);
+      $this->_modified = array();
+    }
+    return $this;
   }
   public function saved() {
     return empty($this->_modified);

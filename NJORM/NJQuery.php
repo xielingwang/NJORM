@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-19 13:11:40
+ * @Last Modified time: 2015-02-22 19:25:27
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -265,12 +265,13 @@ class NJQuery implements NJStringifiable, Countable, ArrayAccess {
     return $sql;
   }
 
-  public function insert() {
-    $sql = call_user_func_array(array($this, 'sqlInsert'), func_get_args());
+  public function insert($data) {
+    $sql = $this->sqlInsert($data);
 
     $stmt = NJSql\NJDb::execute($sql, $this->params());
 
-    return NJORM::pdo()->lastInsertId();
+    $data[$this->_table->primary()] = NJORM::pdo()->lastInsertId();
+    return new NJModel($this->_table, $data);
   }
 
   public function sqlUpdate($data){

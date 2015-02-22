@@ -3,7 +3,7 @@
  * @name: byamin
  * @Date:   2015-01-01 12:21:16
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-18 09:08:12
+ * @Last Modified time: 2015-02-22 19:27:06
  */
 
 
@@ -95,11 +95,11 @@ class NJQueryTest extends PHPUnit_Framework_TestCase {
     $this->assertEquals("INSERT INTO `qn_users`(`user_name`,`user_pass`,`user_balance`,`user_email`) VALUES ('insert-name','insert-pass',".$data['balance'].",'insert-email')"
       , $query->sqlInsert($data));
 
-    $insertId = $query->insert($data);
-    $this->assertGreaterThan(0, $insertId, 'inserted uid > 0');
+    $insUser = $query->insert($data);
+    $this->assertGreaterThan(0, $insUser['uid'], 'inserted uid > 0');
 
-    $query = (new NJQuery('users'))->where('uid', $insertId);
-    $this->assertEquals("SELECT `user_id` `uid`,`user_name` `name`,`user_pass` `pass`,`user_balance` `balance`,`user_email` `email` FROM `qn_users` WHERE `user_id` = '{$insertId}'", (string)$query);
+    $query = (new NJQuery('users'))->where('uid', $insUser['uid']);
+    $this->assertEquals("SELECT `user_id` `uid`,`user_name` `name`,`user_pass` `pass`,`user_balance` `balance`,`user_email` `email` FROM `qn_users` WHERE `user_id` = '{$insUser['uid']}'", (string)$query);
     $db_user = $query->fetch();
 
     $this->assertNotNull($db_user, 'fetch not null after insert');
@@ -107,6 +107,39 @@ class NJQueryTest extends PHPUnit_Framework_TestCase {
     $this->assertEquals('insert-pass', $db_user['pass']);
     $this->assertEquals('insert-email', $db_user['email']);
     $this->assertEquals($data['balance'], $db_user['balance']);
+    return $db_user;
+  }
+
+  /**
+   * @depends testQueryInsert
+   * @return [type] [description]
+   */
+  function testModelSave($model_user) {
+    $uid = $model_user['uid'];
+    $pass = $model_user['pass'];
+    $email = $model_user['email'];
+/*
+    $model_user['pass'] = $new_pass;
+    $model_user['email'] = $new_email;
+    $new_pass = 'pass'.rand(1000,9999);
+    $new_email = 'email'.rand(1000,9999);
+
+    $model_user->save();
+    $this->assertTrue($model_user->saved(), 'saved');
+    $this->assertEquals($model_user['pass'], $new_pass);
+    $this->assertEquals($model_user['email'], $new_email);
+
+    $fetch_model = new NJQuery('users')->where('uid', $uid)->fetch();
+    $this->assertEquals($fetch_model['pass'], $new_pass);
+    $this->assertEquals($fetch_model['email'], $new_email);
+
+    $model_user['pass'] = $pass;
+    $model_user['email'] = $email;
+
+    $model_user->save();
+    $this->assertTrue($model_user->saved(), 'saved');
+    $this->assertEquals($model_user['pass'], $pass);
+    $this->assertEquals($model_user['email'], $email);*/
   }
 
   function testQueryUpdate() {
@@ -137,6 +170,6 @@ class NJQueryTest extends PHPUnit_Framework_TestCase {
   function testQueryCount() {
     $query = new NJQuery('users');
     $query->where('balance', 100);
-    $this->assertEquals('SELECT COUNT(*) FROM `qn_users` WHERE `user_balance` = 100', $query->sqlCount());
+    $this->assertEquals('SELECT COUNT(*) `c` FROM `qn_users` WHERE `user_balance` = 100', $query->sqlCount());
   }
 }
