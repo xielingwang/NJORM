@@ -3,20 +3,19 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-22 19:53:39
+ * @Last Modified time: 2015-02-23 20:09:45
  */
 namespace NJORM\NJSql;
 use NJORM\NJMisc;
-use NJORM\NJSql\NJTable;
 use NJORM\NJValid;
 use NJORM\NJInterface;
 class NJCondition implements NJInterface\NJStringifiable{
 
-  protected static $_table;
+  protected static $s_table;
   static function setTable($table) {
     if(is_string($table))
       $table = NJTable::$table();
-    static::$_table = $table;
+    static::$s_table = $table;
   }
 
   protected $_conditions;
@@ -285,44 +284,10 @@ class NJCondition implements NJInterface\NJStringifiable{
 
   // supported %s, %d, %f, %l
   protected function _parseWithParameters(&$args) {
-    // 1.transfer % to @#PCNT#@ and ? to @#QUSTN#@
-    $format = preg_replace_callback("/'[^']*[%?][^']*'/", function($matches){
-      return str_replace(array('%','?'), array('@#PCNT#@','@#QUSTN#@'), $matches[0]);
-    }, array_shift($args));
+    $njexpr = (new NJExpr())->parse($args);
+    $njexpr->_conditions = $njexpr->stringify();
+    $njexpr->_parameters = $njexpr->parameters();
 
-    // 2.capture printf arguments and their offset
-    $format = str_replace('%s', "'%s'", $format);
-    $r = preg_match_all("/%[sdfl]/", $format, $matches, PREG_PATTERN_ORDER|PREG_OFFSET_CAPTURE);
-    $offsetPtf = array();
-    foreach($matches[0] as $_){
-      $offsetPtf[] = $_[1];
-    }
-
-    // 3.catpure question marks and their offset
-    $offsetQM = array();
-    $r = 0;
-    while(($r = strpos($format, '?', $r)) !== false) {
-      $offsetQM[] = $r++;
-    }
-
-    // 4. process the sprintf arguments and bindPara parameters
-    $offsetMarks = array_merge($offsetPtf, $offsetQM);
-    if(count($args) < count($offsetMarks)) {
-      trigger_error('Too few arguments for NJCondition::parse()');
-    }
-    sort($offsetMarks);
-    $offsetMarks = array_flip($offsetMarks);
-    $args4sprintf = array();
-    foreach($offsetPtf as $idx) {
-      $args4sprintf[] = $args[$offsetMarks[$idx]];
-    }
-
-    // 5.get parameters and condition statement
-    $this->_parameters = array_diff($args, $args4sprintf);
-    array_unshift($args4sprintf, $format);
-    $this->_conditions = str_replace(array('@#PCNT#@','@#QUSTN#@'), array('%','?'), call_user_func_array('sprintf', $args4sprintf));
-
-    // 6.resolve sub condition statements
     $this->_resolveSubConditions();
 
     return $this;
@@ -387,8 +352,8 @@ class NJCondition implements NJInterface\NJStringifiable{
           $args[2] = NJMisc::formatValue($args[2]);
         }
 
-        if(static::$_table) {
-          $args[0] = static::$_table->getField($args[0]);
+        if(static::$s_table) {
+          $args[0] = static::$s_table->getField($args[0]);
         }
         $args[0] = NJMisc::formatFieldName($args[0]);
         $this->_conditions = sprintf("%s %s %s", $args[0], $args[1], $args[2]);
@@ -428,6 +393,26 @@ class NJCondition implements NJInterface\NJStringifiable{
       return $this->_conditions;
     }
     trigger_error('unexpected type for condtion:' . gettype($this->_conditions));
+  }
+
+  public function addParameters() {
+    if(is_null($this->_parameters)){
+      $this->_parameters = array();
+    }
+    elseif(!is_array($this->_parameters)) {
+      $this->_parameters = array($this->_parameters);
+    }
+    foreach(func_get_args() as $arg) {
+      if(is_array($arg)) {
+        foreach($arg as $sarg) {
+          $this->_parameters[] = $sarg;
+        }
+      }
+      else {
+        $this->_parameters[] = $arg;
+      }
+    }
+    return $this;
   }
   protected function _setParameters($ps) {
     $this->_parameters = $ps;

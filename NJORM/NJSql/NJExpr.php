@@ -3,19 +3,19 @@
  * @Author: byamin
  * @Date:   2015-02-17 19:56:26
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-22 19:48:06
+ * @Last Modified time: 2015-02-23 20:20:21
  */
-
+namespace NJORM\NJSql;
 class NJExpr {
   protected $_value;
   protected $_parameters;
-  function __construct($value) {
-    $this->_value = $value;
-    $this->_parameters = func_get_args();
-    array_shift($this->_parameters);
+  function __construct() {
+    if(func_num_args() > 0) {
+      $this->parse(func_get_args());
+    }
   }
 
-  function parse($args) {
+  public function parse($args) {
     // 1.transfer % to @#PCNT#@ and ? to @#QUSTN#@
     $format = preg_replace_callback("/'[^']*[%?][^']*'/", function($matches){
       return str_replace(array('%','?'), array('@#PCNT#@','@#QUSTN#@'), $matches[0]);
@@ -51,7 +51,7 @@ class NJExpr {
     // 5.get parameters and condition statement
     $this->_parameters = array_diff($args, $args4sprintf);
     array_unshift($args4sprintf, $format);
-    $this->_conditions = str_replace(array('@#PCNT#@','@#QUSTN#@'), array('%','?'), call_user_func_array('sprintf', $args4sprintf));
+    $this->_value = str_replace(array('@#PCNT#@','@#QUSTN#@'), array('%','?'), call_user_func_array('sprintf', $args4sprintf));
 
     return $this;
   }
