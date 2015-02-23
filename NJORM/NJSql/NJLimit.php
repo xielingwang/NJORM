@@ -3,10 +3,11 @@
  * @Author: byamin
  * @Date:   2014-12-26 01:41:57
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-17 22:44:19
+ * @Last Modified time: 2015-02-23 21:35:30
  */
 namespace NJORM\NJSql;
-class NJLimit {
+// TODO: extends NJObject
+class NJLimit{
   const TYPE_COMMA = true;
   const TYPE_OFFSET = false;
 

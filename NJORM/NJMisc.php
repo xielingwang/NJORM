@@ -6,7 +6,7 @@
 * @Last Modified time: 2014-12-27 09:58:45
 */
 namespace NJORM;
-
+use NJORM\NJSql\NJObject;
 class NJMisc{
 /**
  * [wrap_grave_accent description]
@@ -25,12 +25,22 @@ public static function wrap_grave_accent($v) {
  * @param  [type] $v [description]
  * @return [type]    [description]
  */
-public static function formatValue($v) {
+public static function formatValue($v, $context=null) {
+
+  // NJObject
+  if($v instanceof NJObject) {
+    if($context instanceof NJObject) {
+      $context->addParameters($v->parameters());
+    }
+    return $v->stringify();
+  }
 
   // array
   if(is_array($v)) {
-    if(empty($v))
+    if(empty($v)) {
       trigger_error('array value for formatValue() cant be empty!', E_USER_ERROR);
+    }
+
     foreach($v as &$_v) {
       $_v = NJMisc::formatValue($_v);
     }
@@ -51,7 +61,7 @@ public static function formatValue($v) {
   elseif(is_string($v)) {
     if(strpos($v, '`') !== false)
       return $v;
-    return "'" . str_replace("'","''",$v) . "'";
+    return '\''.str_replace('\'','\'\'',$v).'\'';
   }
 
   // how to support object/resource

@@ -3,13 +3,13 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-22 19:25:27
+ * @Last Modified time: 2015-02-23 20:59:47
  */
 namespace NJORM;
 use \NJORM\NJSql;
-use \NJORM\NJInterface\NJStringifiable, \Countable, \ArrayAccess;
+use \NJORM\NJInterface\NJObject, \Countable, \ArrayAccess;
 
-class NJQuery implements NJStringifiable, Countable, ArrayAccess {
+class NJQuery implements NJObject, Countable, ArrayAccess {
   const QUERY_TYPE_INSERT = 0;
   const QUERY_TYPE_SELECT = 1;
   const QUERY_TYPE_UPDATE = 2;

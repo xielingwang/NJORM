@@ -3,12 +3,10 @@
  * @Author: byamin
  * @Date:   2015-02-17 19:56:26
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-23 20:20:21
+ * @Last Modified time: 2015-02-23 21:33:35
  */
 namespace NJORM\NJSql;
-class NJExpr {
-  protected $_value;
-  protected $_parameters;
+class NJExpr extends NJObject{
   function __construct() {
     if(func_num_args() > 0) {
       $this->parse(func_get_args());
@@ -49,18 +47,10 @@ class NJExpr {
     }
 
     // 5.get parameters and condition statement
-    $this->_parameters = array_diff($args, $args4sprintf);
+    $this->_SetParameters(array_diff($args, $args4sprintf));
     array_unshift($args4sprintf, $format);
-    $this->_value = str_replace(array('@#PCNT#@','@#QUSTN#@'), array('%','?'), call_user_func_array('sprintf', $args4sprintf));
+    $this->_SetValue(str_replace(array('@#PCNT#@','@#QUSTN#@'), array('%','?'), call_user_func_array('sprintf', $args4sprintf)));
 
     return $this;
-  }
-
-  function stringify() {
-    return $this->_value;
-  }
-
-  function parameters() {
-    return $this->_parameters;
   }
 }
