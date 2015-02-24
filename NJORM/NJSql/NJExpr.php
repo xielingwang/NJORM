@@ -3,11 +3,14 @@
  * @Author: byamin
  * @Date:   2015-02-17 19:56:26
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-23 21:33:35
+ * @Last Modified time: 2015-02-24 23:33:55
  */
 namespace NJORM\NJSql;
-class NJExpr extends NJObject{
-  function __construct() {
+class NJExpr{
+  protected $_parameters = array();
+  protected $_value = null;
+
+  public function __construct() {
     if(func_num_args() > 0) {
       $this->parse(func_get_args());
     }
@@ -52,5 +55,99 @@ class NJExpr extends NJObject{
     $this->_SetValue(str_replace(array('@#PCNT#@','@#QUSTN#@'), array('%','?'), call_user_func_array('sprintf', $args4sprintf)));
 
     return $this;
+  }
+
+  public function addParameters() {
+    if(empty($this->_parameters)){
+      $this->_parameters = array();
+    }
+    elseif(!is_array($this->_parameters)) {
+      $this->_parameters = array($this->_parameters);
+    }
+    foreach(func_get_args() as $arg) {
+      if(is_array($arg)) {
+        foreach($arg as $sarg) {
+          $this->_parameters[] = $sarg;
+        }
+      }
+      else {
+        $this->_parameters[] = $arg;
+      }
+    }
+    return $this;
+  }
+
+  public function parameters() {
+    if(is_array($this->_value)) {
+      $class = get_class($this);
+      $params = array();
+      foreach($this->_value as $cond) {
+        if($cond instanceof $class) {
+          $params = array_merge($params, $cond->parameters());
+        }
+      }
+      return $params;
+    }
+    if($this->_value instanceof NJExpr) {
+      return $this->_value->parameters();
+    }
+    if(empty($this->_value)
+      or is_string($this->_value)
+      or is_numeric($this->_value)) {
+      return $this->_parameters;
+    }
+    trigger_error('unexpected type for condtion:' . gettype($this->_value));
+    return $this->_parameters;
+  }
+
+  protected function _SetParameters() {
+    $this->_parameters = array();
+    if(func_num_args() > 0) {
+      return call_user_func_array(array($this, 'addParameters'), func_get_args());
+    }
+    return $this;
+  }
+
+  protected function _SetValue($value) {
+    $this->_value = $value;
+    return $this;
+  }
+
+  protected function _GetValue() {
+    return $this->_value;
+  }
+
+  public function isEmpty() {
+    return empty($this->_value);
+  }
+
+  public function stringify() {
+    if(is_string($this->_value) or is_numeric($this->_value)) {
+      return (string)$this->_value;
+    }
+    if($this->_value instanceof NJExpr) {
+      return $this->stringify();
+    }
+    if(is_array($this->_value)){
+      $strs = array();
+      foreach($this->_value as $iter) {
+        if(is_string($iter)) {
+          $str = strtoupper($iter);
+        }
+        elseif($iter instanceof NJExpr) {
+          $str = $iter->stringify();
+          if(is_callable(array($iter, 'isEnclosed'))) {
+            if($iter->isEnclosed()) {
+              $str = '('.$str.')';
+            }
+          }
+        }
+        else{
+          trigger_error('unexpected type for condition.' . gettype($cond));
+        }
+        $strs[] = $str;
+      }
+      return implode(' ', $strs);
+    }
   }
 }

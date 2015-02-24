@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-02-02 23:27:30
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-22 19:19:05
+ * @Last Modified time: 2015-02-24 15:24:22
  */
 
 namespace NJORM\NJSql;
@@ -329,7 +329,7 @@ class NJTable {
         // throw new NJException
         trigger_error($ret);
       }
-      $tmpArr[] = NJMisc::wrap_grave_accent($col).'='.NJMisc::formatValue($v);
+      $tmpArr[] = NJMisc::wrapGraveAccent($col).'='.NJMisc::formatValue($v);
     }
     return implode(',', $tmpArr);
   }
@@ -355,7 +355,7 @@ class NJTable {
         $fields[] = $col;
       }
     }
-    $engraved_fields = array_map(array('\NJORM\NJMisc','wrap_grave_accent'), $fields);
+    $engraved_fields = array_map(array('\NJORM\NJMisc','wrapGraveAccent'), $fields);
 
     // values
     $fmted_vals = array();

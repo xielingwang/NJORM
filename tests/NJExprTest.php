@@ -3,17 +3,11 @@
  * @Author: AminBy
  * @Date:   2015-02-23 20:10:16
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-23 21:28:56
+ * @Last Modified time: 2015-02-24 23:16:42
  */
-use \NJORM\NJSql\NJObject;
 use \NJORM\NJSql\NJExpr;
 use \NJORM\NJSql\NJCondition as NJCnd;
 class NJExprTest extends PHPUnit_Framework_TestCase {
-
-  function testNJObject() {
-    $njexpr = new NJExpr('unix_timestamp()');
-    $this->assertTrue($njexpr instanceof NJObject, 'Njexpr is NJObject');
-  }
 
   function testNJExpr() {
     $njexpr = new NJExpr('unix_timestamp()');

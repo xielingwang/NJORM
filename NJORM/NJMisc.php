@@ -6,17 +6,30 @@
 * @Last Modified time: 2014-12-27 09:58:45
 */
 namespace NJORM;
-use NJORM\NJSql\NJObject;
+use NJORM\NJSql\NJExpr;
 class NJMisc{
 /**
- * [wrap_grave_accent description]
+ * [wrapGraveAccent description]
  * @param  [type] $v [description]
  * @return [type]    [description]
  */
-public static function wrap_grave_accent($v) {
+public static function wrapGraveAccent($v) {
   $v = trim($v);
-  if(!self::is_wrap_grave_accent($v))
+  if(!is_numeric($v) && !self::isWrappedGraveAccent($v)) {
     $v = "`{$v}`";
+  }
+  return $v;
+}
+/**
+ * [unwrapGraveAccent description]
+ * @param  [type] $v [description]
+ * @return [type]    [description]
+ */
+public static function unwrapGraveAccent($v) {
+  $v = trim($v);
+  if(self::isWrappedGraveAccent($v)) {
+    $v = substr($v, 1, strlen($v)-2);
+  }
   return $v;
 }
 
@@ -27,9 +40,9 @@ public static function wrap_grave_accent($v) {
  */
 public static function formatValue($v, $context=null) {
 
-  // NJObject
-  if($v instanceof NJObject) {
-    if($context instanceof NJObject) {
+  // NJExpr
+  if($v instanceof NJExpr) {
+    if($context instanceof NJExpr) {
       $context->addParameters($v->parameters());
     }
     return $v->stringify();
@@ -38,7 +51,7 @@ public static function formatValue($v, $context=null) {
   // array
   if(is_array($v)) {
     if(empty($v)) {
-      trigger_error('array value for formatValue() cant be empty!', E_USER_ERROR);
+      return 'NULL';
     }
 
     foreach($v as &$_v) {
@@ -57,9 +70,14 @@ public static function formatValue($v, $context=null) {
     return 'NULL';
   }
 
+  // boolean
+  elseif(is_bool($v)) {
+    return $v ? 'TRUE' : 'FALSE';
+  }
+
   // string
   elseif(is_string($v)) {
-    if(strpos($v, '`') !== false)
+    if(static::isWrappedGraveAccent($v))
       return $v;
     return '\''.str_replace('\'','\'\'',$v).'\'';
   }
@@ -77,22 +95,47 @@ public static function formatValue($v, $context=null) {
  * @param  [type] $op [description]
  * @return [type]     [description]
  */
-public static function formatOperator($op) {
+public static function formatOperator($op, $val) {
   $op = strtoupper(preg_replace('/\s+/i', ' ', trim($op)));
   if(!self::isOperatorSupported($op)){
     trigger_error("illegal operator " . $op, E_USER_ERROR);
   }
+
+  is_array($val) && empty($val) && $val = null;
+
+  // IN IS
+  if(in_array($op, array('=','=='))){
+    if(is_array($val)){
+      $op = 'IN';
+    }
+    elseif(is_bool($val) || is_null($val)) {
+      return 'IS';
+    }
+  }
+
+  // NOT IN / IS NOT
+  elseif(in_array($op, array('!=','<>'))){
+    if(is_array($val)){
+      $op = 'NOT IN';
+    }
+    elseif(is_bool($val) || is_null($val)) {
+      return 'IS NOT';
+    }
+  }
+
   return $op;
 }
 
 /**
- * [is_wrap_grave_accent description]
+ * [isWrappedGraveAccent description]
  * @param  [type]  $v [description]
  * @return boolean    [description]
  */
-public static function is_wrap_grave_accent($v) {
+public static function isWrappedGraveAccent($v) {
   $v = trim($v);
-  return strpos($v, '`') === 0 && strpos(strrev($v), '`') === 0;
+  return strlen($v)>=2
+    && substr($v, 0, 1) == '`'
+    && substr($v, -1) == '`';
 }
 
 /**
@@ -101,27 +144,29 @@ public static function is_wrap_grave_accent($v) {
  * @return [type]      [description]
  */
 public static function formatFieldName($arg) {
-  if(func_num_args() > 1) {
-    $arg = func_get_args();
+  $arg = func_get_args();
+
+  $ret = array();
+  foreach($arg as $_) {
+    if(!is_array($_)){
+      $_ = explode('.', $_);
+    }
+    $ret = array_merge($ret, $_);
   }
 
-  if(!is_array($arg)){
-    $arg = explode('.', $arg);
-  }
+  $ret = array_map(function($v) {
+    return NJMisc::wrapGraveAccent($v);
+  }, $ret);
 
-  foreach($arg as &$v) {
-    $v = self::wrap_grave_accent($v);
-  }
-
-  return implode('.', $arg);
+  return implode('.', $ret);
 }
 
 /**
- * [operatorForNull description]
+ * [nullOperator description]
  * @param  [type] $op [description]
  * @return [type]     [description]
  */
-public static function operatorForNull($op) {
+public static function nullOperator($op) {
   if(in_array($op, array('==','='))) {
     $op = 'IS';
   }
@@ -132,11 +177,11 @@ public static function operatorForNull($op) {
 }
 
 /**
- * [operatorForArray description]
+ * [arrayOperator description]
  * @param  [type] $op [description]
  * @return [type]     [description]
  */
-public static function operatorForArray($operator) {
+public static function arrayOperator($operator) {
   if($operator == '=') {
     $operator = 'IN';
   }

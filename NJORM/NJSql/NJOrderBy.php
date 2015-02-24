@@ -3,17 +3,20 @@
  * @Author: byamin
  * @Date:   2014-12-25 00:56:57
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-23 21:36:36
+ * @Last Modified time: 2015-02-24 23:52:07
  */
 namespace NJORM\NJSql;
-class NJOrderBy extends NJObject{
+use NJORM\NJMisc;
+class NJOrderBy extends NJExpr{
   protected $_data = array();
-  public function __construct($field = null, $order = 'asc') {
+  public function __construct($field = null, $order = 'desc') {
     if(func_num_args() <= 0)
       return;
 
-    $order = (trim($order) == 'asc');
-    call_user_func_array(array($this, 'add'), array($field, $order));
+    if(!is_bool($order)) {
+      $order = (trim($order) == 'desc');
+    }
+    $this->add($field, $order);
   }
 
   public function asc($field) {
@@ -26,19 +29,14 @@ class NJOrderBy extends NJObject{
 
   public function add($field, $asc = true){
     $this->_data[$field] = $asc;
+
+    // set value
+    $orders = array_map(function($field, $direction){
+      return sprintf('%s%s', NJMisc::wrapGraveAccent($field), $direction?'':' DESC');
+    }, array_keys($this->_data), array_values($this->_data));
+    $this->_SetValue(implode(', ', $orders));
+
     return $this;
-  }
-
-  protected function _formatFieldName($f) {
-    return is_numeric($f) ? $f : '`' . $f . '`';
-  }
-
-  public function stringify() {
-    $orders = array();
-    foreach($this->_data as $field => $v) {
-      $orders[] = $this->_formatFieldName($field) . (!$v ? ' DESC' : '');
-    }
-    return implode(', ', $orders);
   }
 
   public function __toString() {

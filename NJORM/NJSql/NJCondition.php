@@ -3,12 +3,12 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-23 21:24:41
+ * @Last Modified time: 2015-02-24 23:15:34
  */
 namespace NJORM\NJSql;
 use NJORM\NJMisc;
 use NJORM\NJValid;
-class NJCondition extends NJObject{
+class NJCondition extends NJExpr{
 
   protected static $s_table;
   static function setTable($table) {
@@ -117,10 +117,6 @@ class NJCondition extends NJObject{
     return $this;
   }
 
-  public function isEmpty() {
-    return empty($this->_value);
-  }
-
   protected function call_and($arg) {
     if(func_num_args() < 1) {
       trigger_error('NJCondition "and" methods expects least 1 parameter.');
@@ -135,7 +131,8 @@ class NJCondition extends NJObject{
 
   protected function call_close() {
     $obj = clone $this;
-    $this->_value = array($obj);
+    $this->_SetValue(array($obj));
+    $this->_SetParameters();
     return $this;
   }
 
@@ -151,30 +148,34 @@ class NJCondition extends NJObject{
       if(is_array($arg))
         throw new \Exception("error arguments for addCondition");
     }
-    if(is_null($this->_value)) {
-      $this->_value = array();
+
+    $val = $this->_GetValue();
+
+    if(empty($val)) {
+      $val = array();
     }
-    elseif(!is_array($this->_value)){
+    elseif(!is_array($val)){
       $this->call_close();
+      $val = $this->_GetValue();
     }
 
-    if(!count($this->_value)) {
-      $this->_value = func_get_args();
+    if(!count($val)) {
+      $val = func_get_args();
     }
     else {
-      $this->_value = array_merge($this->_value, func_get_args());
+      $val = array_merge($val, func_get_args());
     }
 
-    return $this;
+    return $this->_SetValue($val);
   }
 
   protected function _resolveSubConditions() {
-    if(!is_string($this->_value)) {
+    $sqlcnd = $this->_GetValue();
+    if(!is_string($sqlcnd)) {
       return $this;
     }
 
     // 1.Preprocession
-    $sqlcnd = $this->_value;
     $sqlcnd = str_replace(array("\'","''"), "@##QUTESC##@", $sqlcnd);
     if(preg_match_all("/'([^']+)'/i", $sqlcnd, $matches, PREG_SET_ORDER)) {
       foreach($matches as $m) {
@@ -226,11 +227,11 @@ class NJCondition extends NJObject{
     }
 
     // 3.2 place back the strings and allocate the parameters
-    $this->_value = null;
+    $_params = $this->parameters();
+    $this->_SetValue(null);
 
     $arrLinkers = array_filter(explode(' ', str_replace($matched, '', $sqlcnd)));
     ksort($arrConds);
-    $_params = $this->parameters();
 
     $argsForAddCond = array();
     foreach ($arrConds as $cond) {
@@ -274,15 +275,13 @@ class NJCondition extends NJObject{
     if(!$returnObject)
       return array($cnd, $ps);
 
-    $ret = static::fact($cnd)->_setParameters($ps);
+    $ret = static::fact($cnd)->_SetParameters($ps);
     return $ret;
   }
 
   // supported %s, %d, %f, %l
   protected function _parseWithParameters(&$args) {
-    $njexpr = (new NJExpr())->parse($args);
-    $this->_SetString($njexpr->stringify());
-    $this->_SetParameters($njexpr->parameters());
+    parent::parse($args);
 
     $this->_resolveSubConditions();
 
@@ -301,7 +300,7 @@ class NJCondition extends NJObject{
     do {
 
       if(count($args) <= 1) {
-        $this->_value = array_shift($args);
+        $this->_SetValue(array_shift($args));
         $this->_resolveSubConditions();
         break;
       }
@@ -311,48 +310,30 @@ class NJCondition extends NJObject{
         $args[] = $v;
       }
       if(count($args) >= 3) {
-        $args[1] = NJMisc::formatOperator($args[1]);
+        $op = NJMisc::formatOperator($args[1], $args[2]);
 
         // between
-        if(in_array($args[1], array('BETWEEN', 'NOT BETWEEN'))) {
+        if(in_array($op, array('BETWEEN', 'NOT BETWEEN'))) {
           if(count($args) < 4) {
             trigger_error('"between" operetaor expr expects 4 arguments');
           }
 
-          $args[2] = sprintf("%s AND %s", NJMisc::formatValue($args[2], $this), NJMisc::formatValue($args[3], $this));
+          $rOp = sprintf("%s AND %s", NJMisc::formatValue($args[2], $this), NJMisc::formatValue($args[3], $this));
         }
 
-        // IS (NOT) NULL
-        elseif(is_null($args[2]) || is_bool($args[2])) {
-          $args[1] = NJMisc::operatorForNull($args[1]);
-          if(is_null($args[2]))
-            $args[2] = 'NULL';
-          else
-            $args[2] = $args[2] ? 'TRUE' : 'FALSE';
-        }
-
-        // (NOT) IN (...)
-        elseif(is_array($args[2])) {
-          if(empty($args[2])) {
-            $args[1] = NJMisc::operatorForNull($args[1]);
-            $args[2] = 'NULL';
-          }
-          else {
-            $args[1] = NJMisc::operatorForArray($args[1]);
-            $args[2] = NJMisc::formatValue($args[2], $this);
-          }
-        }
-
-        // A VALUE OR A Field
+        // array, null, bool
+        // A VALUE A Field
         else {
-          $args[2] = NJMisc::formatValue($args[2], $this);
+          $rOp = NJMisc::formatValue($args[2], $this);
         }
 
+        // fields
         if(static::$s_table) {
           $args[0] = static::$s_table->getField($args[0]);
         }
-        $args[0] = NJMisc::formatFieldName($args[0]);
-        $this->_value = sprintf("%s %s %s", $args[0], $args[1], $args[2]);
+        $lOp = NJMisc::formatFieldName($args[0]);
+
+        $this->_SetValue(sprintf('%s %s %s', $lOp, $op, $rOp));
       }
     }
     while(0);
@@ -360,37 +341,11 @@ class NJCondition extends NJObject{
     return $this;
   }
 
-  public function stringify() {
-    if(is_array($this->_value)) {
-      $class = get_class($this);
-      $strs = array();
-      foreach($this->_value as $cond) {
-        if(is_string($cond)) {
-          $strs[] = strtoupper($cond);
-        }
-        elseif($cond instanceof $class) {
-          $str = $cond->stringify();
-          if($cond->isEnclosed())
-            $str = '('.$str.')';
-          $strs[] = $str;
-        }
-        else {
-          trigger_error('unexpected type for condition.' . gettype($cond));
-        }
-      }
-      return implode(' ', $strs);
-      if(count($strs) > 1)
-        $str_c = sprintf('(%s)', $str_c);
-      return $str_c;
-    }
-    if(is_string($this->_value) or is_numeric($this->_value)) {
-      return $this->_value;
-    }
-    trigger_error('unexpected type for condtion:' . gettype($this->_value));
-  }
-
   protected function isEnclosed() {
-    return is_array($this->_value) && count($this->_value) > 1 && in_array('or', $this->_value);
+    $v = $this->_GetValue();
+    return is_array($v)
+      && count($v) > 1
+      && in_array('or', $v);
   }
 
   public function __toString() {

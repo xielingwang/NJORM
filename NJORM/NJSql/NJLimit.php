@@ -3,74 +3,63 @@
  * @Author: byamin
  * @Date:   2014-12-26 01:41:57
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-23 21:35:30
+ * @Last Modified time: 2015-02-24 23:42:20
  */
 namespace NJORM\NJSql;
 // TODO: extends NJObject
-class NJLimit{
-  const TYPE_COMMA = true;
-  const TYPE_OFFSET = false;
+class NJLimit extends NJExpr {
+  protected $_limit = 1;
+  protected $_offset = 0;
+  protected $_isOffset = false;
 
-  protected $_limit;
-  protected $_offset;
-  protected $_type;
-
-  public static function factory($args){
-    $class = get_called_class();
-    $inst = new $class;
-    if(!is_array($args))
-      $args = func_get_args();
-    return call_user_func_array(array($inst, 'limit'), $args);
+  public static function factory(){
+    $inst = new NJLimit;
+    if(func_num_args()>0) {
+      $args = func_get_arg(1);
+      is_array($args) || $args = func_get_args();
+      call_user_func_array(array($inst, 'limit'), $args);
+    }
+    return $inst;
   }
 
   public function __construct() {
-    $this->_type = self::TYPE_COMMA;
     if(func_num_args() > 0) {
       call_user_func_array(array($this, 'limit'), func_get_args());
     }
   }
 
-  public function limit() {
-    if(func_num_args() < 1) {
-      return is_null($this->_limit) ? 0 : $this->_limit;
-    }
+  protected function setValueComma(){
+    $this->_SetValue(sprintf('LIMIT %s%d', $this->_offset?($this->_offset.','):'', $this->_limit));
+  }
 
+  public function setValueOffset() {
+    $this->_SetValue(sprintf('LIMIT %d%s', $this->_limit, $this->_offset?(' OFFSET '.$this->_offset):''));
+  }
+
+  public function limit() {
     if(func_num_args() > 1) {
-      $this->_type = self::TYPE_COMMA;
       $this->_offset = intval(func_get_arg(0));
       $this->_limit = intval(func_get_arg(1));
+      $this->setValueComma();
     }
-
-    else
+    else {
       $this->_limit = intval(func_get_arg(0));
+      $this->_isOffset
+        ? $this->setValueOffset()
+        : $this->setValueComma();
+    }
 
     return $this;
   }
 
   public function offset($offset) {
-    $this->_type = self::TYPE_OFFSET;
+    $this->_isOffset = true;
     $this->_offset = intval($offset);
+    $this->setValueOffset();
     return $this;
   }
 
-  public function __toString() {
-    if( is_null($this->_limit) ) {
-      trigger_error('"limit" must have been set before being been stringify.');
-    }
-
-    if(self::TYPE_OFFSET == $this->_type) {
-      $str = "LIMIT " . $this->_limit;
-      if($this->_offset){
-        $str .= " OFFSET " . $this->_offset;
-      }
-    }
-    else {
-      $str = "LIMIT ";
-      if($this->_offset){
-        $str .= $this->_offset . ",";
-      }
-      $str .= $this->_limit;
-    }
-    return $str;
+  public function parameters() {
+    return array();
   }
 }
