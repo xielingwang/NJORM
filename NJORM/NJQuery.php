@@ -3,13 +3,13 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-23 20:59:47
+ * @Last Modified time: 2015-02-25 01:11:59
  */
 namespace NJORM;
 use \NJORM\NJSql;
-use \NJORM\NJInterface\NJObject, \Countable, \ArrayAccess;
+use \Countable, \ArrayAccess;
 
-class NJQuery implements NJObject, Countable, ArrayAccess {
+class NJQuery implements Countable, ArrayAccess {
   const QUERY_TYPE_INSERT = 0;
   const QUERY_TYPE_SELECT = 1;
   const QUERY_TYPE_UPDATE = 2;
@@ -64,16 +64,14 @@ class NJQuery implements NJObject, Countable, ArrayAccess {
 
   // read
   protected $_sel_cols = array('*');
-  protected $_cond_limit = null;
-  protected $_cond_where = null;
-  protected $_cond_sort = null;
+  protected $_sel_expr;
+  protected $_cond_limit;
+  protected $_cond_where;
+  protected $_cond_sort;
   public function select() {
     $this->_type = static::QUERY_TYPE_SELECT;
-    $tmp = array();
-    foreach(func_get_args() as $arg) {
-      $tmp = array_merge($tmp, explode(',', $arg));
-    }
-    $this->_sel_cols = array_unique($tmp);
+    $this->_sel_cols = func_get_args();
+    $this->_sel_expr = null;
     return $this;
   }
 
@@ -123,7 +121,13 @@ class NJQuery implements NJObject, Countable, ArrayAccess {
   }
 
   protected function paramSelect() {
+    if(empty($this->_sel_expr)) {
+      $this->_sel_expr = $this->_table->columns($this->_sel_cols);
+    }
     $parameters = array();
+    if($this->_sel_expr) {
+      $parameters = array_merge($parameters, $this->_sel_expr->parameters());
+    }
     if($this->_cond_where) {
       $parameters = array_merge($parameters, $this->_cond_where->parameters());
     }
@@ -143,8 +147,11 @@ class NJQuery implements NJObject, Countable, ArrayAccess {
   }
 
   protected function sqlSelect() {
+    if(empty($this->_sel_expr)) {
+      $this->_sel_expr = $this->_table->columns($this->_sel_cols);
+    }
     $sql = sprintf('SELECT %s FROM %s'
-      , $this->_table->columns($this->_sel_cols)
+      , $this->_sel_expr
       , $this->_table->name());
 
     if($this->_cond_where) {
@@ -288,7 +295,7 @@ class NJQuery implements NJObject, Countable, ArrayAccess {
     }
 
     if($this->_cond_limit) {
-      $sql .= ' LIMIT '.$this->_cond_limit->limit();
+      $sql .= ' '.$this->_cond_limit->stringify();
     }
 
     return $sql;

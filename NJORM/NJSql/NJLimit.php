@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-26 01:41:57
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-24 23:42:20
+ * @Last Modified time: 2015-02-25 01:10:51
  */
 namespace NJORM\NJSql;
 // TODO: extends NJObject
@@ -15,7 +15,7 @@ class NJLimit extends NJExpr {
   public static function factory(){
     $inst = new NJLimit;
     if(func_num_args()>0) {
-      $args = func_get_arg(1);
+      $args = func_get_arg(0);
       is_array($args) || $args = func_get_args();
       call_user_func_array(array($inst, 'limit'), $args);
     }

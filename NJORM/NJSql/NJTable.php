@@ -3,19 +3,19 @@
  * @Author: byamin
  * @Date:   2015-02-02 23:27:30
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-24 15:24:22
+ * @Last Modified time: 2015-02-25 00:59:39
  */
 
 namespace NJORM\NJSql;
 use NJORM\NJMisc;
 use NJORM\NJValid;
 
-if(!defined('FK_FMT'))
-  define('FK_FMT', 'id_{tbname}');
 class NJTable {
   protected $_name;
   protected $_pri_key;
   protected $_fields;
+
+  const FK_FMT = 'id_{tbname}';
 
   public function __construct($name) {
     $this->_name = $name;
@@ -256,45 +256,82 @@ class NJTable {
     return static::factory($name);
   }
   public static function fk_for_table($table) {
-    return strtr(FK_FMT, array('{tbname}' => $table->_name));
+    return strtr(static::FK_FMT, array('{tbname}' => $table->_name));
   }
 
   // SQL generator
   public function columns($cols='*', $whichTable=null, $whichDB=null) {
+    // in this table
     $whichTable === true && $whichTable = $this->_name;
-    if(is_string($cols)) {
-      $cols = explode(',', $cols);
+
+    // get selected cols and parse
+    $tmp = array();
+    foreach((array)$cols as $_) {
+      if(is_string($_)) {
+        $tmp = array_merge($tmp, explode(',', $_));
+      }
+      else
+        $tmp[] = $_;
     }
+    $cols = $tmp;
+
+    // array unique for leaving only 1 '*'
+    $cols = array_unique($cols, SORT_REGULAR);
     if(in_array('*', $cols)) {
       array_splice($cols, array_search('*', $cols), 1, array_values($this->_fields));
-      $cols = array_unique($cols);
+      $cols = array_unique($cols, SORT_REGULAR);
     }
-    $newcols = array();
-    $flip_fields = array_flip($this->_fields);
+
+    // define return NJExpr
+    $argsForNJExpr = array();
+
+    // format cols
+    $formattedCols = array();
+    $flipFields = array_flip($this->_fields);
     foreach($cols as $col) {
-      if(array_key_exists($col, $this->_fields)) {
-        $col = sprintf("`%s`", $col);
+      $alias = null;
+      if(is_array($col)) {
+        list($col, $alias) = $col;
       }
-      elseif(array_key_exists($col, $flip_fields)) {
-        $col = sprintf("`%s` `%s`", $flip_fields[$col], $col);
+
+      // is NJExpr
+      if($col instanceof NJExpr) {
+        $argsForNJExpr = array_merge($argsForNJExpr, $col->parameters());
+        $col = $col->stringify();
+        if($alias) {
+          $col .= ' '.NJMisc::wrapGraveAccent($alias);
+        }
       }
+
+      // not NJExpr
       else {
-        trigger_error(sprintf('Undefined field - "%s"', $col));
+        if(array_key_exists($col, $this->_fields)) {
+          $col = NJMisc::wrapGraveAccent($col);
+        }
+        elseif(array_key_exists($col, $flipFields)) {
+          $col = NJMisc::wrapGraveAccent($flipFields[$col])
+            .' '.NJMisc::wrapGraveAccent($alias?$alias:$col);
+        }
+        else {
+          trigger_error(sprintf('Undefined field - "%s"', $col));
+        }
+
+        // in which table?
+        if($whichTable) {
+          $col = sprintf('`%s`.%s', $whichTable, $col);
+        }
+
+        // in which database?
+        if($whichDB) {
+          $col = sprintf('`%s`.%s', $whichDB, $col);
+        }
       }
 
-      // in which table?
-      if($whichTable) {
-        $col = sprintf('`%s`.%s', $whichTable, $col);
-      }
-
-      // in which database?
-      if($whichDB) {
-        $col = sprintf('`%s`.%s', $whichDB, $col);
-      }
-
-      $newcols[] = $col;
+      $formattedCols[] = $col;
     }
-    return implode(',', $newcols);
+
+    array_unshift($argsForNJExpr, implode(',', $formattedCols));
+    return (new NJExpr)->parse($argsForNJExpr);
   }
 
   public function values($values, $update=false) {
@@ -316,11 +353,11 @@ class NJTable {
       trigger_error('Update values expect scalars!');
     }
 
-    $flip_fields = array_flip($this->_fields);
+    $flipFields = array_flip($this->_fields);
     $tmpArr = array();
     foreach($values as $col => $v) {
-      if(array_key_exists($col, $flip_fields)) {
-        $col = $flip_fields[$col];
+      if(array_key_exists($col, $flipFields)) {
+        $col = $flipFields[$col];
       }
       elseif(!array_key_exists($col, $this->_fields)) {
         continue;
@@ -344,13 +381,13 @@ class NJTable {
     foreach ($values as $val) {
       $inputKeys = array_merge($inputKeys, array_keys($val));
     }
-    $flip_fields = array_flip($this->_fields);
+    $flipFields = array_flip($this->_fields);
 
     // unique fields and remove that field not in table fields or field aliases
     $fields = array();
     foreach (array_unique($inputKeys) as $col) {
-      if(array_key_exists($col, $flip_fields))
-        $fields[] = $flip_fields[$col];
+      if(array_key_exists($col, $flipFields))
+        $fields[] = $flipFields[$col];
       elseif(array_key_exists($col, $this->_fields)) {
         $fields[] = $col;
       }
