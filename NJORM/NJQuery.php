@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-25 01:11:59
+ * @Last Modified time: 2015-02-25 23:11:43
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -16,6 +16,14 @@ class NJQuery implements Countable, ArrayAccess {
   const QUERY_TYPE_DELETE = 3;
   protected $_table;
   protected $_type;
+  protected $_model;
+  protected $_sel_cols = array('*');
+  protected $_expr_sel;
+  protected $_expr_ins;
+  protected $_expr_upd;
+  protected $_cond_limit;
+  protected $_cond_where;
+  protected $_cond_sort;
 
   public function __construct($table) {
     $this->_type = static::QUERY_TYPE_SELECT;
@@ -51,7 +59,7 @@ class NJQuery implements Countable, ArrayAccess {
     return $this->paramSelect();
     break;
     case static::QUERY_TYPE_INSERT:
-    return $this->paramCreate();
+    return $this->paramInsert();
     break;
     case static::QUERY_TYPE_UPDATE:
     return $this->paramUpdate();
@@ -63,15 +71,10 @@ class NJQuery implements Countable, ArrayAccess {
   }
 
   // read
-  protected $_sel_cols = array('*');
-  protected $_sel_expr;
-  protected $_cond_limit;
-  protected $_cond_where;
-  protected $_cond_sort;
   public function select() {
     $this->_type = static::QUERY_TYPE_SELECT;
     $this->_sel_cols = func_get_args();
-    $this->_sel_expr = null;
+    $this->_expr_sel = null;
     return $this;
   }
 
@@ -112,21 +115,10 @@ class NJQuery implements Countable, ArrayAccess {
     }
     return $this;
   }
-  protected function paramUpdate() {
+  public function paramUpdate() {
     $parameters = array();
-    if($this->_cond_where) {
-      $parameters = array_merge($parameters, $this->_cond_where->parameters());
-    }
-    return $parameters;
-  }
-
-  protected function paramSelect() {
-    if(empty($this->_sel_expr)) {
-      $this->_sel_expr = $this->_table->columns($this->_sel_cols);
-    }
-    $parameters = array();
-    if($this->_sel_expr) {
-      $parameters = array_merge($parameters, $this->_sel_expr->parameters());
+    if($this->_expr_upd) {
+      $parameters = array_merge($parameters, $this->_expr_upd->parameters());
     }
     if($this->_cond_where) {
       $parameters = array_merge($parameters, $this->_cond_where->parameters());
@@ -134,7 +126,22 @@ class NJQuery implements Countable, ArrayAccess {
     return $parameters;
   }
 
-  protected function paramDelete() {
+  public function paramSelect() {
+    if(empty($this->_expr_sel)) {
+      $this->_expr_sel = $this->_table->columns($this->_sel_cols);
+    }
+
+    $parameters = array();
+    if($this->_expr_sel) {
+      $parameters = array_merge($parameters, $this->_expr_sel->parameters());
+    }
+    if($this->_cond_where) {
+      $parameters = array_merge($parameters, $this->_cond_where->parameters());
+    }
+    return $parameters;
+  }
+
+  public function paramDelete() {
     $parameters = array();
     if($this->_cond_where) {
       $parameters = array_merge($parameters, $this->_cond_where->parameters());
@@ -142,16 +149,19 @@ class NJQuery implements Countable, ArrayAccess {
     return $parameters;    
   }
 
-  protected function paramCreate(){
+  public function paramInsert(){
+    $parameters = array();
+    if($this->_expr_ins)
+      $parameters = array_merge($parameters, $this->_expr_ins->parameters());
     return array();
   }
 
   protected function sqlSelect() {
-    if(empty($this->_sel_expr)) {
-      $this->_sel_expr = $this->_table->columns($this->_sel_cols);
+    if(empty($this->_expr_sel)) {
+      $this->_expr_sel = $this->_table->columns($this->_sel_cols);
     }
     $sql = sprintf('SELECT %s FROM %s'
-      , $this->_sel_expr
+      , $this->_expr_sel
       , $this->_table->name());
 
     if($this->_cond_where) {
@@ -204,7 +214,6 @@ class NJQuery implements Countable, ArrayAccess {
   }
 
   // NJModel
-  protected $_model;
   /* Countable */
   public function count() {
     if($this->_model) {
@@ -263,11 +272,12 @@ class NJQuery implements Countable, ArrayAccess {
   }
 
   // insert
-  public function sqlInsert($values) {
+  public function sqlInsert($data) {
     $this->_type = static::QUERY_TYPE_INSERT;
     $sql = 'INSERT INTO '.$this->_table->name();
 
-    $sql .= $this->_table->values($values);
+    $this->_expr_ins = $this->_table->values($data);
+    $sql .= (string)$this->_expr_ins;
 
     return $sql;
   }
@@ -283,8 +293,11 @@ class NJQuery implements Countable, ArrayAccess {
 
   public function sqlUpdate($data){
     $this->_type = static::QUERY_TYPE_UPDATE;
+
+    $this->_expr_upd = $this->_table->values($data, true);
+
     $sql = 'UPDATE '.$this->_table->name()
-      .' SET '.$this->_table->values($data, true);
+      .' SET '.(string)$this->_expr_upd;
 
     if($this->_cond_where) {
       $sql .= ' '.(string)$this->_cond_where;
@@ -295,7 +308,7 @@ class NJQuery implements Countable, ArrayAccess {
     }
 
     if($this->_cond_limit) {
-      $sql .= ' '.$this->_cond_limit->stringify();
+      $sql .= ' '.(string)$this->_cond_limit;
     }
 
     return $sql;

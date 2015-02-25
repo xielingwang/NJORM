@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-02-02 23:27:30
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-25 00:59:39
+ * @Last Modified time: 2015-02-25 23:00:16
  */
 
 namespace NJORM\NJSql;
@@ -352,6 +352,7 @@ class NJTable {
     if(is_array(current($values))) {
       trigger_error('Update values expect scalars!');
     }
+    $argsForNJExpr = array();
 
     $flipFields = array_flip($this->_fields);
     $tmpArr = array();
@@ -362,13 +363,21 @@ class NJTable {
       elseif(!array_key_exists($col, $this->_fields)) {
         continue;
       }
-      if($ret = $this->validCheck($col, $v, $values, true)) {
-        // throw new NJException
-        trigger_error($ret);
+      // skip validate when it is NJExpr instance
+      if($v instanceof NJExpr) {
+        $argsForNJExpr = array_merge($argsForNJExpr, $v->parameters());
+      }
+      else {
+        if($ret = $this->validCheck($col, $v, $values, true)) {
+          // throw new NJException
+          trigger_error($ret);
+        }
       }
       $tmpArr[] = NJMisc::wrapGraveAccent($col).'='.NJMisc::formatValue($v);
     }
-    return implode(',', $tmpArr);
+
+    array_unshift($argsForNJExpr, implode(',', $tmpArr));
+    return (new NJExpr)->parse($argsForNJExpr);
   }
 
   protected function values4insert($values) {
@@ -394,6 +403,8 @@ class NJTable {
     }
     $engraved_fields = array_map(array('\NJORM\NJMisc','wrapGraveAccent'), $fields);
 
+    $argsForNJExpr = array();
+
     // values
     $fmted_vals = array();
     foreach ($values as $val) {
@@ -408,17 +419,25 @@ class NJTable {
         else {
           $v = NULL;
         }
-        if($ret = $this->validCheck($field, $v, $val, true)) {
-          // throw new NJException
-          trigger_error($ret);
+        if($v instanceof NJExpr) {
+          $argsForNJExpr = array_merge($argsForNJExpr, $v->parameters());
+        }
+        else{
+          if($ret = $this->validCheck($field, $v, $val, true)) {
+            // throw new NJException
+            trigger_error($ret);
+          }
         }
         $tmpArr[] = NJMisc::formatValue($v);
       }
       $fmted_vals[] = '('.implode(',', $tmpArr).')';
     }
 
-    return sprintf('(%s) VALUES %s'
+    $sql = sprintf('(%s) VALUES %s'
       , implode(',', $engraved_fields)
       , implode(',', $fmted_vals));
+
+    array_unshift($argsForNJExpr, $sql);
+    return (new NJExpr)->parse($argsForNJExpr);
   }
 }
