@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-27 00:01:21
+ * @Last Modified time: 2015-02-27 00:32:39
  */
 namespace NJORM;
 class NJORM extends \PDO {
@@ -57,7 +57,7 @@ class NJORM extends \PDO {
     static::$config = compact('dsn', 'user', 'pass', 'options');
   }
 
-  public static function pdo() {
+  public static function inst() {
     static $pdo;
     if(!$pdo){
       try {

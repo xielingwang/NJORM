@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-25 23:11:43
+ * @Last Modified time: 2015-02-27 00:32:39
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -287,7 +287,7 @@ class NJQuery implements Countable, ArrayAccess {
 
     $stmt = NJSql\NJDb::execute($sql, $this->params());
 
-    $data[$this->_table->primary()] = NJORM::pdo()->lastInsertId();
+    $data[$this->_table->primary()] = NJORM::inst()->lastInsertId();
     return new NJModel($this->_table, $data);
   }
 

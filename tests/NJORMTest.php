@@ -2,13 +2,13 @@
 /**
  * @Author: Amin by
  * @Date:   2015-02-26 14:54:17
- * @Last Modified by:   Amin by
- * @Last Modified time: 2015-02-26 15:24:46
+ * @Last Modified by:   AminBy
+ * @Last Modified time: 2015-02-27 00:32:39
  */
 use NJORM\NJORM;
 class NJORMTest extends PHPUnit_Framework_TestCase {
   function testTransaction() {
-    $pdo = NJORM::pdo();
+    $pdo = NJORM::inst();
     for($i = 0; $i < 10; $i++) {
       $pdo->TBegin = true;
       $pdo->query(sprintf('INSERT INTO `qn_users` (user_name,user_pass,user_email) VALUES(\'%s\',\'%s\',%d)', "name".rand(100,999), "pass".rand(1000,9999), rand(10000,99999)));
@@ -30,7 +30,7 @@ class NJORMTest extends PHPUnit_Framework_TestCase {
   }
 
   function testTransactionOK() {
-    $pdo = NJORM::pdo();
+    $pdo = NJORM::inst();
     for($i = 0; $i < 10; $i++) {
       $pdo->TBegin = true;
       $pdo->query(sprintf('INSERT INTO `qn_users` (user_name,user_pass,user_email) VALUES(\'%s\',\'%s\',%d)', "name-".rand(100,999), "pass-".rand(1000,9999), rand(10000,99999)));

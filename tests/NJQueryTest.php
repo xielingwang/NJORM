@@ -3,7 +3,7 @@
  * @name: byamin
  * @Date:   2015-01-01 12:21:16
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-27 00:03:12
+ * @Last Modified time: 2015-02-27 00:32:39
  */
 
 
@@ -28,7 +28,7 @@ class NJQueryTest extends PHPUnit_Framework_TestCase {
   }
 
   function testQuerySelect() {
-    $query = NJORM::pdo()->users
+    $query = NJORM::inst()->users
       ->select('name', 'pass', 'email')
       ->limit(0,2)
       ->where('uid', '>', 1)
@@ -42,7 +42,7 @@ class NJQueryTest extends PHPUnit_Framework_TestCase {
   }
 
   function testQueryNoDatasets() {
-    $query = NJORM::pdo()->users
+    $query = NJORM::inst()->users
       ->select('name', 'pass', 'email')
       ->limit(0,2)
       ->where('uid', '>', 1)
@@ -56,7 +56,7 @@ class NJQueryTest extends PHPUnit_Framework_TestCase {
   }
 
   function testQuerySelect2() {
-    $query = NJORM::pdo()->users;
+    $query = NJORM::inst()->users;
     $query
     ->select('name', 'pass', 'email')
     ->limit(2)
@@ -73,7 +73,7 @@ class NJQueryTest extends PHPUnit_Framework_TestCase {
   }
 
   function testQuerySelect3() {
-    $query = NJORM::pdo()->users;
+    $query = NJORM::inst()->users;
     $query
     ->select('name', 'pass', 'email')
     ->limit(2)
@@ -89,7 +89,7 @@ class NJQueryTest extends PHPUnit_Framework_TestCase {
   }
 
   function testQueryInsert() {
-    $query = NJORM::pdo()->users;
+    $query = NJORM::inst()->users;
     $data = array(
       'name' => 'insert-name',
       'pass' => 'insert-pass',
@@ -103,7 +103,7 @@ class NJQueryTest extends PHPUnit_Framework_TestCase {
     $insUser = $query->insert($data);
     $this->assertGreaterThan(0, $insUser['uid'], 'inserted uid > 0');
 
-    $query = NJORM::pdo()->users->where('uid', $insUser['uid']);
+    $query = NJORM::inst()->users->where('uid', $insUser['uid']);
     $this->assertEquals("SELECT `user_id` `uid`,`user_name` `name`,`user_pass` `pass`,`user_balance` `balance`,`user_email` `email`,`user_created` `ct`,`user_updated` `ut` FROM `qn_users` WHERE `user_id` = '{$insUser['uid']}'", (string)$query);
     $db_user = $query->fetch();
 
@@ -135,7 +135,7 @@ class NJQueryTest extends PHPUnit_Framework_TestCase {
     $this->assertEquals($model_user['pass'], $new_pass);
     $this->assertEquals($model_user['email'], $new_email);
 
-    $fetch_model = NJORM::pdo()->users->where('uid', $uid)->fetch();
+    $fetch_model = NJORM::inst()->users->where('uid', $uid)->fetch();
     $this->assertEquals($fetch_model['pass'], $new_pass);
     $this->assertEquals($fetch_model['email'], $new_email);
 
@@ -149,7 +149,7 @@ class NJQueryTest extends PHPUnit_Framework_TestCase {
   }
 
   function testQueryUpdate() {
-    $query = NJORM::pdo()->users
+    $query = NJORM::inst()->users
     ->where('uid=?', 13)
     ->limit(5);
     $data = array(
@@ -165,14 +165,14 @@ class NJQueryTest extends PHPUnit_Framework_TestCase {
 
     $query->update($data);
 
-    $model = NJORM::pdo()->users
+    $model = NJORM::inst()->users
     ->where('uid', 13)->fetch();
     $this->assertEquals($data['email'], $model['email']);
     $this->assertNotNull($model['ut'], 'updated not null');
   }
 
   function testQueryDelete() {
-    $query = NJORM::pdo()->users;
+    $query = NJORM::inst()->users;
     $query->where('email', 'abc@abc.com')
     ->limit(3,4);
     $this->assertEquals("DELETE FROM `qn_users` WHERE `user_email` = 'abc@abc.com' LIMIT 3,4", $query->sqlDelete());
@@ -181,7 +181,7 @@ class NJQueryTest extends PHPUnit_Framework_TestCase {
   }
 
   function testQueryCount() {
-    $query = NJORM::pdo()->users;
+    $query = NJORM::inst()->users;
     $query->where('balance', 100);
     $this->assertEquals('SELECT COUNT(*) `c` FROM `qn_users` WHERE `user_balance` = 100', $query->sqlCount());
   }

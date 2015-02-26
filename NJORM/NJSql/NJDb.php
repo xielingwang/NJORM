@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2015-02-17 18:36:38
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-17 20:33:52
+ * @Last Modified by:   AminBy
+ * @Last Modified time: 2015-02-27 00:32:39
  */
 namespace NJORM\NJSql;
 use NJORM\NJORM;
@@ -27,7 +27,7 @@ class NJDb {
 
     // type: prepare/execute
     if($params) {
-      $stmt = NJORM::pdo()->prepare($sql);
+      $stmt = NJORM::inst()->prepare($sql);
       foreach($params as $k => &$p) {
         $stmt->bindParam($k+1, $p, static::getPDOParamDataType($p));
       }
@@ -41,7 +41,7 @@ class NJDb {
 
     // type: query
     else {
-      $stmt = NJORM::pdo()->query($sql);
+      $stmt = NJORM::inst()->query($sql);
     }
 
     return $stmt;
