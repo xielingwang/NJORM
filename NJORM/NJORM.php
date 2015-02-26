@@ -2,14 +2,14 @@
 /**
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-14 21:39:36
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2015-02-26 15:23:56
  */
 namespace NJORM;
 
-class NJORM {
+class NJORM extends \PDO {
   /**
-   * 
+   *
    * CREATE TABLE `qn_users` (
    * `user_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
    * `user_name` varchar(128) NOT NULL,
@@ -23,24 +23,75 @@ class NJORM {
     static $pdo;
     if(!$pdo){
       try {
-        // $dsn = sprintf("mysql:dbname=%s;host:%s", 'qndb', 'localhost');
+        /*
         $dsn = 'mysql:dbname=test;unix_socket=/private/tmp/mysql.sock';
         $username = 'root';
         $password = 'root';
-        $options = array(
+        /**/
+        $dsn = sprintf("mysql:dbname=%s;host:%s", 'qndb', 'localhost');
+        $username = 'root';
+        $password = 'password';
+        /**/
+
+        $pdoOpts = array(
           1002 => 'SET NAMES utf8',
         );
 
-        $pdo = new \PDO($dsn, $username, $password, $options);
+        $pdo = new NJORM($dsn, $username, $password, $pdoOpts);
       }
       catch(\PDOException $e) {
         die($e->getMessage());
       }
     }
     return $pdo;
-  } 
+  }
+
+  /**
+   * advansa
+   * @var integer
+   */
+  protected $transactionCounter = 0;
+  public function getTransactionCounter() {
+    return $this->transactionCounter;
+  }
+  function beginTransaction() {
+    if(!parent::inTransaction()) {
+      $this->transactionCounter = 0;
+      return parent::beginTransaction();
+    }
+    $this->transactionCounter ++;
+    return parent::inTransaction();
+  }
+
+  function commit() {
+    if($this->transactionCounter > 0) {
+      $this->transactionCounter --;
+      return true;
+    }
+
+    if(parent::inTransaction())
+      return parent::commit();
+  }
+
+  function rollback() {
+    $this->transactionCounter = 0;
+    if(parent::inTransaction())
+      return parent::rollback();
+    return false;
+  }
+
+  public function __set($name, $val) {
+    if(in_array($name, array('TBegin','TRollback', 'TCommit')) && $val) {
+      if($name == 'TCommit')
+        return $this->commit();
+      if($name == 'TRollback')
+        return $this->rollback();
+      if($name == 'TBegin')
+        return $this->beginTransaction();
+    }
+  }
 
   public function __get($name) {
-    
+
   }
 }
