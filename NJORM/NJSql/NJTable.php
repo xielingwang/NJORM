@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2015-02-02 23:27:30
- * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-25 23:00:16
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2015-02-27 10:21:45
  */
 
 namespace NJORM\NJSql;
@@ -31,6 +31,10 @@ class NJTable {
     }
 
     return sprintf("`%s`", $this->_name);
+  }
+
+  public function getName() {
+    return $this->_name;
   }
 
   public function getField($field) {
