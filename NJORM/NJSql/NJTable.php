@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-02-02 23:27:30
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-25 23:00:16
+ * @Last Modified time: 2015-03-04 00:37:36
  */
 
 namespace NJORM\NJSql;
@@ -260,6 +260,21 @@ class NJTable {
   }
 
   // SQL generator
+  public function columnsWithout($cols='') {
+    $_cols = array();
+    foreach((array)$cols as $_) {
+      if(is_string($_))
+        $_ = explode(',', $_);
+      $_cols = array_merge($_cols, $_);
+    }
+    $_arr = array_diff($_cols,$this->_fields);
+    $_cols = array_diff($this->_fields, $_cols);
+    foreach ($_arr as $col) {
+      if(array_key_exists($col, $_cols))
+        unset($_cols[$col]);
+    }
+    return $_cols;
+  }
   public function columns($cols='*', $whichTable=null, $whichDB=null) {
     // in this table
     $whichTable === true && $whichTable = $this->_name;
