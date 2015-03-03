@@ -2,8 +2,8 @@
 /**
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
- * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-22 01:49:06
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2015-02-27 10:30:11
  */
 namespace NJORM;
 use \NJORM\NJSql\NJTable;
@@ -19,7 +19,7 @@ class NJModel implements Countable, ArrayAccess {
 
   public function __construct($table, $data=null) {
     // set table
-    if(is_string($table)) {
+    if(!($table instanceof NJTable)) {
       $table = NJTable::$table();
     }
     $this->_table = $table;
@@ -99,12 +99,20 @@ class NJModel implements Countable, ArrayAccess {
   }
 
   public function save() {
+    $tbname = $this->_table->getName();
     $this->_modified[$this->_table->primary] = $this->pri_key_value();
-    if((new NJQuery($this->_table))->update($this->_modified)){
+    if(NJORM::inst()->$tbname->update($this->_modified)){
       $this->_data = array_merge($this->_data, $this->_modified);
       $this->_modified = array();
     }
     return $this;
+  }
+  public function delete() {
+    $tbname = $this->_table->getName();
+    $primary = $this->_table->primary();
+    $ret = NJORM::inst()->$tbname->where($primary, $this[$primary])->delete();
+    $this->setData(array());
+    return $ret;
   }
   public function saved() {
     return empty($this->_modified);
@@ -125,6 +133,7 @@ class NJModel implements Countable, ArrayAccess {
       break;
     }
   }
+
   function __call($name, $arguments) {
     return call_user_func_array(array($this->$name, 'where'), $arguments);
   }

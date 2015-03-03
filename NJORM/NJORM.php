@@ -2,8 +2,8 @@
 /**
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
- * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-27 00:32:39
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2015-02-27 09:36:45
  */
 namespace NJORM;
 class NJORM extends \PDO {
@@ -40,11 +40,11 @@ class NJORM extends \PDO {
    */
   static $config = array();
   public static function config($dsn, $user, $pass, $options) {
-    /**/
+    /*
     $dsn = 'mysql:dbname=test;unix_socket=/private/tmp/mysql.sock';
     $username = 'root';
     $password = 'root';
-    /*
+    /**/
     $dsn = sprintf("mysql:dbname=%s;host:%s", 'qndb', 'localhost');
     $user = 'root';
     $pass = 'password';
