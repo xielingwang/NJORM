@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
- * @Last Modified by:   Amin by
- * @Last Modified time: 2015-03-04 20:50:28
+ * @Last Modified by:   AminBy
+ * @Last Modified time: 2015-03-04 20:52:30
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -17,7 +17,7 @@ class NJQuery implements Countable, ArrayAccess {
   protected $_table;
   protected $_type;
   protected $_model;
-  protected $_sel_cols = array('*');
+  protected $_sel_cols = '*';
   protected $_expr_sel;
   protected $_expr_ins;
   protected $_expr_upd;
@@ -71,9 +71,15 @@ class NJQuery implements Countable, ArrayAccess {
   }
 
   // read
+  public function selectWithout() {
+    $this->_type = static::QUERY_TYPE_SELECT;
+    $this->select($this->table->columnsWithout(func_get_args()));
+  }
   public function select() {
     $this->_type = static::QUERY_TYPE_SELECT;
-    $this->_sel_cols = func_get_args();
+    $this->_sel_cols = '*' == $this->_sel_cols
+      ? func_get_args();
+      : array_merge($this->_sel_cols, func_get_args());
     $this->_expr_sel = null;
     return $this;
   }
