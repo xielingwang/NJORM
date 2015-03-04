@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2015-02-14 11:57:17
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-16 01:07:15
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2015-03-04 20:09:57
  */
 namespace NJORM;
 use \NJORM\NJSql\NJTable;
@@ -105,7 +105,7 @@ class NJCollection extends NJModel implements Countable, ArrayAccess {
    */
   public function offsetGet($offset){
     // return model
-    if(ctype_digit($offset))
+    if(is_int($offset))
       return $this->getValue($offset);
 
     // return an array with the values in $model where offset is $offset

@@ -3,7 +3,7 @@
  * @Author: AminBy
  * @Date:   2015-02-26 23:52:23
  * @Last Modified by:   Amin by
- * @Last Modified time: 2015-02-27 11:31:30
+ * @Last Modified time: 2015-03-04 20:15:53
  */
 use NJORM\NJSql\NJTable;
 use NJORM\NJSql\NJExpr;
@@ -68,6 +68,24 @@ class IntegrationTest extends PHPUnit_Framework_TestCase {
         NJRelationship::oneMany(array('user'=>'id','post'=>'uid'));
         NJRelationship::manyMany(array('post'=>'id','tag'=>'id'));
     }
+  }
+
+  function testCreateManyUser() {
+    /*
+    for($i=0;$i<50;$i++){
+      $data = array(
+        'name' => 'name-'.rand(100,999),
+        'pass' => 'pass-'.rand(100,999),
+        'bal' => rand(0,9999) / 100.0,
+        'eml' => rand(100,999).'@gmail.com',
+        'ct' => new NJExpr('unix_timestamp()'),
+        // 'ct' => new NJExpr('unix_timestamp()', 60),
+        'ut' => new NJExpr('unix_timestamp()'),
+        );
+
+      $ins_user = NJORM::inst()->user->insert($data);
+    }
+    */
   }
 
   function testCreateUser() {

@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
- * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-27 00:32:39
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2015-03-04 20:50:28
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -178,39 +178,39 @@ class NJQuery implements Countable, ArrayAccess {
     return $sql;
   }
 
-  public function fetch($getMany=false) {
-    $sql = $this->sqlSelect();
+  protected $stmt;
+  public function fetch() {
+    if(null === $this->stmt) {
+      $sql = $this->sqlSelect();
 
-    $stmt = NJSql\NJDb::execute($sql, $this->params());
+      $this->stmt = NJSql\NJDb::execute($sql, $this->params());
+    }
 
     // get many
-    if($getMany) {
-      return $this->fetchMany($stmt);
+    if(func_num_args() > 0) {
+      return $this->_fetchMany($this->stmt);
     }
 
     // get one
-    return $this->fetchOne($stmt);
+    return $this->_fetchOne($this->stmt);
   }
 
-  public function fetchMany($stmt) {
-
+  public function fetchAll() {
+    return $this->fetch(true);
   }
 
-  public function fetchOne($stmt) {
-    if($stmt) {
-      $result = $stmt->fetch(\PDO::FETCH_ASSOC);
-      if(intval($stmt->errorCode())) {
-        echo $stmt->queryString.PHP_EOL;
-        echo $stmt->errorCode().PHP_EOL;
-        print_r($stmt->errorInfo());
-        throw new \Exception('sql execute error!');
-      }
-      if($result === false) {
-        return null;
-      }
-      return new NJModel($this->_table, $result);
+  protected function _fetchMany($stmt) {
+    if(!$stmt || !($r = $stmt->fetchAll(\PDO::FETCH_ASSOC))) {
+      return null;
     }
-    return null;
+    return new NJCollection($this->_table, $r);
+  }
+
+  protected function _fetchOne($stmt) {
+    if(!$stmt || !($r = $stmt->fetch(\PDO::FETCH_ASSOC)) ) {
+      return null;
+    }
+    return new NJModel($this->_table, $r);
   }
 
   // NJModel

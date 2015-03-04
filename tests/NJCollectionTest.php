@@ -2,12 +2,13 @@
 /**
  * @Author: byamin
  * @Date:   2015-02-14 13:21:46
- * @Last Modified by:   byamin
- * @Last Modified time: 2015-02-14 14:02:57
+ * @Last Modified by:   Amin by
+ * @Last Modified time: 2015-03-04 20:21:46
  */
 
 use NJORM\NJSql\NJTable;
 use NJORM\NJCollection;
+use NJORM\NJModel;
 
 class NJCollectionTest extends PHPUnit_Framework_TestCase{
 
@@ -40,6 +41,9 @@ class NJCollectionTest extends PHPUnit_Framework_TestCase{
       ]
     ];
     $collection = new NJCollection(NJTable::users(), $data);
+
+    $this->assertInstanceOf('NJORM\NJModel', $collection[1], 'element is NJModel');
+
     $this->assertEquals('0987445-6', $collection[1]['pass']);
     $this->assertEquals('gogog-7', $collection[2]['email']);
     $this->assertTrue($collection->saved(), 'no models in collection modified! saved() returns true');
@@ -49,5 +53,8 @@ class NJCollectionTest extends PHPUnit_Framework_TestCase{
     $this->assertEquals('eeeeee', $collection[0]['pass']);
     $this->assertEquals('email', $collection[1]['email']);
     $this->assertFalse($collection->saved(), 'any models in collection modified! saved() returns false');
+
+    $this->assertArrayHasKey(1, $collection, 'isset');
+    $this->assertArrayNotHasKey(5, $collection, 'isset');
   }
 }
