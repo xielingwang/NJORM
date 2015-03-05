@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-02-02 23:27:30
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-04 00:43:53
+ * @Last Modified time: 2015-03-05 11:41:01
  */
 
 namespace NJORM\NJSql;
@@ -52,6 +52,38 @@ class NJTable {
     // for static::valid()
     $this->_prev_field = $field;
     $this->_fields[$field] = $alias;
+    return $this;
+  }
+
+  public function fields() {
+    if(func_num_args() <= 0)
+      trigger_error('NJTable::fields() expects at least 1 parameter.');
+
+    $prikeys = array();
+    $keys = array();
+    if(func_num_args() > 2) {
+      if(!is_string(func_get_arg(0)) || !is_array(func_get_arg(1)))
+        trigger_error('NJTable::fields($prefix, $fields, $prikey) expects 1st parameter of string and 2nd parameters of array.');
+      $prikey = (array)func_get_arg(2);
+      $prefix = func_get_arg(0);
+      $fields = func_get_arg(1);
+
+      foreach ($fields as $alias) {
+        in_array($alias, $prikey)
+        ? $this->primary($prefix.'_'.$alias, $alias)
+        : $this->field($prefix.'_'.$alias, $alias);
+      }
+    }
+    else {
+      if(!is_array(func_get_arg(0)))
+        trigger_error('NJTable::fields($fields, $prikey) expects an array');
+      $prikey = (array)func_get_arg(1);
+      foreach(func_get_arg(0) as $k => $alias) {
+        in_array($alias, $prikey)
+        ? $this->primary($k, $alias)
+        : $this->field($k, $alias);
+      }
+    }
     return $this;
   }
 
