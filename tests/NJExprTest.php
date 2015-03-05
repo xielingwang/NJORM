@@ -3,7 +3,7 @@
  * @Author: AminBy
  * @Date:   2015-02-23 20:10:16
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-05 16:54:14
+ * @Last Modified time: 2015-03-06 00:44:31
  */
 use \NJORM\NJSql;
 class NJExprTest extends PHPUnit_Framework_TestCase {
@@ -45,11 +45,23 @@ class NJExprTest extends PHPUnit_Framework_TestCase {
     ->fields('prefix', ['id','user','pass','lastlog','reg'], 'id');
 
     $table = NJSql\NJTable::$alias();
-
-    $njexpr = $table->columns('id,user,pass,lastlog,reg'
-      , NJSql\NJExpr::fact('UPPER(?)', 'jiayou')
+      // 
       // , NJSql\NJExpr::fact('UPPER(?)', 'jiayou')->as('upper')
-      );
-    $this->assertEquals('`prefix_id` `id`,`prefix_user` `un`,`prefix_pass` `pass`,`prefix_lastlog` `lastlog`,`prefix_reg` `reg`,UPPER(?),UPPER(?) `upper`', $njexpr->stringify());
+
+    $njexpr = $table->columns(['id','user','pass','lastlog','reg'
+          , NJSql\NJExpr::fact("UPPER('jiayou')")->as('upper')
+          ]);
+    $this->assertEquals('`prefix_id` `id`,`prefix_user` `user`,`prefix_pass` `pass`,`prefix_lastlog` `lastlog`,`prefix_reg` `reg`,UPPER(\'jiayou\') `upper`', $njexpr->stringify());
+
+    $njexpr = $table->columns(['id','user','pass','lastlog','reg'
+          , NJSql\NJExpr::fact('UPPER(?)', 'jiayou')
+          , NJSql\NJExpr::fact('UPPER(?)', 'cheer up')->as('upper')
+          ]);
+    $this->assertEquals('`prefix_id` `id`,`prefix_user` `user`,`prefix_pass` `pass`,`prefix_lastlog` `lastlog`,`prefix_reg` `reg`,UPPER(?),UPPER(?) `upper`', $njexpr->stringify());
+
+    $params = $njexpr->parameters();
+    $this->assertEquals('jiayou', current($params));
+    next($params);
+    $this->assertEquals('cheer up', current($params));
   }
 }

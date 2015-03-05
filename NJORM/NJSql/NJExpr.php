@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-02-17 19:56:26
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-05 16:59:39
+ * @Last Modified time: 2015-03-06 00:25:05
  */
 namespace NJORM\NJSql;
 class NJExpr{
@@ -35,8 +35,10 @@ class NJExpr{
   }
 
   public function _as() {
-    if(func_num_args() > 0)
+    if(func_num_args() > 0) {
       $this->_alias = func_get_arg(0);
+      return $this;
+    }
     else
       return $this->_alias;
   }

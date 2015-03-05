@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-02-02 23:27:30
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-05 17:03:47
+ * @Last Modified time: 2015-03-06 00:19:24
  */
 
 namespace NJORM\NJSql;
@@ -384,7 +384,7 @@ class NJTable {
 
       $formattedCols[] = $col;
     }
-      var_dump($argsForNJExpr, $formattedCols);die;
+      // var_dump($argsForNJExpr, $formattedCols);die;
 
     array_unshift($argsForNJExpr, implode(',', $formattedCols));
     return (new NJExpr)->parse($argsForNJExpr);
