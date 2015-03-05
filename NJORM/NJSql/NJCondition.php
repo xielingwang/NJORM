@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-25 23:05:43
+ * @Last Modified time: 2015-03-05 16:42:07
  */
 namespace NJORM\NJSql;
 use NJORM\NJMisc;
@@ -29,9 +29,14 @@ class NJCondition extends NJExpr{
    * @see  factX
    * @return [type]      [description]
    */
-  public static function fact($arg) {
+  public static function fact() {
     $class = __CLASS__;
     $inst = new $class;
+
+    if(func_num_args() <= 0)
+      return $inst;
+
+    $arg = func_get_arg(0);
 
     // case like: fact(array, njcond, array)
     if(($arg instanceof $class || is_array($arg)) and func_num_args() > 1){

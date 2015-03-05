@@ -3,17 +3,42 @@
  * @Author: byamin
  * @Date:   2015-02-17 19:56:26
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-25 00:44:50
+ * @Last Modified time: 2015-03-05 16:59:39
  */
 namespace NJORM\NJSql;
 class NJExpr{
   protected $_parameters = array();
   protected $_value = null;
+  protected $_alias = null;
 
   public function __construct() {
     if(func_num_args() > 0) {
       $this->parse(func_get_args());
     }
+  }
+
+  public static function fact() {
+    $ClassNJEpr = __CLASS__;
+    $inst = new $ClassNJEpr();
+
+    if(func_num_args() > 0) {
+      $inst->parse(func_get_args());
+    }
+
+    return $inst;
+  }
+
+  function __call($name, $args) {
+    if(strtolower($name) == 'as') {
+      return call_user_func_array(array($this, '_as'), $args);
+    }
+  }
+
+  public function _as() {
+    if(func_num_args() > 0)
+      $this->_alias = func_get_arg(0);
+    else
+      return $this->_alias;
   }
 
   public function parse($args) {
@@ -40,7 +65,7 @@ class NJExpr{
     // 4. process the sprintf arguments and bindPara parameters
     $offsetMarks = array_merge($offsetPtf, $offsetQM);
     if(count($args) < count($offsetMarks)) {
-      trigger_error('Too few arguments for NJCondition::parse()');
+      trigger_error('Too few arguments for NJExpr::parse()');
     }
     sort($offsetMarks);
     $offsetMarks = array_flip($offsetMarks);
@@ -78,17 +103,18 @@ class NJExpr{
   }
 
   public function parameters() {
+    $ClassNJEpr = __CLASS__;
+
     if(is_array($this->_value)) {
-      $class = get_class($this);
       $params = array();
       foreach($this->_value as $cond) {
-        if($cond instanceof $class) {
+        if($cond instanceof $ClassNJEpr) {
           $params = array_merge($params, $cond->parameters());
         }
       }
       return $params;
     }
-    if($this->_value instanceof NJExpr) {
+    if($this->_value instanceof $ClassNJEpr) {
       return $this->_value->parameters();
     }
     if(empty($this->_value)
@@ -126,10 +152,12 @@ class NJExpr{
   }
 
   public function stringify() {
+    $ClassNJEpr = __CLASS__;
+
     if(is_string($this->_value) or is_numeric($this->_value)) {
       return (string)$this->_value;
     }
-    if($this->_value instanceof NJExpr) {
+    if($this->_value instanceof $ClassNJEpr) {
       return $this->stringify();
     }
     if(is_array($this->_value)){
@@ -138,7 +166,7 @@ class NJExpr{
         if(is_string($iter)) {
           $str = strtoupper($iter);
         }
-        elseif($iter instanceof NJExpr) {
+        elseif($iter instanceof $ClassNJEpr) {
           $str = $iter->stringify();
           if(is_callable(array($iter, 'isEnclosed'))) {
             if($iter->isEnclosed()) {

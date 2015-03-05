@@ -3,11 +3,34 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-05 14:54:35
+ * @Last Modified time: 2015-03-05 15:30:07
  */
 namespace NJORM;
 
 class NJDb {
+
+  public static function execute($sql, $params) {
+
+    // type: prepare/execute
+    if($params) {
+      $stmt = NJORM::inst()->prepare($sql);
+
+      if(!$stmt->execute($params)) {
+        echo $stmt->queryString.PHP_EOL;
+        echo $stmt->errorCode().PHP_EOL;
+        print_r($stmt->errorInfo());
+        throw new \Exception("bindParam Error");
+      }
+    }
+
+    // type: query
+    else {
+      $stmt = NJORM::inst()->query($sql);
+    }
+
+    return $stmt;
+  }
+
   /*
    CREATE TABLE `qn_users` (
      `user_id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,

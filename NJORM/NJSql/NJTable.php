@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-02-02 23:27:30
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-05 11:41:01
+ * @Last Modified time: 2015-03-05 17:03:47
  */
 
 namespace NJORM\NJSql;
@@ -311,7 +311,9 @@ class NJTable {
     }
     return $_cols;
   }
+
   public function columns($cols='*', $whichTable=null, $whichDB=null) {
+    $ClassNJExpr = __NAMESPACE__.'\NJExpr';
     // in this table
     $whichTable === true && $whichTable = $this->_name;
 
@@ -346,7 +348,9 @@ class NJTable {
       }
 
       // is NJExpr
-      if($col instanceof NJExpr) {
+      if($col instanceof $ClassNJExpr) {
+        $alias || $alias=$col->as();
+
         $argsForNJExpr = array_merge($argsForNJExpr, $col->parameters());
         $col = $col->stringify();
         if($alias) {
@@ -380,6 +384,7 @@ class NJTable {
 
       $formattedCols[] = $col;
     }
+      var_dump($argsForNJExpr, $formattedCols);die;
 
     array_unshift($argsForNJExpr, implode(',', $formattedCols));
     return (new NJExpr)->parse($argsForNJExpr);
@@ -400,6 +405,8 @@ class NJTable {
   }
 
   protected function values4update($values) {
+    $ClassNJExpr = __NAMESPACE__.'\NJExpr';
+
     if(is_array(current($values))) {
       trigger_error('Update values expect scalars!');
     }
@@ -415,7 +422,7 @@ class NJTable {
         continue;
       }
       // skip validate when it is NJExpr instance
-      if($v instanceof NJExpr) {
+      if($v instanceof $ClassNJExpr) {
         $argsForNJExpr = array_merge($argsForNJExpr, $v->parameters());
       }
       else {
@@ -428,10 +435,12 @@ class NJTable {
     }
 
     array_unshift($argsForNJExpr, implode(',', $tmpArr));
-    return (new NJExpr)->parse($argsForNJExpr);
+    return (new $ClassNJExpr)->parse($argsForNJExpr);
   }
 
   protected function values4insert($values) {
+    $ClassNJExpr = __NAMESPACE__.'\NJExpr';
+
     // translate one record to multiple records
     if(!is_array(current($values))) {
       return $this->values4insert(array($values));
@@ -470,7 +479,7 @@ class NJTable {
         else {
           $v = NULL;
         }
-        if($v instanceof NJExpr) {
+        if($v instanceof $ClassNJExpr) {
           $argsForNJExpr = array_merge($argsForNJExpr, $v->parameters());
         }
         else{
@@ -489,6 +498,6 @@ class NJTable {
       , implode(',', $fmted_vals));
 
     array_unshift($argsForNJExpr, $sql);
-    return (new NJExpr)->parse($argsForNJExpr);
+    return (new $ClassNJExpr)->parse($argsForNJExpr);
   }
 }

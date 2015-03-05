@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-05 14:55:16
+ * @Last Modified time: 2015-03-05 16:26:24
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -75,12 +75,33 @@ class NJQuery implements Countable, ArrayAccess {
     $this->_type = static::QUERY_TYPE_SELECT;
     $this->select($this->table->columnsWithout(func_get_args()));
   }
+  /**
+   * Case1.select('a,b,c,d', 'e,f,g'...) => a,b,c,d,e,f,g...
+   * Case2.select('a,b,c,d', NJExpr, 'e,f,g', NJExpr) => a,b,c,d,expr,e,f,g,expr
+   * Case3.select(NJExpr, alias) => expr as alias
+   * Case4.select(NJExpr, NJExpr)
+   * @return [type] [description]
+   */
   public function select() {
+    if(func_num_args() <= 0)
+      trigger_error('NJQuery::select() expects at least 1 argument.');
+
     $this->_type = static::QUERY_TYPE_SELECT;
-    $this->_sel_cols = ('*' == $this->_sel_cols)
-      ? func_get_args()
-      : array_merge($this->_sel_cols, func_get_args());
     $this->_expr_sel = null;
+
+    $args = func_get_args();
+
+    // NJExpr
+    if(func_get_arg(0) instanceof NJSql\NJExpr) {
+      if(func_num_args() > 1 && is_string(func_get_arg(1))){
+        $args = array(array(func_get_arg(0), func_get_arg(1)));
+      }
+    }
+
+    $this->_sel_cols = ('*' == $this->_sel_cols)
+      ? $args
+      : array_merge($this->_sel_cols, $args);
+
     return $this;
   }
 
@@ -184,21 +205,26 @@ class NJQuery implements Countable, ArrayAccess {
     return $sql;
   }
 
-  protected $stmt;
+  protected $_last_stmt;
+  protected $_last_stmt_md5;
   public function fetch() {
-    if(null === $this->stmt) {
-      $sql = $this->sqlSelect();
+    $sql = $this->sqlSelect();
+    $params = $this->params();
+    $stmt_md5 = md5($sql.serialize($params));
 
-      $this->stmt = NJSql\NJDb::execute($sql, $this->params());
+    if(null === $this->_last_stmt || $this->_last_stmt_md5 != $stmt_md5) {
+
+      $this->_last_stmt = NJDb::execute($sql, $params);
+      $this->_last_stmt_md5 = $stmt_md5;
     }
 
     // get many
     if(func_num_args() > 0) {
-      return $this->_fetchMany($this->stmt);
+      return $this->_fetchMany($this->_last_stmt);
     }
 
     // get one
-    return $this->_fetchOne($this->stmt);
+    return $this->_fetchOne($this->_last_stmt);
   }
 
   public function fetchAll() {
@@ -227,11 +253,10 @@ class NJQuery implements Countable, ArrayAccess {
     }
 
     $sql = $this->sqlCount();
-    $stmt = NJSql\NJDb::execute($sql, $this->params());
+    $stmt = NJDb::execute($sql, $this->params());
 
     if($stmt) {
-      $result = $stmt->fetch(\PDO::FETCH_ASSOC);
-      return $result['c'];
+      return intval($stmt->fetchColumn());
     }
     return 0;
   }
@@ -291,7 +316,7 @@ class NJQuery implements Countable, ArrayAccess {
   public function insert($data) {
     $sql = $this->sqlInsert($data);
 
-    $stmt = NJSql\NJDb::execute($sql, $this->params());
+    $stmt = NJDb::execute($sql, $this->params());
 
     $data[$this->_table->primary()] = NJORM::inst()->lastInsertId();
     return new NJModel($this->_table, $data);
@@ -323,7 +348,7 @@ class NJQuery implements Countable, ArrayAccess {
   public function update($data){
     $sql = $this->sqlUpdate($data);
 
-    $stmt = NJSql\NJDb::execute($sql, $this->params());
+    $stmt = NJDb::execute($sql, $this->params());
 
     return true;
   }
@@ -351,7 +376,7 @@ class NJQuery implements Countable, ArrayAccess {
   public function delete() {
     $sql = $this->sqlDelete();
 
-    $stmt = NJSql\NJDb::execute($sql, $this->params());
+    $stmt = NJDb::execute($sql, $this->params());
 
     return true;
   }
