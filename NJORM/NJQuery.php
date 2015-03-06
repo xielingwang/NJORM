@@ -3,20 +3,20 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-05 16:26:24
+ * @Last Modified time: 2015-03-06 15:15:35
  */
 namespace NJORM;
 use \NJORM\NJSql;
 use \Countable, \ArrayAccess;
 
-class NJQuery implements Countable, ArrayAccess {
+class NJQuery implements Countable, IteratorAggregate {
   const QUERY_TYPE_INSERT = 0;
   const QUERY_TYPE_SELECT = 1;
   const QUERY_TYPE_UPDATE = 2;
   const QUERY_TYPE_DELETE = 3;
   protected $_table;
   protected $_type;
-  protected $_model;
+  protected $_collection;
   protected $_sel_cols = '*';
   protected $_expr_sel;
   protected $_expr_ins;
@@ -231,6 +231,8 @@ class NJQuery implements Countable, ArrayAccess {
     return $this->fetch(true);
   }
 
+  public function fetch
+
   protected function _fetchMany($stmt) {
     if(!$stmt || !($r = $stmt->fetchAll(\PDO::FETCH_ASSOC))) {
       return null;
@@ -248,8 +250,8 @@ class NJQuery implements Countable, ArrayAccess {
   // NJModel
   /* Countable */
   public function count() {
-    if($this->_model) {
-      return $this->_model->count();
+    if($this->_collection) {
+      return $this->_collection->count();
     }
 
     $sql = $this->sqlCount();
@@ -275,31 +277,11 @@ class NJQuery implements Countable, ArrayAccess {
   }
 
   /* ArrayAccess */
-  public function offsetExists($offset) {
-    if(!$this->_model) {
-      $this->_model = $this->fetch();
+  public function getIterator() {
+    if($this->_collection) {
+      return $this->fetchAll();
     }
-    return isset($this->_model[$offset]);
-  }
-  public function offsetGet($offset){
-    if(!$this->_model) {
-      $this->_model = $this->fetch();
-    }
-    return $this->_model[$offset];
-  }
-  public function offsetSet($offset, $value){
-    if(!$this->_model) {
-      $this->_model = $this->fetch();
-    }
-    return $this->_model[$offset] = $value;
-  }
-  public function offsetUnset($offset){
-    if(!$this->_model) {
-      $this->_model = $this->fetch();
-    }
-    if(isset($this->_model[$offset])){
-      unset($this->_model[$offset]);
-    }
+    return array();
   }
 
   // insert
@@ -318,8 +300,7 @@ class NJQuery implements Countable, ArrayAccess {
 
     $stmt = NJDb::execute($sql, $this->params());
 
-    $data[$this->_table->primary()] = NJORM::inst()->lastInsertId();
-    return new NJModel($this->_table, $data);
+    return (new NJModel($this->_table, array($this->_table->primary() => NJORM::inst()->lastInsertId())))->withLazyReload();
   }
 
   public function sqlUpdate($data){
@@ -350,6 +331,7 @@ class NJQuery implements Countable, ArrayAccess {
 
     $stmt = NJDb::execute($sql, $this->params());
 
+    $prikey = $this->_table->primary();
     return true;
   }
 

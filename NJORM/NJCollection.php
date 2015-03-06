@@ -2,8 +2,8 @@
 /**
  * @Author: byamin
  * @Date:   2015-02-14 11:57:17
- * @Last Modified by:   Amin by
- * @Last Modified time: 2015-03-04 20:09:57
+ * @Last Modified by:   AminBy
+ * @Last Modified time: 2015-03-06 13:27:33
  */
 namespace NJORM;
 use \NJORM\NJSql\NJTable;
@@ -11,7 +11,7 @@ use \NJORM\NJQuery;
 use \Countable, \ArrayAccess;
 
 // Iterator, ArrayAccess, Countable, JsonSerializable
-class NJCollection extends NJModel implements Countable, ArrayAccess {
+class NJCollection extends NJModel {
 
   /**
    * setData: set list data for NJCollection
@@ -82,7 +82,16 @@ class NJCollection extends NJModel implements Countable, ArrayAccess {
   }
 
   /* JsonSerializable */
-  public function jsonSerialize(){}
+  public function jsonSerialize(){
+    static $_tmp;
+    if(!$_tmp) {
+      $_tmp = array();
+      foreach($this as $model) {
+        $_tmp[] = $model->jsonSerialize();
+      }
+    }
+    return $_tmp;
+  }
 
   /* Countable */
   public function count() {

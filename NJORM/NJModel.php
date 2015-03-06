@@ -2,20 +2,21 @@
 /**
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
- * @Last Modified by:   Amin by
- * @Last Modified time: 2015-02-27 10:30:11
+ * @Last Modified by:   AminBy
+ * @Last Modified time: 2015-03-06 15:52:08
  */
 namespace NJORM;
 use \NJORM\NJSql\NJTable;
 use \NJORM\NJQuery;
-use \Countable, \ArrayAccess;
+use \Countable, \ArrayAccess, \Iterator, \JsonSerializable;
 
 // Iterator, ArrayAccess, Countable, JsonSerializable
-class NJModel implements Countable, ArrayAccess {
+class NJModel implements Countable,ArrayAccess,JsonSerializable,Iterator {
   // data
   protected $_table;
   protected $_data = array();
   private $_modified = array();
+  public $_lazy_reload = false;
 
   public function __construct($table, $data=null) {
     // set table
@@ -28,6 +29,19 @@ class NJModel implements Countable, ArrayAccess {
     if($data) {
       $this->setData($data);
     }
+  }
+
+  public function withLazyReload() {
+    $this->_lazy_reload = true;
+    return $this;
+  }
+  protected function lazyReload() {
+    if($this->_lazy_reload) {
+      $prikey = $this->_table->primary();
+      $model = (new NJQuery($this->_table))->where($prikey, $this[$prikey])->limit(1)->fetch();
+      $this->_data = $model->_data;
+    }
+    return $this;
   }
 
   /**
@@ -87,6 +101,8 @@ class NJModel implements Countable, ArrayAccess {
   }
 
   protected function getValue($key) {
+    $this->lazyReload();
+
     if(array_key_exists($key, $this->_modified))
       return $this->_modified[$key];
     elseif(array_key_exists($key, $this->_data))
@@ -104,6 +120,7 @@ class NJModel implements Countable, ArrayAccess {
     if(NJORM::inst()->$tbname->update($this->_modified)){
       $this->_data = array_merge($this->_data, $this->_modified);
       $this->_modified = array();
+      $this->withLazyReload();
     }
     return $this;
   }
@@ -120,6 +137,8 @@ class NJModel implements Countable, ArrayAccess {
 
   // __get
   function __get($name) {
+    $this->lazyReload();
+
     $rel = $this->_table->rel($name);
     switch($rel['type']) {
       case NJTable::TYPE_RELATION_ONE:
@@ -148,30 +167,79 @@ class NJModel implements Countable, ArrayAccess {
   }
 
   /* JsonSerializable */
-  public function jsonSerialize(){}
+  public function jsonSerialize() {
+    $this->lazyReload();
+    if($this->_modified){
+      return array_merge($this->_data, $this->_modified);
+    }
+
+    return $this->_data;
+  }
 
   /* Countable */
   public function count() {
+    $this->lazyReload();
     return count(array_merge($this->_data, $this->_modified));
   }
 
   /* ArrayAccess */
   public function offsetExists($offset) {
+    $this->lazyReload();
     return array_key_exists($offset, $this->_data) 
     || array_key_exists($offset, $this->_modified);
   }
   public function offsetGet($offset){
+    $this->lazyReload();
     return $this->getValue($offset);
   }
   public function offsetSet($offset, $value){
+    $this->lazyReload();
     return $this->setModified($offset, $value);
   }
   public function offsetUnset($offset){
+    $this->lazyReload();
     if(array_key_exists($offset, $this->_data)){
       unset($this->_data[$offset]);
     }
     if(array_key_exists($offset, $this->_modified)){
       unset($this->_modified[$offset]);
     }
+  }
+
+  /**
+   * Iterator
+   */
+  public function rewind(){
+    $this->lazyReload();
+    reset($this->_data);
+  }
+  
+  public function current() {
+    $this->lazyReload();
+    $key = key($this->_data);
+    if($key !== NULL && $key !== FALSE && $this->_modified
+      && array_key_exists($key, $this->_modified) ) {
+      return $this->_modified[$key];
+    }
+
+    return current($this->_data);
+  }
+  
+  public function key(){
+    $this->lazyReload();
+    return key($this->_data);
+  }
+  
+  public function next(){
+    $this->lazyReload();
+    next($this->_data);
+    return $this->current();
+  }
+  
+  public function valid(){
+    $this->lazyReload();
+    $key = key($this->_data);
+    $var = ($key !== NULL && $key !== FALSE);
+    return $var;
   }
 }
