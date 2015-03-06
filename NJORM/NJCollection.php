@@ -3,14 +3,12 @@
  * @Author: byamin
  * @Date:   2015-02-14 11:57:17
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-06 13:27:33
+ * @Last Modified time: 2015-03-06 19:19:41
  */
 namespace NJORM;
 use \NJORM\NJSql\NJTable;
 use \NJORM\NJQuery;
-use \Countable, \ArrayAccess;
 
-// Iterator, ArrayAccess, Countable, JsonSerializable
 class NJCollection extends NJModel {
 
   /**

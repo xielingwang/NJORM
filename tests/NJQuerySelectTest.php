@@ -3,7 +3,7 @@
  * @name: byamin
  * @Date:   2015-01-01 12:21:16
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-06 01:05:07
+ * @Last Modified time: 2015-03-06 20:06:17
  */
 
 
@@ -29,23 +29,7 @@ class NJQuerySelectTest extends PHPUnit_Framework_TestCase {
     }
   }
 
-  function testQuerySelect() {
-    $query = NJORM::inst()->users
-      ->select('name', 'pass', 'balance')
-      ->limit(0,2)
-      ->where('uid', '>', 1)
-      ->where('balance >= ?', 49.9)
-      ->sortAsc('balance');
-
-    $this->assertEquals("SELECT `user_name` `name`,`user_pass` `pass`,`user_balance` `balance` FROM `qn_users` WHERE `user_id` > 1 AND `user_balance` >= ? ORDER BY `balance` LIMIT 2", (string)$query);
-
-    $model = $query->fetch();
-
-    $this->assertNotNull($model, 'return not null');
-    $this->assertGreaterThanOrEqual(49.9, $model['balance'], 'message');
-  }
-
-  function testQueryNoDatasets() {
+  function testQueryFetchNoResult() {
     $query = NJORM::inst()->users
       ->select('name', 'pass', 'email')
       ->limit(0,2)
@@ -59,24 +43,7 @@ class NJQuerySelectTest extends PHPUnit_Framework_TestCase {
     $this->assertNull($model, 'return null with no data');
   }
 
-  function testQuerySelect2() {
-    $query = NJORM::inst()->users;
-    $query
-    ->select('name', 'pass', 'balance')
-    ->limit(2)
-    ->where('uid > ? AND balance >= ?', '1', 49.9)
-    ->sortAsc('balance');
-
-    $this->assertEquals('SELECT `user_name` `name`,`user_pass` `pass`,`user_balance` `balance` FROM `qn_users` WHERE `user_id` > ? AND `user_balance` >= ? ORDER BY `balance` LIMIT 2', (string)$query);
-    $param = $query->params();
-    $this->assertTrue(in_array(49.9, $param));
-    $this->assertTrue(in_array(1, $param));
-
-    $model = $query->fetch();
-    $this->assertGreaterThanOrEqual(49.9, $model['balance'], 'balance > 49.9');
-  }
-
-  function testQuerySelect3() {
+  function testQueryFetch() {
     $query = NJORM::inst()->users;
     $query
     ->select('name', 'pass', 'email', 'balance')
@@ -89,19 +56,66 @@ class NJQuerySelectTest extends PHPUnit_Framework_TestCase {
     $this->assertTrue(in_array(100, $param));
     
     $model = $query->fetch();
+    $this->assertNotNull($model, 'not null returned with records');
     $this->assertInstanceOf('NJORM\NJModel', $model, 'message');
     $this->assertTrue(strpos($model['name'], 'name') !== false);
     $this->assertGreaterThanOrEqual(2, $model['balance'], 'balance >= 2');
     $this->assertLessThanOrEqual(100, $model['balance'], 'balance <= 10');
 
     $model = $query->fetch();
+    $this->assertNotNull($model, 'not null returned with records');
     $this->assertInstanceOf('NJORM\NJModel', $model, 'message');
     $this->assertTrue(strpos($model['name'], 'name') !== false);
     $this->assertGreaterThanOrEqual(2, $model['balance'], 'balance >= 2');
     $this->assertLessThanOrEqual(100, $model['balance'], 'balance <= 100');
   }
 
-  function testQuerySelect4() {
+  function testQueryArrayAccess() {
+    $users = NJORM::inst()->users;
+    // $users->select('ui', 'name', 'pass', 'email', 'balance');
+
+    // get model where id = 2
+    $user2 = $users['2'];
+    $this->assertInstanceOf('NJORM\NJModel', $user2, 'get by id');
+    $this->assertEquals(2, $user2['uid'], 'uid == 2');
+
+    // get model where id = 1
+    $user1 = $users[1];
+    $this->assertInstanceOf('NJORM\NJModel', $user1, 'get by id');
+    $this->assertEquals(1, $user1['uid'], 'uid == 1');
+
+    // get model where id = 99999
+    $user99999 = $users[99999];
+    $this->assertNull($user99999, 'not found whose uid is 99999');
+
+    // get 52
+    $user52 = $users[52];
+
+    // delete 52
+    unset($users[52]);
+    $this->assertNull($users[52], 'message');
+
+    return;
+
+    // TODO: ugly api, shall we support?
+    // update 52
+    $users[52] = array(
+      'ut' => new NJExpr('unix_timestamp()'),
+      );
+    $updUser = $users[52];
+    $this->assertGreaterThan(1425635091, $updUser['ut'], 'update user\'s ut > 1425635091');
+
+    // insert back 52
+    $insUser = ($users[52] = array(
+          'name' => $user52['name'],
+          'pass' => $user52['pass'],
+          'ct' => $user52['ct'],
+          ));
+    $insUser = $users[52];
+    $this->assertEquals($insUser['uid'], $user51['uid']);
+  }
+
+  function testQueryFetchAll() {
     $query = NJORM::inst()->users;
     $query
     ->select('name,pass,email,balance')
@@ -148,5 +162,50 @@ class NJQuerySelectTest extends PHPUnit_Framework_TestCase {
     $this->assertArrayHasKey('uid', $model, 'model has key uid');
     $this->assertArrayHasKey('up', $model, 'model has key up');
     $this->assertEquals('STRTOUPPER', $model['up']);
+  }
+
+  function testQueryIteratorAggregateWithRecords() {
+    $query = NJORM::inst()->users;
+    $query
+    ->select('name,pass,email,balance')
+    ->limit(5)
+    ->where('balance between ? and ?', 29, 99);
+
+    $this->assertEquals('SELECT `user_name` `name`,`user_pass` `pass`,`user_email` `email`,`user_balance` `balance` FROM `qn_users` WHERE `user_balance` BETWEEN ? AND ? LIMIT 5', (string)$query);
+    $param = $query->params();
+    $this->assertTrue(in_array(29, $param));
+    $this->assertTrue(in_array(99, $param));
+
+    $this->assertGreaterThan(0, $query->count(), 'with records');
+
+    foreach($query as $model) {
+      $this->assertArrayHasKey('name', $model, 'has key name');
+      $this->assertArrayHasKey('pass', $model, 'has key pass');
+      $this->assertArrayHasKey('email', $model, 'has key email');
+      $this->assertArrayHasKey('balance', $model, 'has key balance');
+
+      $this->assertGreaterThanOrEqual(29, $model['balance'], 'balance >= 10');
+      $this->assertLessThanOrEqual(99, $model['balance'], 'balance <= 99');
+    }
+  }
+
+  function testQueryIteratorAggregateWithNoRecords() {
+    $query = NJORM::inst()->users;
+    $query
+    ->select('name,pass,email,balance')
+    ->limit(5)
+    ->where('balance between ? and ?', 1000, 1001);
+
+    $this->assertEquals('SELECT `user_name` `name`,`user_pass` `pass`,`user_email` `email`,`user_balance` `balance` FROM `qn_users` WHERE `user_balance` BETWEEN ? AND ? LIMIT 5', (string)$query);
+    $param = $query->params();
+    $param = array_flip($param);
+    $this->assertArrayHasKey(1000, $param, 'message');
+    $this->assertArrayHasKey(1001, $param, 'message');
+
+    $this->assertEquals(0, $query->count(), 'with no records');
+
+    foreach($query as $model) {
+      $this->assertTrue(false, 'it is wrong if in cirle body!');
+    }
   }
 }

@@ -3,12 +3,12 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-06 15:52:08
+ * @Last Modified time: 2015-03-06 18:44:44
  */
 namespace NJORM;
 use \NJORM\NJSql\NJTable;
 use \NJORM\NJQuery;
-use \Countable, \ArrayAccess, \Iterator, \JsonSerializable;
+use \Countable, \ArrayAccess, \Iterator, \JsonSerializable; // INTERFACE
 
 // Iterator, ArrayAccess, Countable, JsonSerializable
 class NJModel implements Countable,ArrayAccess,JsonSerializable,Iterator {
@@ -16,7 +16,7 @@ class NJModel implements Countable,ArrayAccess,JsonSerializable,Iterator {
   protected $_table;
   protected $_data = array();
   private $_modified = array();
-  public $_lazy_reload = false;
+  private $_lazy_reload = false;
 
   public function __construct($table, $data=null) {
     // set table
@@ -31,12 +31,16 @@ class NJModel implements Countable,ArrayAccess,JsonSerializable,Iterator {
     }
   }
 
+  public function isLazyReload(){
+    return $this->_lazy_reload;
+  }
   public function withLazyReload() {
     $this->_lazy_reload = true;
     return $this;
   }
   protected function lazyReload() {
     if($this->_lazy_reload) {
+      $this->_lazy_reload = false;
       $prikey = $this->_table->primary();
       $model = (new NJQuery($this->_table))->where($prikey, $this[$prikey])->limit(1)->fetch();
       $this->_data = $model->_data;

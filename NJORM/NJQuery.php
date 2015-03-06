@@ -3,13 +3,13 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-06 15:15:35
+ * @Last Modified time: 2015-03-06 20:01:45
  */
 namespace NJORM;
 use \NJORM\NJSql;
-use \Countable, \ArrayAccess;
+use \Countable,\IteratorAggregate,\ArrayIterator, \ArrayAccess;
 
-class NJQuery implements Countable, IteratorAggregate {
+class NJQuery implements Countable, IteratorAggregate, ArrayAccess {
   const QUERY_TYPE_INSERT = 0;
   const QUERY_TYPE_SELECT = 1;
   const QUERY_TYPE_UPDATE = 2;
@@ -17,6 +17,7 @@ class NJQuery implements Countable, IteratorAggregate {
   protected $_table;
   protected $_type;
   protected $_collection;
+  protected $_model;
   protected $_sel_cols = '*';
   protected $_expr_sel;
   protected $_expr_ins;
@@ -212,7 +213,7 @@ class NJQuery implements Countable, IteratorAggregate {
     $params = $this->params();
     $stmt_md5 = md5($sql.serialize($params));
 
-    if(null === $this->_last_stmt || $this->_last_stmt_md5 != $stmt_md5) {
+    if(!$this->_last_stmt || $this->_last_stmt_md5 != $stmt_md5) {
 
       $this->_last_stmt = NJDb::execute($sql, $params);
       $this->_last_stmt_md5 = $stmt_md5;
@@ -231,7 +232,7 @@ class NJQuery implements Countable, IteratorAggregate {
     return $this->fetch(true);
   }
 
-  public function fetch
+  // public function fetchPair
 
   protected function _fetchMany($stmt) {
     if(!$stmt || !($r = $stmt->fetchAll(\PDO::FETCH_ASSOC))) {
@@ -274,14 +275,6 @@ class NJQuery implements Countable, IteratorAggregate {
     }
 
     return $sql;
-  }
-
-  /* ArrayAccess */
-  public function getIterator() {
-    if($this->_collection) {
-      return $this->fetchAll();
-    }
-    return array();
   }
 
   // insert
@@ -361,5 +354,42 @@ class NJQuery implements Countable, IteratorAggregate {
     $stmt = NJDb::execute($sql, $this->params());
 
     return true;
+  }
+
+  /**/
+  protected function _rewind() {
+    $this->_cond_where = null;
+  }
+
+  /* IteratorAggregate */
+  public function getIterator() {
+    $this->_collection ? $this->_collection : $this->_collection = $this->fetchAll();
+    return $this->_collection ? $this->_collection : (new ArrayIterator(array()));
+  }
+
+  /* ArrayAccess */
+  public function offsetExists($prival) {
+    return (new NJQuery($this->_table))->where($this->_table->primary(), $prival)->count() > 0;
+  }
+  public function offsetGet($prival) {
+    return (new NJQuery($this->_table))->where($this->_table->primary(), $prival)->fetch();
+  }
+  public function offsetSet($prival, $value) {
+    if(is_array($value)) {
+      $subquery = new NJQuery($this->_table);
+      $m = $this[$prival];
+      if( !$m ) {
+        $value[$this->_table->primary()] = $prival;
+        return $subquery->insert($value);
+      }
+      else {
+        $m->update($value);
+        return $m;
+      }
+    }
+    trigger_error('unexpected type value for NJQuery::offsetSet()');
+  }
+  public function offsetUnset($prival) {
+    return (new NJQuery($this->_table))->where($this->_table->primary(), $prival)->delete();
   }
 }

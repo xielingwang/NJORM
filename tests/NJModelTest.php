@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2015-02-11 14:25:48
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-06 15:37:15
+ * @Last Modified time: 2015-03-06 17:37:07
  */
 
 use NJORM\NJSql\NJTable;
@@ -80,9 +80,9 @@ class NJModelTest extends PHPUnit_Framework_TestCase{
   function testModelLazyReload() {
 
     $model = new NJModel(NJTable::users(), array('uid' => 5, 'name' => 'good'));
-    $this->assertFalse($model->_lazy_reload, 'message');
+    $this->assertFalse($model->isLazyReload(), 'message');
 
     $model = (new NJModel(NJTable::users(), array('uid' => 5)))->withLazyReload();
-    $this->assertTrue($model->_lazy_reload, 'message');
+    $this->assertTrue($model->isLazyReload(), 'message');
   }
 }

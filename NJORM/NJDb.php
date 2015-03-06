@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-06 00:11:41
+ * @Last Modified time: 2015-03-06 09:38:25
  */
 namespace NJORM;
 
@@ -138,7 +138,7 @@ class NJDb {
         'pass' => 'password',
         'charset' => 'utf8',
         ]))
-      ->choose('macAir');
+      ->choose('macMini');
     }
     return $inst;
   }

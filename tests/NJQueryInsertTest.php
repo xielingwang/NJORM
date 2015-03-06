@@ -3,7 +3,7 @@
  * @Author: AminBy
  * @Date:   2015-03-05 15:51:10
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-05 15:54:13
+ * @Last Modified time: 2015-03-06 18:58:17
  */
 
 use \NJORM\NJSql\NJTable;
@@ -41,7 +41,12 @@ class NJQueryInsertTest extends PHPUnit_Framework_TestCase {
       , $query->sqlInsert($data));
 
     $insUser = $query->insert($data);
+    $this->assertTrue($insUser->isLazyReload(), 'is Lazy Reload after insert');
+
     $this->assertGreaterThan(0, $insUser['uid'], 'inserted uid > 0');
+    $this->assertFalse($insUser->isLazyReload(), 'not Lazy Reload get value');
+
+    $this->assertGreaterThan(1425635091, $insUser['ct'], 'inserted uid > 1425635091');
 
     $query = NJORM::inst()->users->where('uid', $insUser['uid']);
     $this->assertEquals("SELECT `user_id` `uid`,`user_name` `name`,`user_pass` `pass`,`user_balance` `balance`,`user_email` `email`,`user_created` `ct`,`user_updated` `ut` FROM `qn_users` WHERE `user_id` = '{$insUser['uid']}'", (string)$query);
@@ -52,39 +57,6 @@ class NJQueryInsertTest extends PHPUnit_Framework_TestCase {
     $this->assertEquals('insert-pass', $db_user['pass']);
     $this->assertEquals('insert-email', $db_user['email']);
     $this->assertEquals($data['balance'], $db_user['balance']);
-    $this->assertGreaterThan(0, $db_user['ct'], 'created > 0');
-    return $db_user;
-  }
-
-  /**
-   * @depends testQueryInsert
-   * @return [type] [description]
-   */
-  function testModelSave($model_user) {
-    $uid = $model_user['uid'];
-    $pass = $model_user['pass'];
-    $email = $model_user['email'];
-/*
-    $model_user['pass'] = $new_pass;
-    $model_user['email'] = $new_email;
-    $new_pass = 'pass'.rand(1000,9999);
-    $new_email = 'email'.rand(1000,9999);
-
-    $model_user->save();
-    $this->assertTrue($model_user->saved(), 'saved');
-    $this->assertEquals($model_user['pass'], $new_pass);
-    $this->assertEquals($model_user['email'], $new_email);
-
-    $fetch_model = NJORM::inst()->users->where('uid', $uid)->fetch();
-    $this->assertEquals($fetch_model['pass'], $new_pass);
-    $this->assertEquals($fetch_model['email'], $new_email);
-
-    $model_user['pass'] = $pass;
-    $model_user['email'] = $email;
-
-    $model_user->save();
-    $this->assertTrue($model_user->saved(), 'saved');
-    $this->assertEquals($model_user['pass'], $pass);
-    $this->assertEquals($model_user['email'], $email);*/
+    $this->assertEquals($insUser['ct'], $db_user['ct'], 'create time > 0');
   }
 }
