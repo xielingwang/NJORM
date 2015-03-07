@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-02-02 23:27:30
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-07 11:51:53
+ * @Last Modified time: 2015-03-07 15:55:16
  */
 
 namespace NJORM\NJSql;
@@ -452,6 +452,7 @@ class NJTable {
     }, array());
 
     // unique fields and remove that field not in table fields or field aliases
+    $refFields =& $this->_fields;
     $flipFields = array_flip($this->_fields);
     $fields = array_map(function($col) use($refFields, $flipFields) {
       if(array_key_exists($col, $flipFields))
@@ -476,6 +477,7 @@ class NJTable {
         else {
           $v = NULL;
         }
+
         if($v instanceof $ClassNJExpr) {
           $arrParams = array_merge($arrParams, $v->parameters());
         }

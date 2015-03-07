@@ -3,7 +3,7 @@
  * @name: byamin
  * @Date:   2015-01-01 12:21:16
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-07 13:53:46
+ * @Last Modified time: 2015-03-07 15:33:27
  */
 
 
@@ -54,8 +54,8 @@ class NJQuerySelectTest extends PHPUnit_Framework_TestCase {
 
     $this->assertEquals('SELECT `user_name` `name`,`user_pass` `pass`,`user_email` `email`,`user_balance` `balance` FROM `qn_users` WHERE `user_balance` BETWEEN ? AND ? LIMIT 2', (string)$query);
     $param = $query->params();
-    $this->assertTrue(in_array(2, $param));
-    $this->assertTrue(in_array(100, $param));
+    $this->assertContains(2, $param);
+    $this->assertContains(100, $param);
     
     $model = $query->fetch();
     $this->assertNotNull($model, 'not null returned with records');
@@ -67,8 +67,8 @@ class NJQuerySelectTest extends PHPUnit_Framework_TestCase {
     // valid sql params
     extract(NJORM::lastquery(), EXTR_PREFIX_ALL, 'exec');
     $this->assertEquals('SELECT `user_name` `name`,`user_pass` `pass`,`user_email` `email`,`user_balance` `balance` FROM `qn_users` WHERE `user_balance` BETWEEN ? AND ? LIMIT 2', $exec_sql);
-    $this->assertTrue(in_array(2, $exec_params));
-    $this->assertTrue(in_array(100, $exec_params));
+    $this->assertContains(2, $exec_params);
+    $this->assertContains(100, $exec_params);
 
     $model = $query->fetch();
     $this->assertNotNull($model, 'not null returned with records');
@@ -80,8 +80,8 @@ class NJQuerySelectTest extends PHPUnit_Framework_TestCase {
     // valid sql params
     extract(NJORM::lastquery(), EXTR_PREFIX_ALL, 'exec');
     $this->assertEquals('SELECT `user_name` `name`,`user_pass` `pass`,`user_email` `email`,`user_balance` `balance` FROM `qn_users` WHERE `user_balance` BETWEEN ? AND ? LIMIT 2', $exec_sql);
-    $this->assertTrue(in_array(2, $exec_params));
-    $this->assertTrue(in_array(100, $exec_params));
+    $this->assertContains(2, $exec_params);
+    $this->assertContains(100, $exec_params);
   }
 
   function testQueryArrayAccess() {
@@ -138,26 +138,9 @@ class NJQuerySelectTest extends PHPUnit_Framework_TestCase {
 
     $this->assertNull($users[$uid], 'message');
 
-    return;
-
-    // TODO: ugly api, shall we support?
-    // update $uid
-    /*
-    $users[$uid] = array(
-      'ut' => new NJExpr('unix_timestamp()'),
-      );
-    $updUser = $users[$uid];
-    $this->assertGreaterThan(1425635091, $updUser['ut'], 'update user\'s ut > 1425635091');
-
-    // insert back $uid
-    $insUser = ($users[$uid] = array(
-          'name' => $userSpecified['name'],
-          'pass' => $userSpecified['pass'],
-          'ct' => $userSpecified['ct'],
-          ));
-    $insUser = $users[$uid];
-    $this->assertEquals($insUser['uid'], $user51['uid']);
-    */
+    // valid sql params
+    extract(NJORM::lastquery(), EXTR_PREFIX_ALL, 'exec');
+    $this->assertEquals('SELECT `user_id` `uid`,`user_name` `name`,`user_pass` `pass`,`user_balance` `balance`,`user_email` `email`,`user_created` `ct`,`user_updated` `ut` FROM `qn_users` WHERE `user_id` = '.$uid.' LIMIT 1' , $exec_sql);
   }
 
   function testQueryFetchAll() {
@@ -172,8 +155,8 @@ class NJQuerySelectTest extends PHPUnit_Framework_TestCase {
     // sql params validation
     extract(NJORM::lastquery(), EXTR_PREFIX_ALL, 'exec');
     $this->assertEquals('SELECT `user_name` `name`,`user_pass` `pass`,`user_email` `email`,`user_balance` `balance` FROM `qn_users` WHERE `user_balance` BETWEEN ? AND ? LIMIT 5' , $exec_sql);
-    $this->assertTrue(in_array(29, $exec_params));
-    $this->assertTrue(in_array(99, $exec_params));
+    $this->assertContains(29, $exec_params);
+    $this->assertContains(99, $exec_params);
 
     // data validation
     $this->assertInstanceOf('NJORM\NJCollection', $users, 'message');
@@ -198,7 +181,7 @@ class NJQuerySelectTest extends PHPUnit_Framework_TestCase {
     // sql params validation
     extract(NJORM::lastquery(), EXTR_PREFIX_ALL, 'exec');
     $this->assertEquals('SELECT COUNT(*) `c` FROM `qn_users` WHERE `user_balance` > ?' , $exec_sql);
-    $this->assertTrue(in_array(10, $exec_params));
+    $this->assertContains(10, $exec_params);
 
     // Case 2
     $query = NJORM::inst()->users->where('balance < -1');
@@ -218,7 +201,7 @@ class NJQuerySelectTest extends PHPUnit_Framework_TestCase {
     // sql params validation
     extract(NJORM::lastquery(), EXTR_PREFIX_ALL, 'exec');
     $this->assertEquals('SELECT `user_id` `uid`,UPPER(?) `up` FROM `qn_users`' , $exec_sql);
-    $this->assertTrue(in_array('strtoupper', $exec_params));
+    $this->assertContains('strtoupper', $exec_params);
 
     // data validtion
     $this->assertArrayHasKey('uid', $model, 'model has key uid');
@@ -237,8 +220,8 @@ class NJQuerySelectTest extends PHPUnit_Framework_TestCase {
     // count: sql params validation
     extract(NJORM::lastquery(), EXTR_PREFIX_ALL, 'exec');
     $this->assertEquals('SELECT COUNT(*) `c` FROM `qn_users` WHERE `user_balance` BETWEEN ? AND ?' , $exec_sql);
-    $this->assertTrue(in_array('29', $exec_params));
-    $this->assertTrue(in_array('99', $exec_params));
+    $this->assertContains('29', $exec_params);
+    $this->assertContains('99', $exec_params);
 
     // data validation
     foreach($query as $model) {
@@ -254,8 +237,8 @@ class NJQuerySelectTest extends PHPUnit_Framework_TestCase {
     // fetchAll: sql params validation
     extract(NJORM::lastquery(), EXTR_PREFIX_ALL, 'exec');
     $this->assertEquals('SELECT `user_name` `name`,`user_pass` `pass`,`user_email` `email`,`user_balance` `balance` FROM `qn_users` WHERE `user_balance` BETWEEN ? AND ? LIMIT 5' , $exec_sql);
-    $this->assertTrue(in_array('29', $exec_params));
-    $this->assertTrue(in_array('99', $exec_params));
+    $this->assertContains('29', $exec_params);
+    $this->assertContains('99', $exec_params);
   }
 
   function testQueryIteratorAggregateWithNoRecords() {
@@ -269,8 +252,8 @@ class NJQuerySelectTest extends PHPUnit_Framework_TestCase {
     // count: sql params validation
     extract(NJORM::lastquery(), EXTR_PREFIX_ALL, 'exec');
     $this->assertEquals('SELECT COUNT(*) `c` FROM `qn_users` WHERE `user_balance` BETWEEN ? AND ?' , $exec_sql);
-    $this->assertTrue(in_array(1000, $exec_params));
-    $this->assertTrue(in_array(1001, $exec_params));
+    $this->assertContains(1000, $exec_params);
+    $this->assertContains(1001, $exec_params);
 
     // data validation
     foreach($query as $model) {
@@ -280,7 +263,7 @@ class NJQuerySelectTest extends PHPUnit_Framework_TestCase {
     // fetchAll: sql params validation
     extract(NJORM::lastquery(), EXTR_PREFIX_ALL, 'exec');
     $this->assertEquals('SELECT `user_name` `name`,`user_pass` `pass`,`user_email` `email`,`user_balance` `balance` FROM `qn_users` WHERE `user_balance` BETWEEN ? AND ? LIMIT 5' , $exec_sql);
-    $this->assertTrue(in_array(1000, $exec_params));
-    $this->assertTrue(in_array(1001, $exec_params));
+    $this->assertContains(1000, $exec_params);
+    $this->assertContains(1001, $exec_params);
   }
 }

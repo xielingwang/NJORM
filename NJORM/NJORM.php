@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-07 11:59:37
+ * @Last Modified time: 2015-03-07 16:37:52
  */
 namespace NJORM;
 use \PDO;
@@ -17,6 +17,8 @@ class NJORM extends PDO {
       try {
         extract(NJDb::getInstance()->config(), EXTR_PREFIX_ALL, 'pdo');
         $pdo = new NJORM($pdo_dsn, $pdo_user, $pdo_pass, $pdo_options);
+        $pdo->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
+        $pdo->setAttribute(\PDO::ATTR_STRINGIFY_FETCHES, false);
       }
       catch(\PDOException $e) {
         die($e->getMessage());

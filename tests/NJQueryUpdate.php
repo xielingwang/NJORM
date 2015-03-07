@@ -3,7 +3,7 @@
  * @Author: AminBy
  * @Date:   2015-03-05 15:51:47
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-07 12:00:02
+ * @Last Modified time: 2015-03-07 15:34:11
  */
 
 use \NJORM\NJSql\NJTable;
@@ -43,8 +43,8 @@ class NJQueryUpdateTest extends PHPUnit_Framework_TestCase {
     $this->assertEquals("UPDATE `qn_users` SET `user_email`='{$data['email']}',`user_updated`=? WHERE `user_id` = ? LIMIT 5", $exec_sql);
 
     $this->assertEquals(2, count($exec_params));
-    $this->assertEquals($t, array_shift($exec_params));
-    $this->assertEquals(13, array_shift($exec_params));
+    $this->assertContains($t, $exec_params);
+    $this->assertContains(13, $exec_params);
 
     // assert data in database
     $model = NJORM::inst()->users[13];

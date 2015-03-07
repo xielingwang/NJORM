@@ -3,17 +3,19 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-07 13:35:14
+ * @Last Modified time: 2015-03-07 16:43:02
  */
 namespace NJORM;
 use \NJORM\NJSql;
 use \Countable,\IteratorAggregate,\ArrayIterator, \ArrayAccess;
 
 class NJQuery implements Countable, IteratorAggregate, ArrayAccess {
-  const QUERY_TYPE_INSERT = 0;
-  const QUERY_TYPE_SELECT = 1;
-  const QUERY_TYPE_UPDATE = 2;
-  const QUERY_TYPE_DELETE = 3;
+  const QUERY_TYPE_SELECT = 0;
+  const QUERY_TYPE_COUNT = 1;
+  const QUERY_TYPE_INSERT = 2;
+  const QUERY_TYPE_UPDATE = 3;
+  const QUERY_TYPE_DELETE = 4;
+
   protected $_table;
   protected $_type;
   protected $_sel_cols = '*';
@@ -32,41 +34,45 @@ class NJQuery implements Countable, IteratorAggregate, ArrayAccess {
   }
 
   public function stringify(){
-    switch($this->_type) {
-    case static::QUERY_TYPE_SELECT:
-    return $this->sqlSelect();
-    break;
-    case static::QUERY_TYPE_INSERT:
-    return $this->sqlCreate();
-    break;
-    case static::QUERY_TYPE_UPDATE:
-    return $this->sqlUpdate();
-    break;
-    case static::QUERY_TYPE_DELETE:
-    return $this->sqlDelete();
-    break;
-    }
+    $type = (func_num_args() <= 0)
+      ? static::QUERY_TYPE_SELECT
+      : intval(func_get_arg(0));
+
+    $args = func_get_args();
+    $args && array_shift($args);
+
+    $map = array(
+      static::QUERY_TYPE_SELECT => 'sqlSelect',
+      static::QUERY_TYPE_COUNT => 'sqlCount',
+      static::QUERY_TYPE_INSERT => 'sqlCreate',
+      static::QUERY_TYPE_UPDATE => 'sqlUpdate',
+      static::QUERY_TYPE_DELETE => 'sqlDelete',
+      );
+
+    return call_user_func_array(array($this, $map[$type]), $args);
   }
 
   public function __toString() {
-    return $this->stringify();
+    return 'stringify';
   }
 
   public function params() {
-    switch($this->_type) {
-    case static::QUERY_TYPE_SELECT:
-    return $this->paramSelect();
-    break;
-    case static::QUERY_TYPE_INSERT:
-    return $this->paramInsert();
-    break;
-    case static::QUERY_TYPE_UPDATE:
-    return $this->paramUpdate();
-    break;
-    case static::QUERY_TYPE_DELETE:
-    return $this->paramDelete();
-    break;
-    }
+    $type = (func_num_args() <= 0)
+      ? static::QUERY_TYPE_SELECT
+      : intval(func_get_arg(0));
+
+    $args = func_get_args();
+    $args && array_shift($args);
+
+    $map = array(
+      static::QUERY_TYPE_SELECT => 'paramsSelect',
+      static::QUERY_TYPE_COUNT => 'paramsCount',
+      static::QUERY_TYPE_INSERT => 'paramsCreate',
+      static::QUERY_TYPE_UPDATE => 'paramsUpdate',
+      static::QUERY_TYPE_DELETE => 'paramsDelete',
+      );
+
+    return call_user_func_array(array($this, $map[$type]), $args);
   }
 
   // read
@@ -146,7 +152,7 @@ class NJQuery implements Countable, IteratorAggregate, ArrayAccess {
   /****************************************************************************************
    * protected param
    ****************************************************************************************/
-  protected function paramUpdate() {
+  protected function paramsUpdate() {
     $parameters = array();
     if($this->_expr_upd) {
       $parameters = array_merge($parameters, $this->_expr_upd->parameters());
@@ -157,7 +163,7 @@ class NJQuery implements Countable, IteratorAggregate, ArrayAccess {
     return $parameters;
   }
 
-  protected function paramSelect() {
+  protected function paramsSelect() {
     if(empty($this->_expr_sel)) {
       $this->_expr_sel = $this->_table->columns($this->_sel_cols);
     }
@@ -172,7 +178,7 @@ class NJQuery implements Countable, IteratorAggregate, ArrayAccess {
     return $parameters;
   }
 
-  protected function paramDelete() {
+  protected function paramsDelete() {
     $parameters = array();
     if($this->_cond_where) {
       $parameters = array_merge($parameters, $this->_cond_where->parameters());
@@ -180,11 +186,11 @@ class NJQuery implements Countable, IteratorAggregate, ArrayAccess {
     return $parameters;    
   }
 
-  protected function paramInsert(){
+  protected function paramsInsert(){
     $parameters = array();
     if($this->_expr_ins)
       $parameters = array_merge($parameters, $this->_expr_ins->parameters());
-    return array();
+    return $parameters;
   }
 
   /****************************************************************************************
@@ -294,7 +300,7 @@ class NJQuery implements Countable, IteratorAggregate, ArrayAccess {
     $sql = 'INSERT INTO '.$this->_table->name();
 
     $this->_expr_ins = $this->_table->values($data);
-    $sql .= (string)$this->_expr_ins;
+    $sql .= $this->_expr_ins->stringify();
 
     return $sql;
   }
@@ -302,9 +308,13 @@ class NJQuery implements Countable, IteratorAggregate, ArrayAccess {
   public function insert($data) {
     $sql = $this->sqlInsert($data);
 
-    $stmt = NJDb::execute($sql, $this->params());
+    $stmt = NJDb::execute($sql, $this->paramsInsert());
 
-    return (new NJModel($this->_table, array($this->_table->primary() => NJORM::inst()->lastInsertId())))->withLazyReload();
+    $lastInsertId = NJORM::inst()->lastInsertId();
+    if(is_numeric($lastInsertId) && ''.intval($lastInsertId) === ''.$lastInsertId) {
+      $lastInsertId = floatval($lastInsertId);
+    }
+    return (new NJModel($this->_table, array($this->_table->primary() => $lastInsertId)))->withLazyReload();
   }
 
   protected function sqlUpdate($data){
@@ -333,7 +343,7 @@ class NJQuery implements Countable, IteratorAggregate, ArrayAccess {
   public function update($data){
     $sql = $this->sqlUpdate($data);
 
-    $stmt = NJDb::execute($sql, $this->params());
+    $stmt = NJDb::execute($sql, $this->paramsUpdate());
 
     $prikey = $this->_table->primary();
     return true;
@@ -365,7 +375,7 @@ class NJQuery implements Countable, IteratorAggregate, ArrayAccess {
   public function delete() {
     $sql = $this->sqlDelete();
 
-    $stmt = NJDb::execute($sql, $this->params());
+    $stmt = NJDb::execute($sql, $this->paramsDelete());
 
     return true;
   }
