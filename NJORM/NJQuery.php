@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-07 17:27:55
+ * @Last Modified time: 2015-03-07 18:46:46
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -220,7 +220,7 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
 
   protected $_last_stmt;
   protected $_last_stmt_md5;
-  public function fetch() {
+  public function _fetch() {
     $sql = $this->sqlSelect();
     $params = $this->params();
     $stmt_md5 = md5($sql.serialize($params));
@@ -230,21 +230,42 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
       $this->_last_stmt = NJDb::execute($sql, $params);
       $this->_last_stmt_md5 = $stmt_md5;
     }
+    return $this;
+  }
 
+  public function fetch() {
     // get many
     if(func_num_args() > 0) {
-      return $this->_fetchMany($this->_last_stmt);
+      return $this->_fetch()->_fetchMany($this->_last_stmt);
     }
 
     // get one
-    return $this->_fetchOne($this->_last_stmt);
+    return $this->_fetch()->_fetchOne($this->_last_stmt);
   }
 
   public function fetchAll() {
     return $this->fetch(true);
   }
 
-  // public function fetchPair
+  public function fetchPair() {
+    if(func_num_args() > 0) {
+      $name = func_get_arg(0);
+      if(func_num_args() > 1) {
+        $value = func_get_arg(1);
+        $arr = compact('name', 'value')
+        $this->_sel_cols = array_map(function($col, $alias){
+          return (new NJExpr(NJMisc::wrapGraveAccent($this->_table->getField($col))))->as($alias);
+        }, $arr, array_keys($arr));
+        $this->_fetch();
+        if($this->_last_stmt) {
+          return $this->_last_stmt->fetchAll(\PDO::FETCH_KEY_PAIR);
+        }
+      }
+      else {
+        
+      }
+    }
+  }
 
   protected function _fetchMany($stmt) {
     if(!$stmt || !($r = $stmt->fetchAll(\PDO::FETCH_ASSOC))) {
