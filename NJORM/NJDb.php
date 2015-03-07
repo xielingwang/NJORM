@@ -3,13 +3,21 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-06 09:38:25
+ * @Last Modified time: 2015-03-07 10:31:09
  */
 namespace NJORM;
 
 class NJDb {
+  public static $savequeries = true;
+  public static $queries = array();
+  public static $lastquery;
 
   public static function execute($sql, $params) {
+
+    static::$lastquery = compact('sql', 'params');
+    if(static::$savequeries) {
+      static::$queries[] = static::$lastquery;
+    }
 
     // type: prepare/execute
     if($params) {

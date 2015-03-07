@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-02-02 23:27:30
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-06 00:19:24
+ * @Last Modified time: 2015-03-07 11:51:53
  */
 
 namespace NJORM\NJSql;
@@ -410,10 +410,11 @@ class NJTable {
     if(is_array(current($values))) {
       trigger_error('Update values expect scalars!');
     }
-    $argsForNJExpr = array();
 
+    // get 
     $flipFields = array_flip($this->_fields);
-    $tmpArr = array();
+    $arrParams = array();
+    $arrExpr = array();
     foreach($values as $col => $v) {
       if(array_key_exists($col, $flipFields)) {
         $col = $flipFields[$col];
@@ -423,7 +424,7 @@ class NJTable {
       }
       // skip validate when it is NJExpr instance
       if($v instanceof $ClassNJExpr) {
-        $argsForNJExpr = array_merge($argsForNJExpr, $v->parameters());
+        $arrParams = array_merge($arrParams, $v->parameters());
       }
       else {
         if($ret = $this->validCheck($col, $v, $values, true)) {
@@ -431,42 +432,38 @@ class NJTable {
           trigger_error($ret);
         }
       }
-      $tmpArr[] = NJMisc::wrapGraveAccent($col).'='.NJMisc::formatValue($v);
+      $arrExpr[] = NJMisc::wrapGraveAccent($col).'='.NJMisc::formatValue($v);
     }
 
-    array_unshift($argsForNJExpr, implode(',', $tmpArr));
-    return (new $ClassNJExpr)->parse($argsForNJExpr);
+    array_unshift($arrParams, implode(',', $arrExpr));
+    return (new $ClassNJExpr)->parse($arrParams);
   }
 
   protected function values4insert($values) {
     $ClassNJExpr = __NAMESPACE__.'\NJExpr';
 
-    // translate one record to multiple records
+    // change one record to multiple records
     if(!is_array(current($values))) {
       return $this->values4insert(array($values));
     }
 
-    $inputKeys = array();
-    foreach ($values as $val) {
-      $inputKeys = array_merge($inputKeys, array_keys($val));
-    }
-    $flipFields = array_flip($this->_fields);
+    $inputKeys = array_reduce($values, function($carry, $item){
+      return array_merge($carry, array_keys($item));
+    }, array());
 
     // unique fields and remove that field not in table fields or field aliases
-    $fields = array();
-    foreach (array_unique($inputKeys) as $col) {
+    $flipFields = array_flip($this->_fields);
+    $fields = array_map(function($col) use($refFields, $flipFields) {
       if(array_key_exists($col, $flipFields))
-        $fields[] = $flipFields[$col];
-      elseif(array_key_exists($col, $this->_fields)) {
-        $fields[] = $col;
-      }
-    }
-    $engraved_fields = array_map(array('\NJORM\NJMisc','wrapGraveAccent'), $fields);
-
-    $argsForNJExpr = array();
+        return $flipFields[$col];
+      if(array_key_exists($col, $this->_fields))
+        return $col;
+    }, array_unique($inputKeys));
+    $fields = array_filter($fields);
 
     // values
     $fmted_vals = array();
+    $arrParams = array();
     foreach ($values as $val) {
       $tmpArr = array();
       foreach($fields as $field) {
@@ -480,7 +477,7 @@ class NJTable {
           $v = NULL;
         }
         if($v instanceof $ClassNJExpr) {
-          $argsForNJExpr = array_merge($argsForNJExpr, $v->parameters());
+          $arrParams = array_merge($arrParams, $v->parameters());
         }
         else{
           if($ret = $this->validCheck($field, $v, $val, true)) {
@@ -493,11 +490,12 @@ class NJTable {
       $fmted_vals[] = '('.implode(',', $tmpArr).')';
     }
 
+    $engravedFields = array_map(array('\NJORM\NJMisc','wrapGraveAccent'), $fields);
     $sql = sprintf('(%s) VALUES %s'
-      , implode(',', $engraved_fields)
+      , implode(',', $engravedFields)
       , implode(',', $fmted_vals));
 
-    array_unshift($argsForNJExpr, $sql);
-    return (new $ClassNJExpr)->parse($argsForNJExpr);
+    array_unshift($arrParams, $sql);
+    return (new $ClassNJExpr)->parse($arrParams);
   }
 }

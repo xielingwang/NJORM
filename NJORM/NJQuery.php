@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-06 20:01:45
+ * @Last Modified time: 2015-03-07 13:35:14
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -16,8 +16,6 @@ class NJQuery implements Countable, IteratorAggregate, ArrayAccess {
   const QUERY_TYPE_DELETE = 3;
   protected $_table;
   protected $_type;
-  protected $_collection;
-  protected $_model;
   protected $_sel_cols = '*';
   protected $_expr_sel;
   protected $_expr_ins;
@@ -143,7 +141,12 @@ class NJQuery implements Countable, IteratorAggregate, ArrayAccess {
     }
     return $this;
   }
-  public function paramUpdate() {
+
+
+  /****************************************************************************************
+   * protected param
+   ****************************************************************************************/
+  protected function paramUpdate() {
     $parameters = array();
     if($this->_expr_upd) {
       $parameters = array_merge($parameters, $this->_expr_upd->parameters());
@@ -154,7 +157,7 @@ class NJQuery implements Countable, IteratorAggregate, ArrayAccess {
     return $parameters;
   }
 
-  public function paramSelect() {
+  protected function paramSelect() {
     if(empty($this->_expr_sel)) {
       $this->_expr_sel = $this->_table->columns($this->_sel_cols);
     }
@@ -169,7 +172,7 @@ class NJQuery implements Countable, IteratorAggregate, ArrayAccess {
     return $parameters;
   }
 
-  public function paramDelete() {
+  protected function paramDelete() {
     $parameters = array();
     if($this->_cond_where) {
       $parameters = array_merge($parameters, $this->_cond_where->parameters());
@@ -177,13 +180,16 @@ class NJQuery implements Countable, IteratorAggregate, ArrayAccess {
     return $parameters;    
   }
 
-  public function paramInsert(){
+  protected function paramInsert(){
     $parameters = array();
     if($this->_expr_ins)
       $parameters = array_merge($parameters, $this->_expr_ins->parameters());
     return array();
   }
 
+  /****************************************************************************************
+   * select/fetch api
+   ****************************************************************************************/
   protected function sqlSelect() {
     if(empty($this->_expr_sel)) {
       $this->_expr_sel = $this->_table->columns($this->_sel_cols);
@@ -248,14 +254,15 @@ class NJQuery implements Countable, IteratorAggregate, ArrayAccess {
     return new NJModel($this->_table, $r);
   }
 
-  // NJModel
-  /* Countable */
-  public function count() {
+  /****************************************************************************************
+   * count and coutable
+   ****************************************************************************************/
+  public function count($col = '*') {
     if($this->_collection) {
       return $this->_collection->count();
     }
 
-    $sql = $this->sqlCount();
+    $sql = $this->sqlCount($col);
     $stmt = NJDb::execute($sql, $this->params());
 
     if($stmt) {
@@ -264,10 +271,11 @@ class NJQuery implements Countable, IteratorAggregate, ArrayAccess {
     return 0;
   }
 
-  public function sqlCount() {
-    $this->_type = static::QUERY_TYPE_SELECT;
-    $sql = sprintf('SELECT %s FROM %s'
-      , 'COUNT(*) `c`'
+  protected function sqlCount($col) {
+    $col or $col = '*';
+    $col == '*' or $col = NJMisc::wrapGraveAccent($this->_table->getField($col));
+    $sql = sprintf('SELECT COUNT(%s) `c` FROM %s'
+      , $col
       , $this->_table->name());
 
     if($this->_cond_where) {
@@ -277,8 +285,11 @@ class NJQuery implements Countable, IteratorAggregate, ArrayAccess {
     return $sql;
   }
 
-  // insert
-  public function sqlInsert($data) {
+
+  /****************************************************************************************
+   * Insertation
+   ****************************************************************************************/
+  protected function sqlInsert($data) {
     $this->_type = static::QUERY_TYPE_INSERT;
     $sql = 'INSERT INTO '.$this->_table->name();
 
@@ -296,7 +307,7 @@ class NJQuery implements Countable, IteratorAggregate, ArrayAccess {
     return (new NJModel($this->_table, array($this->_table->primary() => NJORM::inst()->lastInsertId())))->withLazyReload();
   }
 
-  public function sqlUpdate($data){
+  protected function sqlUpdate($data){
     $this->_type = static::QUERY_TYPE_UPDATE;
 
     $this->_expr_upd = $this->_table->values($data, true);
@@ -328,8 +339,11 @@ class NJQuery implements Countable, IteratorAggregate, ArrayAccess {
     return true;
   }
 
-  // delete
-  public function sqlDelete() {
+
+  /****************************************************************************************
+   * Deletion
+   ****************************************************************************************/
+  protected function sqlDelete() {
     $this->_type = static::QUERY_TYPE_DELETE;
     $sql = 'DELETE FROM '.$this->_table->name();
 
@@ -356,7 +370,11 @@ class NJQuery implements Countable, IteratorAggregate, ArrayAccess {
     return true;
   }
 
-  /**/
+  /****************************************************************************************
+   * NJModel NJCollection
+   ****************************************************************************************/
+  protected $_collection;
+  protected $_model;
   protected function _rewind() {
     $this->_cond_where = null;
   }
@@ -368,18 +386,20 @@ class NJQuery implements Countable, IteratorAggregate, ArrayAccess {
   }
 
   /* ArrayAccess */
-  public function offsetExists($prival) {
-    return (new NJQuery($this->_table))->where($this->_table->primary(), $prival)->count() > 0;
+  // by id
+  public function offsetExistsById($offset) {
+    return (new NJQuery($this->_table))->where($this->_table->primary(), $offset)->count() > 0;
   }
-  public function offsetGet($prival) {
-    return (new NJQuery($this->_table))->where($this->_table->primary(), $prival)->fetch();
+  public function offsetGetById($offset) {
+    return (new NJQuery($this->_table))->where($this->_table->primary(), $offset)->limit(1)->fetch();
   }
-  public function offsetSet($prival, $value) {
+  public function offsetSetById($offset, $value) {
+    /*
     if(is_array($value)) {
       $subquery = new NJQuery($this->_table);
-      $m = $this[$prival];
+      $m = $this[$offset];
       if( !$m ) {
-        $value[$this->_table->primary()] = $prival;
+        $value[$this->_table->primary()] = $offset;
         return $subquery->insert($value);
       }
       else {
@@ -387,9 +407,57 @@ class NJQuery implements Countable, IteratorAggregate, ArrayAccess {
         return $m;
       }
     }
-    trigger_error('unexpected type value for NJQuery::offsetSet()');
+    */
+    trigger_error('unexpected involving method of NJQuery::offsetSet()');
   }
-  public function offsetUnset($prival) {
-    return (new NJQuery($this->_table))->where($this->_table->primary(), $prival)->delete();
+  public function offsetUnsetById($offset) {
+    (new NJQuery($this->_table))->where($this->_table->primary(), $offset)->limit(1)->delete();
+  }
+
+  // by fetching
+  public function offsetExistsByFetch($offset) {
+    $this->_model or $this->_model = $this->fetch();
+    return $this->_model and isset($this->_model[$offset]);
+  }
+  public function offsetGetByFetch($offset) {
+    return $this->offsetExistsByFetch($offset) ? $this->_model[$offset] : null;
+  }
+  public function offsetSetByFetch($offset, $value) {
+    $this->_model or $this->_model = $this->fetch();
+    if($this->_model) {
+      $this->_model[$offset] = $value;
+    }
+  }
+  public function offsetUnsetByFetch($offset) {
+    $this->_model or $this->_model = $this->fetch();
+    if($this->_model) {
+      unset($this->_model[$offset]);
+    }
+  }
+
+  // sumary
+  public function offsetExists($offset) {
+    if($this->_cond_limit or $this->_cond_where or $this->_cond_sort){
+      return $this->offsetExistsByFetch($offset);
+    }
+    return $this->offsetExistsById($offset);
+  }
+  public function offsetGet($offset) {
+    if($this->_cond_limit or $this->_cond_where or $this->_cond_sort){
+      return $this->offsetGetByFetch($offset);
+    }
+    return $this->offsetGetById($offset);
+  }
+  public function offsetSet($offset, $value) {
+    if($this->_cond_limit or $this->_cond_where or $this->_cond_sort){
+      return $this->offsetSetByFetch($offset);
+    }
+    return $this->offsetSetById($offset);
+  }
+  public function offsetUnset($offset) {
+    if($this->_cond_limit or $this->_cond_where or $this->_cond_sort){
+      return $this->offsetUnsetByFetch($offset);
+    }
+    return $this->offsetUnsetById($offset);
   }
 }

@@ -3,7 +3,7 @@
  * @Author: AminBy
  * @Date:   2015-03-05 15:51:47
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-05 15:54:38
+ * @Last Modified time: 2015-03-07 12:00:02
  */
 
 use \NJORM\NJSql\NJTable;
@@ -36,17 +36,22 @@ class NJQueryUpdateTest extends PHPUnit_Framework_TestCase {
       'email' => 'insert-email'.rand(100,999),
       'ut' => new NJExpr('?', $t = time()),
       );
-    $this->assertEquals("UPDATE `qn_users` SET `user_email`='{$data['email']}',`user_updated`=? WHERE `user_id` = ? LIMIT 5", $query->sqlUpdate($data));
-    $params = $query->paramUpdate();
-
-    $this->assertEquals(2, count($params));
-    $this->assertEquals($t, array_shift($params));
-    $this->assertEquals(13, array_shift($params));
-
     $query->update($data);
 
-    $model = NJORM::inst()->users
-    ->where('uid', 13)->fetch();
+    // assert sql and params
+    extract(NJORM::lastquery(), EXTR_PREFIX_ALL, 'exec');
+    $this->assertEquals("UPDATE `qn_users` SET `user_email`='{$data['email']}',`user_updated`=? WHERE `user_id` = ? LIMIT 5", $exec_sql);
+
+    $this->assertEquals(2, count($exec_params));
+    $this->assertEquals($t, array_shift($exec_params));
+    $this->assertEquals(13, array_shift($exec_params));
+
+    // assert data in database
+    $model = NJORM::inst()->users[13];
+
+    // assert sql and params
+    extract(NJORM::lastquery(), EXTR_PREFIX_ALL, 'exec');
+    $this->assertEquals("SELECT `user_id` `uid`,`user_name` `name`,`user_pass` `pass`,`user_balance` `balance`,`user_email` `email`,`user_created` `ct`,`user_updated` `ut` FROM `qn_users` WHERE `user_id` = 13", $exec_sql);
     $this->assertEquals($data['email'], $model['email']);
     $this->assertNotNull($model['ut'], 'updated not null');
   }

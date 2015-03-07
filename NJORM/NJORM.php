@@ -3,14 +3,13 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-05 14:48:40
+ * @Last Modified time: 2015-03-07 11:59:37
  */
 namespace NJORM;
 use \PDO;
 
 class NJORM extends PDO {
   static $config = array();
-
 
   public static function inst() {
     static $pdo;
@@ -26,10 +25,9 @@ class NJORM extends PDO {
     return $pdo;
   }
 
-  /**
-   * advansa
-   * @var integer
-   */
+  /****************************************************************************************
+   * Transaction
+   ****************************************************************************************/
   protected $transactionCounter = 0;
   public function getTransactionCounter() {
     return $this->transactionCounter;
@@ -71,6 +69,21 @@ class NJORM extends PDO {
     }
   }
 
+
+  /****************************************************************************************
+   * debug/log
+   ****************************************************************************************/
+  public static function lastquery() {
+    return NJDb::$lastquery;
+
+  }
+  public static function queries() {
+    return NJDb::$queries;
+  }
+
+  /****************************************************************************************
+   * new query for table
+   ****************************************************************************************/
   public function __get($name) {
     return new NJQuery($name);
   }
