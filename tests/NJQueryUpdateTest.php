@@ -3,7 +3,7 @@
  * @Author: AminBy
  * @Date:   2015-03-05 15:51:47
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-07 15:34:11
+ * @Last Modified time: 2015-03-07 16:47:24
  */
 
 use \NJORM\NJSql\NJTable;
@@ -51,7 +51,7 @@ class NJQueryUpdateTest extends PHPUnit_Framework_TestCase {
 
     // assert sql and params
     extract(NJORM::lastquery(), EXTR_PREFIX_ALL, 'exec');
-    $this->assertEquals("SELECT `user_id` `uid`,`user_name` `name`,`user_pass` `pass`,`user_balance` `balance`,`user_email` `email`,`user_created` `ct`,`user_updated` `ut` FROM `qn_users` WHERE `user_id` = 13", $exec_sql);
+    $this->assertEquals("SELECT `user_id` `uid`,`user_name` `name`,`user_pass` `pass`,`user_balance` `balance`,`user_email` `email`,`user_created` `ct`,`user_updated` `ut` FROM `qn_users` WHERE `user_id` = 13 LIMIT 1", $exec_sql);
     $this->assertEquals($data['email'], $model['email']);
     $this->assertNotNull($model['ut'], 'updated not null');
   }

@@ -3,7 +3,7 @@
  * @name: byamin
  * @Date:   2015-01-01 12:21:16
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-07 15:33:27
+ * @Last Modified time: 2015-03-07 16:49:10
  */
 
 
@@ -51,13 +51,16 @@ class NJQuerySelectTest extends PHPUnit_Framework_TestCase {
     ->select('name', 'pass', 'email', 'balance')
     ->limit(2)
     ->where('balance between ? and ?', 2, 100);
-
-    $this->assertEquals('SELECT `user_name` `name`,`user_pass` `pass`,`user_email` `email`,`user_balance` `balance` FROM `qn_users` WHERE `user_balance` BETWEEN ? AND ? LIMIT 2', (string)$query);
-    $param = $query->params();
-    $this->assertContains(2, $param);
-    $this->assertContains(100, $param);
     
     $model = $query->fetch();
+
+    // sql param valdiation
+    extract(NJORM::lastquery(), EXTR_PREFIX_ALL, 'exec');
+    $this->assertEquals('SELECT `user_name` `name`,`user_pass` `pass`,`user_email` `email`,`user_balance` `balance` FROM `qn_users` WHERE `user_balance` BETWEEN ? AND ? LIMIT 2', $exec_sql);
+    $this->assertContains(2, $exec_params);
+    $this->assertContains(100, $exec_params);
+
+    // data validation
     $this->assertNotNull($model, 'not null returned with records');
     $this->assertInstanceOf('NJORM\NJModel', $model, 'message');
     $this->assertTrue(strpos($model['name'], 'name') !== false);
