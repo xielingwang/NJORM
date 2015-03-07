@@ -3,13 +3,13 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-07 16:43:02
+ * @Last Modified time: 2015-03-07 17:27:55
  */
 namespace NJORM;
 use \NJORM\NJSql;
 use \Countable,\IteratorAggregate,\ArrayIterator, \ArrayAccess;
 
-class NJQuery implements Countable, IteratorAggregate, ArrayAccess {
+class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
   const QUERY_TYPE_SELECT = 0;
   const QUERY_TYPE_COUNT = 1;
   const QUERY_TYPE_INSERT = 2;
@@ -53,7 +53,7 @@ class NJQuery implements Countable, IteratorAggregate, ArrayAccess {
   }
 
   public function __toString() {
-    return 'stringify';
+    return $this->stringify();
   }
 
   public function params() {
@@ -366,7 +366,7 @@ class NJQuery implements Countable, IteratorAggregate, ArrayAccess {
     }
 
     if($this->_cond_limit) {
-      $sql .= ' '.(string)$this->_cond_limit;
+      $sql .= ' '.$this->_cond_limit->stringify(true);
     }
 
     return $sql;

@@ -3,7 +3,7 @@
  * @Author: AminBy
  * @Date:   2015-03-05 15:52:11
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-05 15:54:56
+ * @Last Modified time: 2015-03-07 17:25:31
  */
 
 use \NJORM\NJSql\NJTable;
@@ -30,10 +30,12 @@ class NJQueryDeleteTest extends PHPUnit_Framework_TestCase {
 
   function testQueryDelete() {
     $query = NJORM::inst()->users;
-    $query->where('email', 'abc@abc.com')
-    ->limit(3,4);
-    $this->assertEquals("DELETE FROM `qn_users` WHERE `user_email` = 'abc@abc.com' LIMIT 3,4", $query->sqlDelete());
+    $query->where('uid > 10')
+    ->limit(3,1);
 
     $query->delete();
+
+    extract(NJORM::lastquery(), EXTR_PREFIX_ALL, 'exec');
+    $this->assertEquals("DELETE FROM `qn_users` WHERE `user_id` > 10 LIMIT 3", $exec_sql);
   }
 }

@@ -3,14 +3,14 @@
  * @Author: byamin
  * @Date:   2014-12-26 01:41:57
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-25 01:10:51
+ * @Last Modified time: 2015-03-07 18:16:03
  */
 namespace NJORM\NJSql;
 // TODO: extends NJObject
 class NJLimit extends NJExpr {
   protected $_limit = 1;
   protected $_offset = 0;
-  protected $_isOffset = false;
+  protected $_isOffsetType = false;
 
   public static function factory(){
     $inst = new NJLimit;
@@ -28,11 +28,20 @@ class NJLimit extends NJExpr {
     }
   }
 
-  protected function setValueComma(){
+  public function stringify() {
+    if(func_num_args() > 0) {
+      return ($this->_isOffsetType || !$this->_offset)
+      ? 'LIMIT ' . $this->_limit
+      : 'LIMIT ' . $this->_offset;
+    }
+    return parent::stringify();
+  }
+
+  protected function _updateValueWithComma(){
     $this->_SetValue(sprintf('LIMIT %s%d', $this->_offset?($this->_offset.','):'', $this->_limit));
   }
 
-  public function setValueOffset() {
+  public function _updateValueWithOffset() {
     $this->_SetValue(sprintf('LIMIT %d%s', $this->_limit, $this->_offset?(' OFFSET '.$this->_offset):''));
   }
 
@@ -40,23 +49,32 @@ class NJLimit extends NJExpr {
     if(func_num_args() > 1) {
       $this->_offset = intval(func_get_arg(0));
       $this->_limit = intval(func_get_arg(1));
-      $this->setValueComma();
+      $this->_updateValueWithComma();
+    }
+    elseif(func_num_args() > 0) {
+      $this->_limit = intval(func_get_arg(0));
+      $this->_isOffsetType
+        ? $this->_updateValueWithOffset()
+        : $this->_updateValueWithComma();
     }
     else {
-      $this->_limit = intval(func_get_arg(0));
-      $this->_isOffset
-        ? $this->setValueOffset()
-        : $this->setValueComma();
+      return (int)$this->_limit;
     }
 
     return $this;
   }
 
-  public function offset($offset) {
-    $this->_isOffset = true;
-    $this->_offset = intval($offset);
-    $this->setValueOffset();
-    return $this;
+  public function offset() {
+    if(func_num_args() > 0) {
+      $offset = func_get_arg(0);
+      $this->_isOffsetType = true;
+      $this->_offset = intval($offset);
+      $this->_updateValueWithOffset();
+      return $this;
+    }
+    else {
+      return (int)$this->_offset;
+    }
   }
 
   public function parameters() {
