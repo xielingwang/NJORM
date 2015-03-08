@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-07 18:46:46
+ * @Last Modified time: 2015-03-09 00:34:59
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -220,7 +220,91 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
 
   protected $_last_stmt;
   protected $_last_stmt_md5;
-  public function _fetch() {
+
+  public function fetchOne() {
+    return $this->_fetch()->_fetchOne($this->_last_stmt);
+  }
+
+  public function fetchAll() {
+    return $this->_fetch()->_fetchMany($this->_last_stmt);
+  }
+
+  public function fetchCol($col=0, $unique=false) {
+    if($this->_fetch()->_last_stmt) {
+      $style = \PDO::FETCH_COLUMN;
+      if($unique) $style |= \PDO::FETCH_UNIQUE;
+      return $this->_last_stmt->fetchAll($style,$col);
+    }
+  }
+
+  /**
+   * [fetchGroupedPairs description]
+   * @param  [type] $name  [description]
+   * @param  [type] $value [description]
+   * @return [type]        [description]
+   *
+   * Fetch Result Like: [k1 => [v1,v2,v3], k2 => [v4,v5], ...]
+   */
+  public function fetchGroupedPairs($name, $value) {
+    $arr = compact('name', 'value');
+    $this->_sel_cols = array_map(function($col, $alias){
+      return (new NJExpr(NJMisc::wrapGraveAccent($this->_table->getField($col))))->as($alias);
+    }, $arr, array_keys($arr));
+
+    if($this->_fetch()->_last_stmt) {
+      return $this->_last_stmt->fetchAll(PDO::FETCH_GROUP|PDO::FETCH_COLUMN);
+    }
+  }
+
+  /**
+   * [fetchPairs description]
+   * @param  [type] $name [description]
+   * @return [type]       [description]
+   *
+   * Case 1: fetch result like: [k1 => v1, k2 => v2 ...]
+   * Case 2: fetch result lkie: [k1 => njmodel1, k2 => njmodel2...]
+   * NOTE: if these are same keys, the value would be set to the last one
+   */
+  public function fetchPairs($name) {
+    // Case 1
+    if(func_num_args() > 1) {
+      $value = func_get_arg(1);
+      $arr = compact('name', 'value');
+      $this->_sel_cols = array_map(function($col, $alias){
+        return (new NJExpr(NJMisc::wrapGraveAccent($this->_table->getField($col))))->as($alias);
+      }, $arr, array_keys($arr));
+
+      if($this->_fetch()->_last_stmt) {
+        return $this->_last_stmt->fetchAll(\PDO::FETCH_KEY_PAIR);
+      }
+    }
+
+    // Case 2
+    else {
+      $this->_sel_cols = '*';
+      if($this->_fetch()->_last_stmt && $r = $this->_last_stmt->fetchAll(\PDO::FETCH_ASSOC)) {
+        $ret = array();
+        foreach ($r as $_) {
+          $ret[$_[$name]] = new NJModel($this->_table, $_);
+        }
+        return $ret;
+      }
+    }
+  }
+
+  protected function _fetchMany($stmt) {
+    if($stmt && $r = $stmt->fetchAll(\PDO::FETCH_ASSOC)) {
+      return new NJCollection($this->_table, $r);
+    }
+  }
+
+  protected function _fetchOne($stmt) {
+    if($stmt && $r = $stmt->fetch(\PDO::FETCH_ASSOC)) {
+      return new NJModel($this->_table, $r);
+    }
+  }
+
+  protected function _fetch() {
     $sql = $this->sqlSelect();
     $params = $this->params();
     $stmt_md5 = md5($sql.serialize($params));
@@ -231,54 +315,6 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
       $this->_last_stmt_md5 = $stmt_md5;
     }
     return $this;
-  }
-
-  public function fetch() {
-    // get many
-    if(func_num_args() > 0) {
-      return $this->_fetch()->_fetchMany($this->_last_stmt);
-    }
-
-    // get one
-    return $this->_fetch()->_fetchOne($this->_last_stmt);
-  }
-
-  public function fetchAll() {
-    return $this->fetch(true);
-  }
-
-  public function fetchPair() {
-    if(func_num_args() > 0) {
-      $name = func_get_arg(0);
-      if(func_num_args() > 1) {
-        $value = func_get_arg(1);
-        $arr = compact('name', 'value')
-        $this->_sel_cols = array_map(function($col, $alias){
-          return (new NJExpr(NJMisc::wrapGraveAccent($this->_table->getField($col))))->as($alias);
-        }, $arr, array_keys($arr));
-        $this->_fetch();
-        if($this->_last_stmt) {
-          return $this->_last_stmt->fetchAll(\PDO::FETCH_KEY_PAIR);
-        }
-      }
-      else {
-        
-      }
-    }
-  }
-
-  protected function _fetchMany($stmt) {
-    if(!$stmt || !($r = $stmt->fetchAll(\PDO::FETCH_ASSOC))) {
-      return null;
-    }
-    return new NJCollection($this->_table, $r);
-  }
-
-  protected function _fetchOne($stmt) {
-    if(!$stmt || !($r = $stmt->fetch(\PDO::FETCH_ASSOC)) ) {
-      return null;
-    }
-    return new NJModel($this->_table, $r);
   }
 
   /****************************************************************************************

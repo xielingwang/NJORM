@@ -3,7 +3,7 @@
  * @name: byamin
  * @Date:   2015-01-01 12:21:16
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-07 16:49:10
+ * @Last Modified time: 2015-03-09 00:03:15
  */
 
 
@@ -37,7 +37,7 @@ class NJQuerySelectTest extends PHPUnit_Framework_TestCase {
       ->where('email', 'InvalidEmail')
       ->sortAsc('email');
 
-    $model = $query->fetch();
+    $model = $query->fetchOne();
     $this->assertNull($model, 'return null with no data');
 
     // valid sql params
@@ -52,7 +52,7 @@ class NJQuerySelectTest extends PHPUnit_Framework_TestCase {
     ->limit(2)
     ->where('balance between ? and ?', 2, 100);
     
-    $model = $query->fetch();
+    $model = $query->fetchOne();
 
     // sql param valdiation
     extract(NJORM::lastquery(), EXTR_PREFIX_ALL, 'exec');
@@ -73,7 +73,7 @@ class NJQuerySelectTest extends PHPUnit_Framework_TestCase {
     $this->assertContains(2, $exec_params);
     $this->assertContains(100, $exec_params);
 
-    $model = $query->fetch();
+    $model = $query->fetchOne();
     $this->assertNotNull($model, 'not null returned with records');
     $this->assertInstanceOf('NJORM\NJModel', $model, 'message');
     $this->assertTrue(strpos($model['name'], 'name') !== false);
@@ -116,7 +116,7 @@ class NJQuerySelectTest extends PHPUnit_Framework_TestCase {
     extract(NJORM::lastquery(), EXTR_PREFIX_ALL, 'exec');
     $this->assertEquals('SELECT `user_id` `uid`,`user_name` `name`,`user_pass` `pass`,`user_balance` `balance`,`user_email` `email`,`user_created` `ct`,`user_updated` `ut` FROM `qn_users` WHERE `user_id` = 99999 LIMIT 1' , $exec_sql);
 
-    $userLast = NJORM::inst()->users->sortDesc('uid')->fetch();
+    $userLast = NJORM::inst()->users->sortDesc('uid')->fetchOne();
 
     // valid sql params
     extract(NJORM::lastquery(), EXTR_PREFIX_ALL, 'exec');
@@ -199,7 +199,7 @@ class NJQuerySelectTest extends PHPUnit_Framework_TestCase {
   function testQuerySelectExpr() {
     $query = NJORM::inst()->users;
     $query->select('uid')->select(NJExpr::fact('UPPER(?)', 'strtoupper'), 'up');
-    $model = $query->fetch();
+    $model = $query->fetchOne();
 
     // sql params validation
     extract(NJORM::lastquery(), EXTR_PREFIX_ALL, 'exec');
