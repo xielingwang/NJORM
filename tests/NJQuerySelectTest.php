@@ -3,7 +3,7 @@
  * @name: byamin
  * @Date:   2015-01-01 12:21:16
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-09 00:03:15
+ * @Last Modified time: 2015-03-09 14:42:23
  */
 
 
@@ -173,6 +173,30 @@ class NJQuerySelectTest extends PHPUnit_Framework_TestCase {
       $this->assertGreaterThanOrEqual(29, $model['balance'], 'balance >= 10');
       $this->assertLessThanOrEqual(99, $model['balance'], 'balance <= 99');
     }
+  }
+
+  function testQueryFetchPairs() {
+    // CASE 1
+    $query = NJORM::inst()->users();
+    $ret = $query->fetchPairs('uid', 'name');
+    $this->assertArrayHasKey(6, $ret);
+    $this->assertEquals('name-297', $ret[6]);
+
+    // CASE 1
+    $query = NJORM::inst()->users();
+    $ret = $query->fetchPairs('uid');
+    $this->assertArrayHasKey(6, $ret);
+    $this->assertEquals('name-297', $ret[6]['name']);
+    $this->assertEquals(6, $ret[6]['uid']);
+  }
+
+  function testQueryFetchGroupedPairs() {
+    // CASE 1
+    $query = NJORM::inst()->users();
+    $ret = $query->fetchGroupedPairs('name', 'uid');
+    $this->assertArrayHasKey('name-297', $ret);
+    $this->assertInternalType('array', $ret['name-297']);
+    $this->assertContains(6, $ret['name-297']);
   }
 
   function testQuerySelectCount() {

@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-07 16:37:52
+ * @Last Modified time: 2015-03-09 14:45:37
  */
 namespace NJORM;
 use \PDO;
@@ -88,5 +88,10 @@ class NJORM extends PDO {
    ****************************************************************************************/
   public function __get($name) {
     return new NJQuery($name);
+  }
+  public function __call($name, $args) {
+    if(empty($args))
+      return $this->$name;
+    return call_user_func_array(array($this->$name, 'where'), $args);
   }
 }

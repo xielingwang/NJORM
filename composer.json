@@ -1,15 +1,15 @@
 {
     "name": "njorm/njorm",
     "type": "library",
-    "description": "NJORM - Not Just ORM, a database.",
+    "description": "Not Just ORM. More simple api, more powerful. ",
     "keywords": ["orm","database","pdo"],
     "homepage": "http://github.com/xielingwang/njorm",
-    "license": "MIT",
+    "license": "GPLv3",
     "authors": [
         {
             "name": "Amin By",
-            "email": "admin@aminby.net",
-            "homepage": "http://www.aminby.net/"
+            "email": "xielingwang@gmail.com",
+            "homepage": "http://blog.aminby.net/"
         }
     ],
     "require": {

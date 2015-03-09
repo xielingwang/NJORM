@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-09 00:34:59
+ * @Last Modified time: 2015-03-09 14:47:23
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -248,11 +248,11 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
   public function fetchGroupedPairs($name, $value) {
     $arr = compact('name', 'value');
     $this->_sel_cols = array_map(function($col, $alias){
-      return (new NJExpr(NJMisc::wrapGraveAccent($this->_table->getField($col))))->as($alias);
+      return (new NJSql\NJExpr(NJMisc::wrapGraveAccent($this->_table->getField($col))))->as($alias);
     }, $arr, array_keys($arr));
 
     if($this->_fetch()->_last_stmt) {
-      return $this->_last_stmt->fetchAll(PDO::FETCH_GROUP|PDO::FETCH_COLUMN);
+      return $this->_last_stmt->fetchAll(\PDO::FETCH_GROUP|\PDO::FETCH_COLUMN);
     }
   }
 
@@ -271,7 +271,7 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
       $value = func_get_arg(1);
       $arr = compact('name', 'value');
       $this->_sel_cols = array_map(function($col, $alias){
-        return (new NJExpr(NJMisc::wrapGraveAccent($this->_table->getField($col))))->as($alias);
+        return (new NJSql\NJExpr(NJMisc::wrapGraveAccent($this->_table->getField($col))))->as($alias);
       }, $arr, array_keys($arr));
 
       if($this->_fetch()->_last_stmt) {
@@ -458,7 +458,7 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
     return (new NJQuery($this->_table))->where($this->_table->primary(), $offset)->count() > 0;
   }
   public function offsetGetById($offset) {
-    return (new NJQuery($this->_table))->where($this->_table->primary(), $offset)->limit(1)->fetch();
+    return (new NJQuery($this->_table))->where($this->_table->primary(), $offset)->limit(1)->fetchOne();
   }
   public function offsetSetById($offset, $value) {
     /*
