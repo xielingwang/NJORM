@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-06 18:44:44
+ * @Last Modified time: 2015-03-09 14:58:25
  */
 namespace NJORM;
 use \NJORM\NJSql\NJTable;
@@ -42,7 +42,7 @@ class NJModel implements Countable,ArrayAccess,JsonSerializable,Iterator {
     if($this->_lazy_reload) {
       $this->_lazy_reload = false;
       $prikey = $this->_table->primary();
-      $model = (new NJQuery($this->_table))->where($prikey, $this[$prikey])->limit(1)->fetch();
+      $model = (new NJQuery($this->_table))->where($prikey, $this[$prikey])->limit(1)->fetchOne();
       $this->_data = $model->_data;
     }
     return $this;

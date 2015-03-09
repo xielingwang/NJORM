@@ -3,7 +3,7 @@
  * @Author: AminBy
  * @Date:   2015-03-05 15:51:47
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-07 16:47:24
+ * @Last Modified time: 2015-03-09 14:57:23
  */
 
 use \NJORM\NJSql\NJTable;
@@ -30,7 +30,7 @@ class NJQueryUpdateTest extends PHPUnit_Framework_TestCase {
 
   function testQueryUpdate() {
     $query = NJORM::inst()->users
-    ->where('uid=?', 13)
+    ->where('uid=?', 79)
     ->limit(5);
     $data = array(
       'email' => 'insert-email'.rand(100,999),
@@ -44,14 +44,14 @@ class NJQueryUpdateTest extends PHPUnit_Framework_TestCase {
 
     $this->assertEquals(2, count($exec_params));
     $this->assertContains($t, $exec_params);
-    $this->assertContains(13, $exec_params);
+    $this->assertContains(79, $exec_params);
 
     // assert data in database
-    $model = NJORM::inst()->users[13];
+    $model = NJORM::inst()->users[79];
 
     // assert sql and params
     extract(NJORM::lastquery(), EXTR_PREFIX_ALL, 'exec');
-    $this->assertEquals("SELECT `user_id` `uid`,`user_name` `name`,`user_pass` `pass`,`user_balance` `balance`,`user_email` `email`,`user_created` `ct`,`user_updated` `ut` FROM `qn_users` WHERE `user_id` = 13 LIMIT 1", $exec_sql);
+    $this->assertEquals("SELECT `user_id` `uid`,`user_name` `name`,`user_pass` `pass`,`user_balance` `balance`,`user_email` `email`,`user_created` `ct`,`user_updated` `ut` FROM `qn_users` WHERE `user_id` = 79 LIMIT 1", $exec_sql);
     $this->assertEquals($data['email'], $model['email']);
     $this->assertNotNull($model['ut'], 'updated not null');
   }
