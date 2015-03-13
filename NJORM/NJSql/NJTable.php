@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-02-02 23:27:30
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-07 15:55:16
+ * @Last Modified time: 2015-03-13 19:32:22
  */
 
 namespace NJORM\NJSql;
@@ -48,6 +48,9 @@ class NJTable {
   public function field($field, $alias = null) {
     if(!$this->_fields)
       $this->_fields = array();
+
+    // set alias with field name
+    $alias or $alias = $field;
 
     // for static::valid()
     $this->_prev_field = $field;

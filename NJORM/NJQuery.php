@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-09 14:47:23
+ * @Last Modified time: 2015-03-13 19:22:10
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -398,11 +398,18 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
   }
 
   public function update($data){
+
+    $prikey = $this->_table->primary();
+    if(!array_key_exists($prikey, $data)) {
+      trigger_error('NJQuery::update expects data with primary key!');
+    }
+    $this->where($prikey, $data[$prikey]);
+    unset($data[$prikey]);
+
     $sql = $this->sqlUpdate($data);
 
     $stmt = NJDb::execute($sql, $this->paramsUpdate());
 
-    $prikey = $this->_table->primary();
     return true;
   }
 
