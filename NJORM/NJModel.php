@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-13 19:19:01
+ * @Last Modified time: 2015-03-17 21:02:48
  */
 namespace NJORM;
 use \NJORM\NJSql\NJTable;
@@ -86,9 +86,16 @@ class NJModel implements Countable,ArrayAccess,JsonSerializable,Iterator {
   }
 
   protected function setModified() {
+
+    // single value
     if(func_num_args() >= 2) {
-      $this->_modified[func_get_arg(0)] = func_get_arg(1);
+      $k = func_get_arg(0);
+      $v = func_get_arg(1);
+      if(!array_key_exists($k, $this->_data) || $this->_data[$k] !== $v)
+      $this->_modified[$k] = $v;
     }
+
+    // multi-values
     else {
       $data = func_get_arg(0);
       if(is_array($data)) {
@@ -101,6 +108,7 @@ class NJModel implements Countable,ArrayAccess,JsonSerializable,Iterator {
         trigger_error('NJModel::setModified error!');
       }
     }
+
     return $this;
   }
 
@@ -118,14 +126,20 @@ class NJModel implements Countable,ArrayAccess,JsonSerializable,Iterator {
     return $this[$this->_table->primary()];
   }
 
-  public function save() {
+  public function save($modified = null) {
+    if(is_array($modified)) {
+      $this->setModified($modified);
+    }
+
     $tbname = $this->_table->getName();
     $this->_modified[$this->_table->primary()] = $this->pri_key_value();
+
     if(NJORM::inst()->$tbname->update($this->_modified)){
       $this->_data = array_merge($this->_data, $this->_modified);
       $this->_modified = array();
       $this->withLazyReload();
     }
+
     return $this;
   }
   public function delete() {
