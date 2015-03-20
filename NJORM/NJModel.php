@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-17 21:02:48
+ * @Last Modified time: 2015-03-20 21:27:37
  */
 namespace NJORM;
 use \NJORM\NJSql\NJTable;
@@ -126,8 +126,10 @@ class NJModel implements Countable,ArrayAccess,JsonSerializable,Iterator {
     return $this[$this->_table->primary()];
   }
 
-  public function save($modified = null) {
-    if(is_array($modified)) {
+  public function save() {
+    if(func_num_args() > 0 
+      && ($modified = func_get_arg(0))
+      && is_array($modified)) {
       $this->setModified($modified);
     }
 
