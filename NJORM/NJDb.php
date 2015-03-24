@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-07 16:35:59
+ * @Last Modified time: 2015-03-23 17:13:12
  */
 namespace NJORM;
 
@@ -18,6 +18,7 @@ class NJDb {
     if(static::$savequeries) {
       static::$queries[] = static::$lastquery;
     }
+    NJORM::debug($sql . '; -- ' . json_encode($params));
 
     // type: prepare/execute
     if($params) {

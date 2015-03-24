@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-09 14:45:37
+ * @Last Modified time: 2015-03-23 17:13:32
  */
 namespace NJORM;
 use \PDO;
@@ -81,6 +81,15 @@ class NJORM extends PDO {
   }
   public static function queries() {
     return NJDb::$queries;
+  }
+  public static function debug($argument) {
+    static $debug;
+    if(is_callable($argument)) {
+      $debug = $argument;
+    }
+    elseif(is_callable($debug)) {
+      $debug('[NJORM]'.$argument);
+    }
   }
 
   /****************************************************************************************

@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-13 19:22:10
+ * @Last Modified time: 2015-03-23 20:01:40
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -294,7 +294,10 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
 
   protected function _fetchMany($stmt) {
     if($stmt && $r = $stmt->fetchAll(\PDO::FETCH_ASSOC)) {
-      return new NJCollection($this->_table, $r);
+      // print_r($r);
+      $_cols = new NJCollection($this->_table, $r);
+      // print_r($_cols);
+      return $_cols;
     }
   }
 
@@ -310,7 +313,8 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
     $stmt_md5 = md5($sql.serialize($params));
 
     if(!$this->_last_stmt || $this->_last_stmt_md5 != $stmt_md5) {
-
+      $this->_collection = null;
+      $this->_model = null;
       $this->_last_stmt = NJDb::execute($sql, $params);
       $this->_last_stmt_md5 = $stmt_md5;
     }

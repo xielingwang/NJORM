@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-02-14 11:57:17
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-06 19:19:41
+ * @Last Modified time: 2015-03-23 20:03:00
  */
 namespace NJORM;
 use \NJORM\NJSql\NJTable;
@@ -80,15 +80,15 @@ class NJCollection extends NJModel {
   }
 
   /* JsonSerializable */
+  protected $_array;
   public function jsonSerialize(){
-    static $_tmp;
-    if(!$_tmp) {
-      $_tmp = array();
+    if(!$this->_array) {
+      $this->_array = array();
       foreach($this as $model) {
-        $_tmp[] = $model->jsonSerialize();
+        $this->_array[] = $model->jsonSerialize();
       }
     }
-    return $_tmp;
+    return $this->_array;
   }
 
   /* Countable */
