@@ -3,12 +3,11 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-23 17:13:32
+ * @Last Modified time: 2015-03-24 20:26:10
  */
 namespace NJORM;
-use \PDO;
 
-class NJORM extends PDO {
+class NJORM extends \PDO {
   static $config = array();
 
   public static function inst() {
@@ -16,15 +15,24 @@ class NJORM extends PDO {
     if(!$pdo){
       try {
         extract(NJDb::getInstance()->config(), EXTR_PREFIX_ALL, 'pdo');
-        $pdo = new NJORM($pdo_dsn, $pdo_user, $pdo_pass, $pdo_options);
-        $pdo->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
-        $pdo->setAttribute(\PDO::ATTR_STRINGIFY_FETCHES, false);
+        $pdo = new static($pdo_dsn, $pdo_user, $pdo_pass, $pdo_options);
       }
       catch(\PDOException $e) {
-        die($e->getMessage());
+        throw static::NJExceptionFactory($e->getMessage());
       }
     }
     return $pdo;
+  }
+
+  public function __construct() {
+    call_user_func_array('parent::__construct', func_get_args());
+    $this->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
+    $this->setAttribute(\PDO::ATTR_STRINGIFY_FETCHES, false);
+    $this->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+  }
+
+  public static function NJExceptionFactory($e) {
+
   }
 
   /****************************************************************************************
@@ -81,6 +89,16 @@ class NJORM extends PDO {
   }
   public static function queries() {
     return NJDb::$queries;
+  }
+
+  public static function error($argument) {
+    static $error;
+    if(is_callable($argument)) {
+      $error = $argument;
+    }
+    elseif(is_callable($error)) {
+      $error('[NJORM]'.$argument);
+    } 
   }
   public static function debug($argument) {
     static $debug;

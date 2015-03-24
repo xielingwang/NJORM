@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-23 17:13:12
+ * @Last Modified time: 2015-03-24 20:27:06
  */
 namespace NJORM;
 
@@ -18,23 +18,30 @@ class NJDb {
     if(static::$savequeries) {
       static::$queries[] = static::$lastquery;
     }
-    NJORM::debug($sql . '; -- ' . json_encode($params));
+    $dumpSQL = sprintf('%s;%s', $sql, empty($params)?'':(' -- '.json_encode($params)));
+    NJORM::debug($dumpSQL);
 
-    // type: prepare/execute
-    if($params) {
-      $stmt = NJORM::inst()->prepare($sql);
+    try {
+      // type: prepare/execute
+      if($params) {
+        $stmt = NJORM::inst()->prepare($sql);
 
-      if(!$stmt->execute($params)) {
-        echo $stmt->queryString.PHP_EOL;
-        echo $stmt->errorCode().PHP_EOL;
-        print_r($stmt->errorInfo());
-        throw new \Exception("bindParam Error");
+        if(!$stmt->execute($params)) {
+          echo $stmt->queryString.PHP_EOL;
+          echo $stmt->errorCode().PHP_EOL;
+          print_r($stmt->errorInfo());
+          throw new \Exception("bindParam Error");
+        }
+      }
+
+      // type: query
+      else {
+        $stmt = NJORM::inst()->query($sql);
       }
     }
-
-    // type: query
-    else {
-      $stmt = NJORM::inst()->query($sql);
+    catch(\PDOException ) {
+      NJORM::debug($dumpSQL);
+      throw new NJException('db_error', NJException::TYPE_SYST);
     }
 
     return $stmt;
