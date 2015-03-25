@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-02-02 23:27:30
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-13 19:32:22
+ * @Last Modified time: 2015-03-25 16:32:02
  */
 
 namespace NJORM\NJSql;
@@ -125,6 +125,7 @@ class NJTable {
     return $this;
   }
   public function validCheck($field, $val, $data, $isUpdate) {
+    print_r($this->_validation);
     if(!array_key_exists($field, $this->_validation))
       return;
     foreach($this->_validation[$field] as $vld) {

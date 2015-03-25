@@ -3,15 +3,17 @@
  * @Author: byamin
  * @Date:   2015-01-08 01:18:08
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-25 15:27:17
+ * @Last Modified time: 2015-03-25 16:41:47
  */
 use \NJORM\NJORM;
-use \NJORM\NJValid;
+use \NJORM\NJValid\NJRule;
 use \NJORM\NJSql\NJTable;
 
 class NJValidTest extends PHPUnit_Framework_TestCase{
   function testNumeric() {
     $v = NJValid::V('integer');
+    $this->assertInstanceOf('\\NJORM\\NJValid\\NJCheck', $v, '$v');
+
     $this->assertFalse($v('eee'), 'eee is not integer');
     $this->assertFalse($v(1111.22), '1111.22 is not integer');
     $this->assertFalse($v('1111.22'), "'1111.22' is not integer");
