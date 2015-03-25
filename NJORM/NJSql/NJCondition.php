@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-25 12:19:18
+ * @Last Modified time: 2015-03-25 15:46:58
  */
 namespace NJORM\NJSql;
 use NJORM\NJMisc;
@@ -226,8 +226,13 @@ class NJCondition extends NJExpr{
     }
 
     // 3. Strings and Pramaters
-    // 3.1. No need to change
+    // 3.1. Reconize as field
     if(empty($matched)) {
+      $field = $this->_GetValue();
+      if(static::$s_table) {
+        $field = static::$s_table->getField($field);
+      }
+      $this->_SetValue(NJMisc::formatFieldName($field));
       return $this;
     }
 

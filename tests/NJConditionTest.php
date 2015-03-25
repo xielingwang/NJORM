@@ -3,29 +3,23 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:11:15
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-22 01:36:42
+ * @Last Modified time: 2015-03-25 15:47:48
  */
 use \NJORM\NJSql\NJCondition as NJCnd;
 class NJConditionTest extends PHPUnit_Framework_TestCase {
-
-  function testCondition11(){
-
-    $cnd = NJCnd::fact(array(
-        'b' => 2,
-        'c' => 'abc',
-        'd' => '2.33'
-        ));
-    $this->assertEquals("`b` = 2 AND `c` = 'abc' AND `d` = '2.33'", $cnd->stringify());
-  }
 
   function testConditionParse() {
     $cond = new NJCnd();
     $cond->parse(array("abc", ">", 3));
     $this->assertEquals("`abc` > 3", $cond->stringify());
 
+    $cond->parse(array("hello"));
+    $this->assertEquals("`hello`", $cond->stringify());
+
     $cond->parse(array("1"));
     $this->assertEquals("1", $cond->stringify());
   }
+
   function testCondition() {
     $cond = NJCnd::fact("abc", ">", 3);
     $this->assertEquals("`abc` > 3", $cond->stringify());
@@ -93,10 +87,20 @@ class NJConditionTest extends PHPUnit_Framework_TestCase {
 
     $cond = NJCnd::fact("field1", "like", "abc%");
     $this->assertEquals("`field1` LIKE 'abc%'", $cond->stringify());
-    $this->assertEquals("WHERE `field1` LIKE 'abc%'", (string)$cond);
+    $this->assertEquals("WHERE `field1` LIKE 'abc%'", $cond->whereString());
 
     $cnd = NJCnd::fact("b in (2,  '3' , ? ) or field = 'field >= \'a''%' AND a between ? AND 4 and field  = 'field2   >= \'a''%'", 4, 2);
     $this->assertEquals("`b` IN (2,'3',?) OR `field` = 'field >= ''a''%' AND `a` BETWEEN ? AND 4 AND `field` = 'field2   >= ''a''%'", $cnd->stringify());
+  }
+
+  function testConditionKeyValues(){
+
+    $cnd = NJCnd::fact(array(
+        'b' => 2,
+        'c' => 'abc',
+        'd' => '2.33'
+        ));
+    $this->assertEquals("`b` = 2 AND `c` = 'abc' AND `d` = '2.33'", $cnd->stringify());
   }
 
   function testConditionWithBindParameters() {
