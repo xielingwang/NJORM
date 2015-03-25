@@ -3,8 +3,9 @@
  * @Author: byamin
  * @Date:   2015-01-08 01:18:08
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-19 02:18:04
+ * @Last Modified time: 2015-03-25 15:27:17
  */
+use \NJORM\NJORM;
 use \NJORM\NJValid;
 use \NJORM\NJSql\NJTable;
 
@@ -257,6 +258,10 @@ class NJValidTest extends PHPUnit_Framework_TestCase{
   }
 
   function testUnique() {
+    NJORM::error(function($msg) {
+      echo $msg . PHP_EOL;
+    });
+
     if(!NJTable::defined('qn_users')) {
       NJTable::define('qn_users', 'users')
         ->primary('user_id', 'uid')
@@ -266,7 +271,11 @@ class NJValidTest extends PHPUnit_Framework_TestCase{
         ->field('user_email', 'email');
     }
     $v = NJValid::V('unique', 'name', 'users');
-    $this->assertFalse($v('gogog'), '"gogog" is existed!');
-    $this->assertTrue($v('gogog1'), '"gogog1" is not existed!');
+    $this->assertFalse($v('name-264'), '"name-264" is existed!');
+    $this->assertTrue($v('name-264-failed'), '"name-264-failed" is not existed!');
+
+    $v = NJValid::V('unique', 'name', 'users', [['pass', 'pass-750']]);
+    $this->assertFalse($v('name-264'), '"name-264" is existed!');
+    $this->assertTrue($v('name-264-failed'), '"name-264-failed" is not existed!');
   }
 }

@@ -3,12 +3,14 @@
  * @Author: byamin
  * @Date:   2015-01-07 00:27:39
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-20 01:59:00
+ * @Last Modified time: 2015-03-25 15:22:43
  */
 namespace NJORM;
 use NJORM\NJSql;
 
 class NJValid {
+  protected $rules = array();
+
   protected static function instance() {
     static $inst;
     if(!$inst) {
@@ -21,26 +23,14 @@ class NJValid {
     static::instance()->addRule($rule, $callable);
   }
 
-  public static function V($args) {
-    if(!is_array($args))
-      $args = func_get_args();
-    return call_user_func_array(array(static::instance(), 'rule'), $args);
-  }
+  public static function V($rule) {
 
-  public function rule($rule) {
     $args = func_get_args();
-    array_shift($args);
-    return function () use ($rule, $args) {
-      if(!func_num_args())
-        return $args;
+    array_shift($args); // $rule
 
-      $args = array_merge(func_get_args(), $args);
-      array_unshift($args, $rule);
-      return call_user_func_array(__CLASS__.'::checkRule', $args);
-    };
+    return new NJCheck($rule, $args);
   }
 
-  protected $rules = array();
   public function addRule($rule, $callable) {
     if(!is_callable($callable)) {
       trigger_error('Argument 2 expects a callable value for NJValid::addRule()');
@@ -48,18 +38,17 @@ class NJValid {
     $this->rules[$rule] = $callable;
   }
 
-  public function _checkRule($rule) {
+  public static function checkRule() {
+    $self = static::instance();
+
     $args = func_get_args();
-    array_shift($args);
-    if(!array_key_exists($rule, $this->rules)) {
+    $rule = array_shift($args);
+
+    if(!array_key_exists($rule, $self->rules)) {
       trigger_error("Rule {$rule} not found!");
     }
 
-    return call_user_func_array($this->rules[$rule], $args);
-  }
-
-  public static function checkRule() {
-    return call_user_func_array(array(static::instance(), '_checkRule'), func_get_args());
+    return call_user_func_array($self->rules[$rule], $args);
   }
 
   public function __construct() {
@@ -215,15 +204,34 @@ class NJValid {
     });
 
     // njsql/njtable
-    $this->addRule('unique', function($val, $data, $field, $table) {
+    $this->addRule('existed', function($val, $col, $table, $extra = null) {
       $table = NJSql\NJTable::factory($table);
       $query = new NJQuery($table);
-      $prikey = $table->primary();
-      if(array_key_exists($prikey, $data) && $priVal = $data[$prikey]) {
-        $query->where($prikey, '!=', $priVal);
+
+      // extra conditions
+      if($extra && is_array($extra)) {
+        if(!is_array(current($extra)))
+          $extra = array($extra);
+        foreach($extra as $cond) {
+          call_user_func_array(array($query, 'where'), $cond);
+        }
       }
-      $query->where($field, $val);
-      return $query->count() <= 0;
+
+      // support multi primary keys
+      if(is_array($col)) {
+        return $query->where(array_combine($col, $val))->count() > 0;
+      }
+
+      // single primary key
+      return $query->where($col, $val)->count() > 0;
+    });
+
+    $this->addRule('notExisted', function($val, $col, $table, $extra = null){
+      return !static::checkRule('existed', $val, $col, $table, $extra);
+    });
+
+    $this->addRule('unique', function($val, $col, $table, $extra = null){
+      return !static::checkRule('existed', $val, $col, $table, $extra);
     });
 
     // datetime
