@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-24 20:27:06
+ * @Last Modified time: 2015-03-25 11:47:50
  */
 namespace NJORM;
 
@@ -39,9 +39,9 @@ class NJDb {
         $stmt = NJORM::inst()->query($sql);
       }
     }
-    catch(\PDOException ) {
-      NJORM::debug($dumpSQL);
-      throw new NJException('db_error', NJException::TYPE_SYST);
+    catch(\PDOException $e) {
+      NJORM::error($dumpSQL . "\n" . $e->getMessage());
+      throw new NJException('db_query_failed', NJException::TYPE_SYST);
     }
 
     return $stmt;

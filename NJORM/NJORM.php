@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-24 20:26:10
+ * @Last Modified time: 2015-03-25 11:48:20
  */
 namespace NJORM;
 
@@ -18,7 +18,8 @@ class NJORM extends \PDO {
         $pdo = new static($pdo_dsn, $pdo_user, $pdo_pass, $pdo_options);
       }
       catch(\PDOException $e) {
-        throw static::NJExceptionFactory($e->getMessage());
+        NJORM::error($e->getMessage());
+        throw new NJException('db_conn_failed', NJException::TYPE_SYST);
       }
     }
     return $pdo;
@@ -29,10 +30,6 @@ class NJORM extends \PDO {
     $this->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
     $this->setAttribute(\PDO::ATTR_STRINGIFY_FETCHES, false);
     $this->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-  }
-
-  public static function NJExceptionFactory($e) {
-
   }
 
   /****************************************************************************************
