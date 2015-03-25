@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-23 20:01:40
+ * @Last Modified time: 2015-03-25 12:20:43
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -50,10 +50,6 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
       );
 
     return call_user_func_array(array($this, $map[$type]), $args);
-  }
-
-  public function __toString() {
-    return $this->stringify();
   }
 
   public function params() {
@@ -205,15 +201,15 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
       , $this->_table->name());
 
     if($this->_cond_where) {
-      $sql .= ' '.(string)$this->_cond_where;
+      $sql .= ' '.$this->_cond_where->whereString();
     }
 
     if($this->_cond_sort) {
-      $sql .= ' '.(string)$this->_cond_sort;
+      $sql .= ' '.$this->_cond_sort->string();
     }
 
     if($this->_cond_limit) {
-      $sql .= ' '.(string)$this->_cond_limit;
+      $sql .= ' '.$this->_cond_limit->string();
     }
     return $sql;
   }
@@ -346,7 +342,7 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
       , $this->_table->name());
 
     if($this->_cond_where) {
-      $sql .= ' '.(string)$this->_cond_where;
+      $sql .= ' '.$this->_cond_where->whereString();
     }
 
     return $sql;
@@ -384,18 +380,18 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
     $this->_expr_upd = $this->_table->values($data, true);
 
     $sql = 'UPDATE '.$this->_table->name()
-      .' SET '.(string)$this->_expr_upd;
+      .' SET '.$this->_expr_upd->string();
 
     if($this->_cond_where) {
-      $sql .= ' '.(string)$this->_cond_where;
+      $sql .= ' '.$this->_cond_where->whereString();
     }
 
     if($this->_cond_sort) {
-      $sql .= ' '.(string)$this->_cond_sort;
+      $sql .= ' '.$this->_cond_sort->string();
     }
 
     if($this->_cond_limit) {
-      $sql .= ' '.(string)$this->_cond_limit;
+      $sql .= ' '.$this->_cond_limit->string();
     }
 
     return $sql;
@@ -426,15 +422,15 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
     $sql = 'DELETE FROM '.$this->_table->name();
 
     if($this->_cond_where) {
-      $sql .= ' '.(string)$this->_cond_where;
+      $sql .= ' '.$this->_cond_where->whereString();
     }
 
     if($this->_cond_sort) {
-      $sql .= ' '.(string)$this->_cond_sort;
+      $sql .= ' '.$this->_cond_sort->string();
     }
 
     if($this->_cond_limit) {
-      $sql .= ' '.$this->_cond_limit->stringify(true);
+      $sql .= ' '.$this->_cond_limit->stringify();
     }
 
     return $sql;

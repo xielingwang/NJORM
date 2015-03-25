@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-02-17 19:56:26
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-06 00:25:05
+ * @Last Modified time: 2015-03-25 12:19:37
  */
 namespace NJORM\NJSql;
 class NJExpr{
@@ -148,11 +148,6 @@ class NJExpr{
   public function isEmpty() {
     return empty($this->_value);
   }
-
-  public function __toString() {
-    return $this->stringify();
-  }
-
   public function stringify() {
     $ClassNJEpr = __CLASS__;
 

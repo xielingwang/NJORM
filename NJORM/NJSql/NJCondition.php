@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-05 16:42:07
+ * @Last Modified time: 2015-03-25 12:19:18
  */
 namespace NJORM\NJSql;
 use NJORM\NJMisc;
@@ -353,7 +353,7 @@ class NJCondition extends NJExpr{
       && in_array('or', $v);
   }
 
-  public function __toString() {
-    return "WHERE " . parent::__toString();
+  public function whereString() {
+    return "WHERE " . $this->stringify();
   }
 }
