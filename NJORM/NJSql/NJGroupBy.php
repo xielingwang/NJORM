@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-26 00:35:38
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-25 22:20:46
+ * @Last Modified time: 2015-03-26 16:32:37
  */
 namespace NJORM\NJSql;
 class NJGroupBy extends NJOrderBy{
@@ -25,7 +25,7 @@ class NJGroupBy extends NJOrderBy{
   }
 
   public function stringify() {
-    $str = "GROUP BY " . parent::stringify();
+    $str = "GROUP BY " . $this->toString();
     if($this->_condition)
       $str .= " HAVING " . $this->_condition->stringify();
     return $str;

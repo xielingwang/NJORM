@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-25 00:56:57
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-02-25 22:20:20
+ * @Last Modified time: 2015-03-26 16:32:10
  */
 namespace NJORM\NJSql;
 use NJORM\NJMisc;
@@ -39,7 +39,11 @@ class NJOrderBy extends NJExpr{
     return $this;
   }
 
+  protected function toString() {
+    return parent::stringify();
+  }
+
   public function stringify() {
-    return "ORDER BY " . parent::stringify();
+    return "ORDER BY " . $this->toString();
   }
 }

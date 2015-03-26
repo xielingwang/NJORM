@@ -3,7 +3,7 @@
  * @Author: AminBy
  * @Date:   2015-03-05 15:51:10
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-07 16:44:15
+ * @Last Modified time: 2015-03-26 16:12:17
  */
 
 use \NJORM\NJSql\NJTable;
@@ -30,11 +30,12 @@ class NJQueryInsertTest extends PHPUnit_Framework_TestCase {
 
   function testQueryInsert() {
     $query = NJORM::inst()->users;
+    $emailRand = rand(0, 999);
     $data = array(
-      'name' => 'insert-name',
-      'pass' => 'insert-pass',
+      'name' => 'testQueryInsert'.rand(0,999),
+      'pass' => 'testQueryInsert'.rand(0,999),
       'balance' => floatval(rand(1000,99999)) / 100,
-      'email' => new NJExpr("CONCAT(?, UPPER(?))", 'insert-', 'email'),
+      'email' => new NJExpr("CONCAT(?, UPPER(?))", 'insert-', $emailRand),
       'ct' => new NJExpr('unix_timestamp()')
       );
 
@@ -42,9 +43,9 @@ class NJQueryInsertTest extends PHPUnit_Framework_TestCase {
 
     // assert sql and params
     extract(NJORM::lastquery(), EXTR_PREFIX_ALL, 'exec');
-    $this->assertEquals("INSERT INTO `qn_users`(`user_name`,`user_pass`,`user_balance`,`user_email`,`user_created`) VALUES ('insert-name','insert-pass',".$data['balance'].",CONCAT(?, UPPER(?)),unix_timestamp())", $exec_sql);
+    $this->assertEquals("INSERT INTO `qn_users`(`user_name`,`user_pass`,`user_balance`,`user_email`,`user_created`) VALUES ('{$data['name']}','{$data['pass']}',{$data['balance']},CONCAT(?, UPPER(?)),unix_timestamp())", $exec_sql);
     $this->assertContains('insert-', $exec_params);
-    $this->assertContains('email', $exec_params);
+    $this->assertContains($emailRand, $exec_params);
 
     // isLazyReload() == true after inserting
     $this->assertTrue($insUser->isLazyReload(), 'is Lazy Reload after inserting');
@@ -57,9 +58,9 @@ class NJQueryInsertTest extends PHPUnit_Framework_TestCase {
 
     // isLazyReload() == true after reload
     $this->assertFalse($insUser->isLazyReload(), 'not Lazy Reload get value');
-    $this->assertEquals($insUser['name'], 'insert-name');
-    $this->assertEquals($insUser['pass'], 'insert-pass');
-    $this->assertEquals($insUser['email'], 'insert-EMAIL');
+    $this->assertEquals($insUser['name'], $data['name']);
+    $this->assertEquals($insUser['pass'], $data['pass']);
+    $this->assertEquals($insUser['email'], 'insert-'.$emailRand);
     $this->assertGreaterThan(1425635091, $insUser['ct'], 'inserted uid > 1425635091'); // 1425635091 is timestamp of 2015-03-06 17:44:51 for Asia/Shanghai Timezone
 
 

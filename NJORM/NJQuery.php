@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-25 12:20:43
+ * @Last Modified time: 2015-03-26 16:34:00
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -197,7 +197,7 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
       $this->_expr_sel = $this->_table->columns($this->_sel_cols);
     }
     $sql = sprintf('SELECT %s FROM %s'
-      , $this->_expr_sel
+      , $this->_expr_sel->stringify()
       , $this->_table->name());
 
     if($this->_cond_where) {
@@ -205,11 +205,11 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
     }
 
     if($this->_cond_sort) {
-      $sql .= ' '.$this->_cond_sort->string();
+      $sql .= ' '.$this->_cond_sort->stringify();
     }
 
     if($this->_cond_limit) {
-      $sql .= ' '.$this->_cond_limit->string();
+      $sql .= ' '.$this->_cond_limit->stringify();
     }
     return $sql;
   }
@@ -290,9 +290,7 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
 
   protected function _fetchMany($stmt) {
     if($stmt && $r = $stmt->fetchAll(\PDO::FETCH_ASSOC)) {
-      // print_r($r);
       $_cols = new NJCollection($this->_table, $r);
-      // print_r($_cols);
       return $_cols;
     }
   }
@@ -517,6 +515,7 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
     return $this->offsetExistsById($offset);
   }
   public function offsetGet($offset) {
+    // print_r(array($this->_cond_limit or $this->_cond_where or $this->_cond_sort));
     if($this->_cond_limit or $this->_cond_where or $this->_cond_sort){
       return $this->offsetGetByFetch($offset);
     }
