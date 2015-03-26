@@ -3,7 +3,7 @@
  * @Author: AminBy
  * @Date:   2015-03-25 17:17:17
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-25 20:59:49
+ * @Last Modified time: 2015-03-26 11:47:12
  */
 
 use \NJORM\NJValid\NJDuang;
@@ -44,8 +44,10 @@ class NJDuangTest extends PHPUnit_Framework_TestCase {
     $duang = $this->getDuang();
     \NJORM\NJException::setMessage('float/max', '"{k}"不能大于{p}');
     \NJORM\NJException::setMessage('test/float/max', '测试"{k}"不能大于{p}');
-    \NJORM\NJException::setMessage('length/length', '"{k}"长度要等于{p}');
+    \NJORM\NJException::setMessage('length', '`{k}`长度要等于{p}');
+    \NJORM\NJException::setMessage('length/length', '长度的长度要等于{p}');
     \NJORM\NJException::setMessage('test/isin', '"{k}"需要是以下值{p}');
+    \NJORM\NJException::setMessage('test/notEmpty', '"{k}"不为空');
 
     $data = [
     'integer' => -111,
@@ -58,8 +60,17 @@ class NJDuangTest extends PHPUnit_Framework_TestCase {
       $duang($data);
     }
     catch(\NJORM\NJException $e) {
-      print_r($e->getMsgs());
+      $this->assertEquals([
+        '"-111" must be a positive number',
+        '长度的长度要等于9',
+        '"120" must between 20 and 70',
+        '"lb"不为空',
+        '"".length must between 3 and 5',
+        '"ne"不为空',
+        '"isin"需要是以下值["1",3,5]',
+      ], $e->getMsgs());
+      return;
     }
-
+    $this->assertFalse(true, 'opps, no exception throw!');
   }
 }
