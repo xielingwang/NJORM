@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-02-02 23:27:30
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-25 16:32:02
+ * @Last Modified time: 2015-03-26 16:06:11
  */
 
 namespace NJORM\NJSql;
@@ -264,8 +264,8 @@ class NJTable {
       || array_key_exists($name, static::$_aliases);
   }
   public static function redefine($name, $alias=null) {
-    if(!array_key_exists($name, static::$_tables))
-      unset(static::$_tables);
+    unset(static::$_tables[$name]);
+    unset(static::$_tables[$alias]);
     return static::define($name, $alias);
   } 
   public static function define($name, $alias=null) {
@@ -310,8 +310,7 @@ class NJTable {
     $_arr = array_diff($_cols,$this->_fields);
     $_cols = array_diff($this->_fields, $_cols);
     foreach ($_arr as $col) {
-      if(array_key_exists($col, $_cols))
-        unset($_cols[$col]);
+      unset($_cols[$col]);
     }
     return $_cols;
   }

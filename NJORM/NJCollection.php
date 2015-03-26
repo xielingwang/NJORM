@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-02-14 11:57:17
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-23 20:03:00
+ * @Last Modified time: 2015-03-26 13:36:59
  */
 namespace NJORM;
 use \NJORM\NJSql\NJTable;
@@ -138,8 +138,6 @@ class NJCollection extends NJModel {
    * @return [type]         [description]
    */
   public function offsetUnset($offset){
-    if(array_key_exists($offset, $this->_data)){
-      unset($this->_data[$offset]);
-    }
+    unset($this->_data[$offset]);
   }
 }

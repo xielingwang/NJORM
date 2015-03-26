@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-20 21:27:37
+ * @Last Modified time: 2015-03-26 13:36:45
  */
 namespace NJORM;
 use \NJORM\NJSql\NJTable;
@@ -218,12 +218,8 @@ class NJModel implements Countable,ArrayAccess,JsonSerializable,Iterator {
   }
   public function offsetUnset($offset){
     $this->lazyReload();
-    if(array_key_exists($offset, $this->_data)){
-      unset($this->_data[$offset]);
-    }
-    if(array_key_exists($offset, $this->_modified)){
-      unset($this->_modified[$offset]);
-    }
+    unset($this->_data[$offset]);
+    unset($this->_modified[$offset]);
   }
 
   /**
