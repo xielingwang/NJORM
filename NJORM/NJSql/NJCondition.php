@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-25 15:46:58
+ * @Last Modified time: 2015-03-26 16:23:53
  */
 namespace NJORM\NJSql;
 use NJORM\NJMisc;
@@ -259,7 +259,7 @@ class NJCondition extends NJExpr{
   }
 
   protected function _putBackStringsAndParameters($cond, &$strngs, &$parameters, $returnObject=true) {
-    $isfloat = NJValid::V('float');
+    $isfloat = NJValid\NJRule::V('float');
 
     $ps = array();
     $cnd = array();
