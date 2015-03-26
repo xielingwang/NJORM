@@ -3,15 +3,14 @@
  * @Author: byamin
  * @Date:   2015-01-07 00:27:39
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-25 20:58:48
+ * @Last Modified time: 2015-03-26 18:50:30
  */
 namespace NJORM\NJValid;
 use NJORM\NJSql;
 
 class NJRule {
-  public static $messages = array();
-
   protected $_rules = array();
+  protected $_messages = array();
   protected $_prev_rule; // save rule name after add rule
 
   protected static function instance() {
@@ -20,6 +19,10 @@ class NJRule {
       $inst = new static();
     }
     return $inst;
+  }
+
+  public static function messages() {
+    return static::instance()->_messages;
   }
 
   public static function register($rule, $callable) {
@@ -47,12 +50,8 @@ class NJRule {
   }
 
   public function msg($msg) {
-    static::setMsg($this->_prev_rule, $msg);
+    $this->_messages[$this->_prev_rule] = $msg;
     return $this;
-  }
-
-  static function setMsg($rule, $msg) {
-    static::$messages[$rule] = $msg;
   }
 
   public static function checkRule() {
@@ -83,13 +82,13 @@ class NJRule {
       if($caseinsensitive)
         $regex .= 'i';
       return !!preg_grep($regex, $arr);
-    })->msg('"{v}" must be in array {p1}');
+    })->msg('"{v}" must be in array {p}');
 
     // rule 'notIn'
     $this->addRule('notIn', function($val, $arr, $caseinsensitive=false){
       return !static::checkRule('in', $val, $arr, $caseinsensitive);
  
-    })->msg('"{v}" must not in array {p1}');
+    })->msg('"{v}" must not in array {p}');
 
     // rule 'array'
     $this->addRule('array', 'is_array')->msg('"{v}" must be an array');
@@ -132,18 +131,18 @@ class NJRule {
     // rule 'max'
     $this->addRule('max', function($val, $max){
       return $val <= $max;
-    })->msg('"{v}" mustn\'t greater than {p1}');
+    })->msg('"{v}" mustn\'t greater than {p}');
 
     // rule 'min'
     $this->addRule('min', function($val, $min){
       return $val >= $min;
-    })->msg('"{v}" mustn\'t less than {p1}');
+    })->msg('"{v}" mustn\'t less than {p}');
 
     // rule 'between'
     $this->addRule('between', function($val, $min, $max){
       return static::checkRule('min', $val, $min)
         && static::checkRule('max', $val, $max);
-    })->msg('"{v}" must between {p1} and {p2}');
+    })->msg('"{v}" must between {p} and {p2}');
 
     // string
     // rule 'alpha'
@@ -170,22 +169,22 @@ class NJRule {
     // rule 'length'
     $this->addRule('length', function($val, $len){
       return strlen($val) == $len;
-    })->msg('"{v}".length must equal of {p1}');
+    })->msg('"{v}"\'s length must equal of {p}');
 
     // rule 'lengthBetween'
     $this->addRule('lengthBetween', function($val, $min, $max){
       return static::checkRule('lengthMin', $val, $min) && static::checkRule('lengthMax', $val, $max);
-    })->msg('"{v}".length must between {p1} and {p2}');
+    })->msg('"{v}"\'s length must between {p} and {p2}');
 
     // rule 'lengthMin'
     $this->addRule('lengthMin', function($val, $min){
       return strlen($val) >= $min;
-    })->msg('"{v}".length must greater or equal than {q1}');
+    })->msg('"{v}"\'s length must greater or equal than {p}');
 
     // rule 'lengthMax'
     $this->addRule('lengthMax', function($val, $max){
       return strlen($val) <= $max;
-    })->msg('"{v}".length must less or equal than {1}');
+    })->msg('"{v}"\'s length must less or equal than {p}');
 
     // rule 'contains'
     $this->addRule('contains', function($val, $needle, $caseinsensitive = false){
@@ -203,7 +202,7 @@ class NJRule {
           : strpos($val, $needle)
           ) !== false;
       }
-    })->msg('"{v}" must contains "{q1}"');
+    })->msg('"{v}" must contains "{p}"');
 
     // rule 'startsWith'
     $this->addRule('startsWith', function($val, $needle, $caseinsensitive=false){
@@ -227,7 +226,7 @@ class NJRule {
           : strpos($val, $needle)
           ) === 0;
       }
-    })->msg('"{v}" must start with "{q1}"');
+    })->msg('"{v}" must start with "{p}"');
 
     // rule 'endsWith'
     $this->addRule('endsWith', function($val, $needle, $caseinsensitive=false){
@@ -252,7 +251,7 @@ class NJRule {
           : strrpos($val, $needle)
           ) === $last;
       }
-    })->msg('"{v}" must end with {q1}');
+    })->msg('"{v}" must end with {p}');
 
     // regex
     // rule 'regex'
@@ -262,7 +261,7 @@ class NJRule {
         trigger_error('A regex error occurs: "' . $pattern . '"');
       }
       return !!$ret;
-    })->msg('"{v}" must accord with regular pattern "{q1}"');
+    })->msg('"{v}" must accord with regular pattern "{p}"');
 
     // rule 'email'
     $this->addRule('email', function($val){
@@ -283,7 +282,7 @@ class NJRule {
     // rule 'existed'
     $this->addRule('existed', function($val, $col, $table, $extra = null) {
       $table = NJSql\NJTable::factory($table);
-      $query = new NJQuery($table);
+      $query = new \NJORM\NJQuery($table);
 
       // extra conditions
       if($extra && is_array($extra)) {
@@ -301,12 +300,17 @@ class NJRule {
 
       // single primary key
       return $query->where($col, $val)->count() > 0;
-    })->msg('"{v}" must be existed in `{p1}`.`{p2}`, exstra: {p3}');
+    })->msg('"{v}" must be existed in {p2}.{p}, extra: {p3}');
 
     // rule 'notExisted'
     $this->addRule('notExisted', function($val, $col, $table, $extra = null){
       return !static::checkRule('existed', $val, $col, $table, $extra);
-    })->msg('"{v}" must not be existed in `{p1}`.`{p2}`, exstra: {p3}');
+    })->msg('"{v}" must not be existed in {p2}.{p}, extra: {p3}');
+
+    // rule 'unqiue'
+    $this->addRule('unique', function($val, $col, $table, $extra = null){
+      return !static::checkRule('existed', $val, $col, $table, $extra);
+    })->msg('{p2}.{p} should be unique, "{v}" has been existed before, extra: {p3}');
 
     // datetime
     /*

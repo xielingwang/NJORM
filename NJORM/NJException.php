@@ -3,22 +3,39 @@
  * @Author: AminBy
  * @Date:   2015-03-24 17:27:30
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-26 11:14:18
+ * @Last Modified time: 2015-03-26 18:52:37
  */
 
 namespace NJORM;
 use \NJORM\NJValid\NJRule;
 
 class NJException extends \Exception {
+  const ERROR_TYPE_DBACCESS = 'error_dbaccess';
+  const ERROR_TYPE_DBEXECUTION = 'error_sql_execution';
+  const ERROR_TYPE_VALIDATION = 'error_validation';
+
   protected $_messages = [];
   protected $_msgs = [];
   protected $_type = 1;
+  protected $_error;
 
   const TYPE_SYST = 0;
   const TYPE_USER = 1;
-  public function __construct($key, $type=1, $params = null) {
+  public function __construct($error, $type=1, $params = null) {
+    $this->_messages = array_merge($this->_messages, NJRule::messages(), static::$s_messages);
+
     $this->_type = $type;
-    $this->_messages = array_merge($this->_messages, NJRule::$messages, static::$s_messages);
+    $this->_error = $error;
+
+    $this->init_error_msgs();
+  }
+
+  public function init_error_msgs() {
+
+  }
+
+  public function getError() {
+    return $this->_error;
   }
 
   protected static $s_messages = array();
@@ -104,6 +121,8 @@ class NJException extends \Exception {
     $toString = function($v) {
       if(is_array($v) || is_object($v))
         return json_encode($v);
+      if(is_null($v))
+        return 'nil';
       return $v;
     };
 

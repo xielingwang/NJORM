@@ -3,15 +3,16 @@
  * @Author: byamin
  * @Date:   2015-02-02 23:27:30
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-26 16:06:11
+ * @Last Modified time: 2015-03-26 19:21:03
  */
 
 namespace NJORM\NJSql;
 use NJORM\NJMisc;
-use NJORM\NJValid;
+use NJORM\NJValid\NJDuang;
 
 class NJTable {
   protected $_name;
+  protected $_alias;
   protected $_pri_key;
   protected $_fields;
 
@@ -19,10 +20,16 @@ class NJTable {
 
   public function __construct($name) {
     $this->_name = $name;
+
+    // init NJDuang
+    $this->_alias = (func_num_args() > 1) ? func_get_arg(1) : $name;
+    $this->_duang = new NJDuang($this->_alias);
   }
 
   public function __get($name) {
-    return $this->columns($name);
+    if(in_array($name, $this->_fields) || array_key_exists($name, $this->_fields))
+      return $this->columns($name);
+    trigger_error('access undefined attribute "'.$name.'"');
   }
 
   public function name($alias = null) {
@@ -49,21 +56,34 @@ class NJTable {
     if(!$this->_fields)
       $this->_fields = array();
 
+    if(in_array($alias, $this->_fields))
+      trigger_error('field alias existed');
+
     // set alias with field name
     $alias or $alias = $field;
 
     // for static::valid()
-    $this->_prev_field = $field;
+    $this->_prev_field = $alias;
+
     $this->_fields[$field] = $alias;
     return $this;
   }
 
+  /**
+   * [fields description]
+   * @return [type] [description]
+   */
   public function fields() {
     if(func_num_args() <= 0)
       trigger_error('NJTable::fields() expects at least 1 parameter.');
 
-    $prikeys = array();
-    $keys = array();
+    /*
+     * Case 1: $this->fields('prefix', array('a', 'b', 'd'), array('a'))
+     * translate to:
+     * $this->primary('prefix_a', 'a');
+     * $this->field('prefix_b', 'b');
+     * $this->field('prefix_d', 'd');
+     */
     if(func_num_args() > 2) {
       if(!is_string(func_get_arg(0)) || !is_array(func_get_arg(1)))
         trigger_error('NJTable::fields($prefix, $fields, $prikey) expects 1st parameter of string and 2nd parameters of array.');
@@ -77,6 +97,14 @@ class NJTable {
         : $this->field($prefix.'_'.$alias, $alias);
       }
     }
+
+    /*
+     *  Case 2: $this->fields(array('oa' => 'a', 'zb' => 'b', 'cd' => 'd'), array('a'));
+     *  truanslate to:
+     *  $this->primary('oa', 'a');
+     *  $this->primary('zb', 'b');
+     *  $this->primary('cd', 'd');
+     */
     else {
       if(!is_array(func_get_arg(0)))
         trigger_error('NJTable::fields($fields, $prikey) expects an array');
@@ -87,60 +115,62 @@ class NJTable {
         : $this->field($k, $alias);
       }
     }
+
     return $this;
   }
 
   private $_prev_field;
-  protected $_validation = array();
-  public function valid($message) {
+  protected $_duang;
+  protected $_unique_cols = array();
+  public function valid() {
     if(!$this->_prev_field) {
       trigger_error('Field should be define first!');
     }
-    $valids = func_get_args();
-    array_shift($valids);
-    if(empty($valids)) {
-      trigger_error('NJTable::valid() expects more than 1 arguments.');
+
+    $args = func_get_args();
+    array_unshift($args, $this->_prev_field);
+
+    return call_user_func_array(array($this, 'validfield'), $args);
+  }
+
+  protected function validfield($field) {
+    if(!in_array($field, $this->_fields) && array_key_exists($field, $this->_fields)) {
+      $field = $this->_fields[$field];
     }
-    foreach($valids as &$_vld) {
-      $vld = $_vld;
-      if(!($vld instanceof NJValid)) {
-        if(!is_array($vld)) {
-          $vld = array($vld);
-        }
-        $tmp = array($this->_fields[$this->_prev_field], $this->_name);
-        $_vld = function ($data) use ($vld,$tmp) {
-          array_unshift($tmp, $data);
-          $vld = array_merge($vld, $tmp);
-          return NJValid::V($vld);
-        };
-      }
+
+    if(!in_array($field, $this->_fields)) 
+      trigger_error("table field '{$field}' not found");
+
+    $args = func_get_args();
+    array_shift($args);
+
+    // unique keys
+    if(($index = array_search('unique', $args)) !== false){
+      $this->_unique_cols[] =$this->_prev_field;
+      unset($args[$index]);
     }
-    if(!array_key_exists($this->_prev_field, $this->_validation)){
-      $this->_validation[$this->_prev_field] = array();
+    if(($index = array_search(array('unique'), $args)) !== false) {
+      $this->_unique_cols[] =$this->_prev_field;
+      unset($args[$index]);
     }
-    $this->_validation[$this->_prev_field][] = array(
-      'msg' => $message,
-      'valids' => $valids,
-      );
+    $this->_unique_cols = array_unique($this->_unique_cols);
+
+    // use NJDuang::add() api
+    array_unshift($args, $this->_prev_field);
+    call_user_func_array(array($this->_duang, 'add'), $args);
+
     return $this;
   }
-  public function validCheck($field, $val, $data, $isUpdate) {
-    print_r($this->_validation);
-    if(!array_key_exists($field, $this->_validation))
-      return;
-    foreach($this->_validation[$field] as $vld) {
-      $msg = $vld['msg'];
-      $error = false;
-      foreach($vld['valids'] as $k=>$v) {
-        $v = $v($data);
-        $msg = preg_replace("/\{{$k}-(\d+)\}/i", "E", $msg);
-        if(!$v($val)) {
-          $error = true;
-        }
-      }
-      if($error)
-        return $msg;
+
+  public function unique() {
+    if(!$this->_prev_field) {
+      trigger_error('Field should be define first!');
     }
+
+    $this->_unique_fields[] = $this->_prev_field;
+    $this->_unique_fields = array_filter($this->_unique_fields);
+
+    return $this;
   }
 
   public function primary($field=null, $alias = null) {
@@ -270,7 +300,7 @@ class NJTable {
   } 
   public static function define($name, $alias=null) {
     if(!array_key_exists($name, static::$_tables)) {
-      static::$_tables[$name] = new static($name);
+      static::$_tables[$name] = new static($name, $alias);
       if($alias) {
         static::$_aliases[$alias] =& static::$_tables[$name];
       }
@@ -393,114 +423,134 @@ class NJTable {
     return (new NJExpr)->parse($argsForNJExpr);
   }
 
-  public function values($values, $update=false) {
-    // update
-    if($update) {
-      return $this->values4update($values);
+  protected function filterValues($values) {
+
+    // filter: remove unavailable cols
+    $refFields =& $this->_fields;
+    $flipFields = array_flip($refFields);
+    $keyvalues = array_map(function($col, $val) use ($refFields, $flipFields) {
+      if(in_array($col, $refFields))
+        return array($col => $val);
+
+      if(in_array($col, $flipFields))
+        return array($refFields[$col] => $val);
+
+    }, array_keys($values), array_values($values));
+    return call_user_func_array('array_merge', array_filter($keyvalues));
+  }
+
+  protected function executeDuang($values, $update) {
+    $duang = clone $this->_duang;
+
+    if(true or $this->_unique_cols) {
+      $table = $this->_alias;
+      $extra = null;
+      if($update && array_key_exists($this->_pri_key, $values)) {
+        $extra = array($this->_pri_key, '!=', $values[$this->_pri_key]);
+      }
+
+      array_map(function($col) use (&$duang, $table, $extra) {
+        $duang->add($col, ['unique', $col, $table, $extra]);
+      }, $this->_unique_cols);
     }
 
-    // insert
-    foreach((array)$this->primary() as $key){
-      if(array_key_exists($key, $values))
+    $duang($values, $update);
+  }
+
+  public function values($values, $update=false) {
+    if($update) {
+      // execute Duang
+      $this->executeDuang($values, $update);
+
+      // filter: remove primary key values
+      foreach((array)$this->primary() as $key) {
         unset($values[$key]);
+      }
+
+      return $this->values4update($values);
     }
-    return $this->values4insert($values);
+    else {
+      // single => multiple
+      if(!is_array(current($values)))
+        $values = array($values);
+
+      // remove unavailable cols and duang
+      $_values = array();
+      foreach ($values as $vals) {
+        $vals = $this->filterValues($vals);
+
+        // execute Duang
+        $this->executeDuang($vals, $update);
+
+        $_values[] = $vals;
+      }
+
+      return $this->values4insert($_values);
+    }
   }
 
   protected function values4update($values) {
-    $ClassNJExpr = __NAMESPACE__.'\NJExpr';
-
     if(is_array(current($values))) {
       trigger_error('Update values expect scalars!');
     }
 
-    // get 
+    // flipFields
     $flipFields = array_flip($this->_fields);
-    $arrParams = array();
-    $arrExpr = array();
-    foreach($values as $col => $v) {
-      if(array_key_exists($col, $flipFields)) {
-        $col = $flipFields[$col];
-      }
-      elseif(!array_key_exists($col, $this->_fields)) {
-        continue;
-      }
-      // skip validate when it is NJExpr instance
-      if($v instanceof $ClassNJExpr) {
-        $arrParams = array_merge($arrParams, $v->parameters());
-      }
-      else {
-        if($ret = $this->validCheck($col, $v, $values, true)) {
-          // throw new NJException
-          trigger_error($ret);
-        }
-      }
-      $arrExpr[] = NJMisc::wrapGraveAccent($col).'='.NJMisc::formatValue($v);
-    }
 
-    array_unshift($arrParams, implode(',', $arrExpr));
-    return (new $ClassNJExpr)->parse($arrParams);
+    $params = array();
+    $exprs = array_map(function($col, $v) use(&$params, $flipFields) {
+      static $c; $c or $c = __NAMESPACE__.'\\NJExpr';
+      if($v instanceof $c) {
+        $params[] = $v->parameters();
+      }
+      return NJMisc::wrapGraveAccent($flipFields[$col]).'='.NJMisc::formatValue($v);
+    }
+    , array_keys($values)
+    , array_values($values));
+
+    // $params = merge($params[0], $params[1], $params[2], ...)
+    $params && $params = call_user_func_array('array_merge', $params);
+
+    array_unshift($params, implode(',', $exprs));
+    return (new NJExpr)->parse($params);
   }
 
   protected function values4insert($values) {
-    $ClassNJExpr = __NAMESPACE__.'\NJExpr';
+    // 1. get all cols and merge then unique them
+    $cols = array_unique(call_user_func_array('array_merge', array_map(function($_){ return array_keys($_); }, $values)));
 
-    // change one record to multiple records
-    if(!is_array(current($values))) {
-      return $this->values4insert(array($values));
-    }
-
-    $inputKeys = array_reduce($values, function($carry, $item){
-      return array_merge($carry, array_keys($item));
-    }, array());
-
-    // unique fields and remove that field not in table fields or field aliases
-    $refFields =& $this->_fields;
+    // 2.dbrow-values
     $flipFields = array_flip($this->_fields);
-    $fields = array_map(function($col) use($refFields, $flipFields) {
-      if(array_key_exists($col, $flipFields))
-        return $flipFields[$col];
-      if(array_key_exists($col, $this->_fields))
-        return $col;
-    }, array_unique($inputKeys));
-    $fields = array_filter($fields);
+    $params = array();
+    $dbrows = array_map(function($vals) use ($cols, $flipFields, &$params){
+      $dbvals = array_map(function($col) use($vals, $flipFields, &$params) {
+        static $c; $c or $c = __NAMESPACE__.'\\NJExpr';
 
-    // values
-    $fmted_vals = array();
-    $arrParams = array();
-    foreach ($values as $val) {
-      $tmpArr = array();
-      foreach($fields as $field) {
-        if(array_key_exists($field, $val)){
-          $v = $val[$field];
-        }
-        elseif(array_key_exists($this->_fields[$field], $val)) {
-          $v = $val[$this->_fields[$field]];
-        }
-        else {
-          $v = NULL;
-        }
+        $v = array_key_exists($col, $vals) ? $vals[$col] : null;
+        if($v instanceof $c)
+          $params[] = $v->parameters();
 
-        if($v instanceof $ClassNJExpr) {
-          $arrParams = array_merge($arrParams, $v->parameters());
-        }
-        else{
-          if($ret = $this->validCheck($field, $v, $val, true)) {
-            // throw new NJException
-            trigger_error($ret);
-          }
-        }
-        $tmpArr[] = NJMisc::formatValue($v);
-      }
-      $fmted_vals[] = '('.implode(',', $tmpArr).')';
-    }
+        return NJMisc::formatValue($v);
+      }, $cols);
 
-    $engravedFields = array_map(array('\NJORM\NJMisc','wrapGraveAccent'), $fields);
+      return '('.implode(',', $dbvals).')';
+    }, $values);
+
+    // $params = merge($params[0], $params[1], $params[2], ...)
+    $params && $params = call_user_func_array('array_merge', $params);
+
+    // 3.dbcols
+    $dbcols = array_map(function($col) use ($flipFields) {
+      return \NJORM\NJMisc::wrapGraveAccent($flipFields[$col]);
+    }, $cols);
+
+    // 4.NJExpr
     $sql = sprintf('(%s) VALUES %s'
-      , implode(',', $engravedFields)
-      , implode(',', $fmted_vals));
+      , implode(',', $dbcols)
+      , implode(',', $dbrows));
 
-    array_unshift($arrParams, $sql);
-    return (new $ClassNJExpr)->parse($arrParams);
+    // 5. return 
+    array_unshift($params, $sql);
+    return (new NJExpr)->parse($params);
   }
 }

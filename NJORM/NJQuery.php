@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-26 16:34:00
+ * @Last Modified time: 2015-03-26 19:12:23
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -378,18 +378,18 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
     $this->_expr_upd = $this->_table->values($data, true);
 
     $sql = 'UPDATE '.$this->_table->name()
-      .' SET '.$this->_expr_upd->string();
+      .' SET '.$this->_expr_upd->stringify();
 
     if($this->_cond_where) {
       $sql .= ' '.$this->_cond_where->whereString();
     }
 
     if($this->_cond_sort) {
-      $sql .= ' '.$this->_cond_sort->string();
+      $sql .= ' '.$this->_cond_sort->stringify();
     }
 
     if($this->_cond_limit) {
-      $sql .= ' '.$this->_cond_limit->string();
+      $sql .= ' '.$this->_cond_limit->stringify();
     }
 
     return $sql;
@@ -398,11 +398,13 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
   public function update($data){
 
     $prikey = $this->_table->primary();
+    /*
     if(!array_key_exists($prikey, $data)) {
       trigger_error('NJQuery::update expects data with primary key!');
     }
     $this->where($prikey, $data[$prikey]);
     unset($data[$prikey]);
+    */
 
     $sql = $this->sqlUpdate($data);
 
@@ -424,7 +426,7 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
     }
 
     if($this->_cond_sort) {
-      $sql .= ' '.$this->_cond_sort->string();
+      $sql .= ' '.$this->_cond_sort->stringify();
     }
 
     if($this->_cond_limit) {

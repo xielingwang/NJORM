@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-25 11:48:20
+ * @Last Modified time: 2015-03-26 18:47:57
  */
 namespace NJORM;
 
@@ -19,7 +19,7 @@ class NJORM extends \PDO {
       }
       catch(\PDOException $e) {
         NJORM::error($e->getMessage());
-        throw new NJException('db_conn_failed', NJException::TYPE_SYST);
+        throw new NJException(NJException::ERROR_TYPE_DBACCESS, NJException::TYPE_SYST);
       }
     }
     return $pdo;

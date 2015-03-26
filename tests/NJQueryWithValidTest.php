@@ -3,11 +3,12 @@
  * @Author: AminBy
  * @Date:   2015-02-17 22:21:26
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-25 16:32:27
+ * @Last Modified time: 2015-03-26 19:19:08
  */
 
 use \NJORM\NJSql\NJTable;
 use \NJORM\NJQuery;
+use \NJORM\NJORM;
 
 class NJQueryWithValidTest extends PHPUnit_Framework_TestCase {
 
@@ -18,27 +19,68 @@ class NJQueryWithValidTest extends PHPUnit_Framework_TestCase {
         ->primary('user_id', 'uid')
 
         ->field('user_name', 'name')
-        ->valid('用户名称{0-0}-{0-1}个字符', 'notEmpty', ['lengthBetween', 3,30])
-        ->valid('用户名称要唯一', 'unique')
+        ->valid('notEmpty', ['lengthBetween', 5,9])
+        ->valid('unique')
 
         ->field('user_pass', 'pass')
-        ->valid('用户密码{0-0}-{0-1}个字符', 'notEmpty', ['lengthBetween', 7,30])
+        ->valid('notEmpty', ['lengthBetween', 7,32])
 
         ->field('user_balance', 'balance')
-        ->valid('余额必须是个小数', 'float')
+        ->valid('float', ['between', 0, 1])
 
         ->field('user_email', 'email')
-        ->valid('用户邮箱要正确', 'email');
+        ->valid('email');
     }
   }
 
-  public function testQN(){
+  public function testInsertCheck(){
+    NJORM::error(function($msg){
+      echo $msg;
+    });
+
     $query = new NJQuery('users');
-    $query->insert(array(
-      'name' => 'flowergogogo',
-      'pass' => '1234567',
-      'balance' => '0.22',
-      'email' => 'email@email.com',
-      ));
+    try {
+      $query->insert(array(
+        'name' => 'flowergogogo1',
+        'pass' => '012345678910',
+        'balance' => '0.22',
+        'email' => 'email@email.com',
+        ));
+    }
+    catch(\NJORM\NJException $e) {
+      $this->assertEquals([
+        '"flowergogogo1"\'s length must between 5 and 9',
+        'users.name should be unique, "flowergogogo1" has been existed before, extra: nil'], $e->getMsgs());
+      return;
+    }
+
+    $this->assertTrue(false, 'expects an exception here');
+  }
+
+  public function testUpdateCheck() {
+    NJORM::error(function($msg){
+      echo $msg;
+    });
+
+    $users = new NJQuery('users');
+    $user = $users[127];
+    try {
+      $this->assertEquals('flowergogogo', $user['name']);
+      $user->save(array(
+        'name' => 'flowergogogo1',
+        'balance' => 3,
+        ));
+    }
+    catch(\NJORM\NJException $e) {
+      $msgs = [
+        '"flowergogogo1"\'s length must between 5 and 9',
+        'users.name should be unique, "flowergogogo1" has been existed before, extra: nil',
+        '"3" must between 0 and 1',
+      ];
+      $this->assertEquals($msgs, $e->getMsgs());
+      return;
+    }
+
+    $this->assertTrue(false, 'expects an exception here');
   }
 }

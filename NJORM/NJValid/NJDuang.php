@@ -3,7 +3,7 @@
  * @Author: AminBy
  * @Date:   2015-03-25 16:43:45
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-25 20:13:18
+ * @Last Modified time: 2015-03-26 19:24:07
  */
 namespace NJORM\NJValid;
 use NJORM\NJException;
@@ -34,11 +34,15 @@ class NJDuang {
     return $this;
   }
 
-  public function __invoke($data) {
-    $e = new NJException('validation');
+  public function __invoke($data, $update) {
+    $e = new NJException(NJException::ERROR_TYPE_VALIDATION);
 
     foreach($this->_keysChecks as $key => $checks) {
-      isset($data[$key]) || $data[$key] = null;
+      if(!isset($data[$key])) {
+        if($update)
+          continue;
+        $data[$key] = null;
+      }
 
       foreach ($checks as $check) {
         if(!$check($data[$key])) {
