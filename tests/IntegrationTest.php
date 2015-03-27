@@ -3,7 +3,7 @@
  * @Author: AminBy
  * @Date:   2015-02-26 23:52:23
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-27 17:25:59
+ * @Last Modified time: 2015-03-27 18:01:49
  */
 use NJORM\NJSql\NJTable;
 use NJORM\NJSql\NJExpr;
@@ -88,7 +88,7 @@ class IntegrationTest extends PHPUnit_Framework_TestCase {
         ->field('tag_created', 'ct');
 
         NJRelationship::oneMany(array('users'=>'id','posts'=>'uid'));
-        NJRelationship::manyMany(array('posts'=>'id','tags'=>'id'));
+        NJRelationship::manyMany(array('posts'=>'id','tags'=>'id'), null, 'qn_posts_tags');
     }
   }
 
@@ -195,6 +195,24 @@ class IntegrationTest extends PHPUnit_Framework_TestCase {
     $id = $ins_post['id'];
     $ins_post->delete();
     $this->assertEquals("DELETE FROM `qn_posts` WHERE `post_id` = {$id}", NJORM::lastquery('sql'));
+  }
+
+  /**
+   * @depends testCreateUser
+   */
+  function testCreateTags($db_user) {
+    $data = array(
+      'tit' => 'Post-'.rand(0,99999),
+      'cnt' => 'Post-Content-'.rand(0,9999),
+      'ct' => new NJExpr('unix_timestamp()+?', 86400),
+      );
+    $db_post = $db_user->posts->insert($data);
+    $this->assertEquals("INSERT INTO `qn_posts`(`post_user_id`,`post_title`,`post_content`,`post_created`) VALUES ({$db_user['id']},'{$data['tit']}','{$data['cnt']}',unix_timestamp()+?)", NJORM::lastquery('sql'));
+    in_array(86400, NJORM::lastquery('params'));
+
+    print_r($db_post->_table->_has);
+
+    $db_post->delete();
   }
 
   /**

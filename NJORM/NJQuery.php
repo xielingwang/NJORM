@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-27 17:25:26
+ * @Last Modified time: 2015-03-27 17:51:01
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -249,6 +249,7 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
       return call_user_func_array(array($this, '_fetchGroupedPairs'), $args);
     }
 
+    // fetch pairs
     if(in_array($method, array('pairs', 'getPairs'))) {
       return call_user_func_array(array($this, '_fetchPairs'), $args);
     }
@@ -324,6 +325,7 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
     }
 
     // Case 2
+    // TODO: group by
     else {
       $query->_sel_cols = '*';
       if($query->_fetch()->_last_stmt && $r = $query->_last_stmt->fetchAll(\PDO::FETCH_ASSOC)) {

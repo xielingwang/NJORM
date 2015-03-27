@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-27 16:40:55
+ * @Last Modified time: 2015-03-27 17:58:34
  */
 namespace NJORM;
 use \NJORM\NJSql\NJTable;
@@ -13,7 +13,7 @@ use \Countable, \ArrayAccess, \Iterator, \JsonSerializable; // INTERFACE
 // Iterator, ArrayAccess, Countable, JsonSerializable
 class NJModel implements Countable,ArrayAccess,JsonSerializable,Iterator {
   // data
-  protected $_table;
+  public $_table;
   protected $_data = array();
   private $_modified = array();
   private $_lazy_reload = false;

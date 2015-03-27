@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-02-02 23:27:30
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-27 17:12:18
+ * @Last Modified time: 2015-03-27 22:11:03
  */
 
 namespace NJORM\NJSql;
@@ -195,6 +195,16 @@ class NJTable {
     return in_array($field, (array)$this->_pri_key);
   }
 
+  public function alias($field) {
+    if(in_array($field, $this->_fields)) {
+      return $field;
+    }
+    if(array_key_exists($field, $this->_fields)) {
+      return $this->_fields[$field];
+    }
+    trigger_error("Field `{$this->_name}`.`{$field}` is not found.");
+  }
+
   public static function check_field_exist($table, $field) {
     if(is_array($field)) {
       foreach ($field as $f) {
@@ -206,6 +216,7 @@ class NJTable {
       trigger_error(sprintf('Field "%s" is not in table "%s"', $field, $table->_name));
     }
   }
+
   protected static function get_real_field($table, $field, $foreign_table = null) {
     if(!$field) {
       $field = $foreign_table ? static::fk_for_table($foreign_table) : $table->_pri_key;
@@ -232,7 +243,7 @@ class NJTable {
   const TYPE_RELATION_ONE = 1;
   const TYPE_RELATION_MANY = 2;
   const TYPE_RELATION_MANY_X = 3;
-  protected $_has = array();
+  public $_has = array();
   public function rel($table) {
     if(!array_key_exists($table, $this->_has)) {
       trigger_error(sprintf('Undefined relationship "" for "%s"', $table, $this->_name));
@@ -241,13 +252,7 @@ class NJTable {
   }
 
   public function hasOne($sk, $table, $fk) {
-    $fk || $fk = static::$table()->_pri_key;
-    $sk || $sk = $this->_pri_key;
 
-    $fk = static::get_real_field(static::$table(), $fk);
-    $sk = static::get_real_field($this, $sk);
-
-    // ok
     $this->_has[$table] = array(
       'type' => static::TYPE_RELATION_ONE,
       'fk' => $fk,
@@ -256,33 +261,26 @@ class NJTable {
 
     return $this;
   }
-  public function hasMany($sk, $table, $fk, $msk=null, $mfk=null, $mapTable=null) {
-    $sk = static::get_real_field($this, $sk);
+  public function hasMany($sk, $table, $fk) {
+    $fk = static::get_real_field(static::$table(), $fk, $this);
 
-    if(func_num_args() <= 3) {
-      $fk = static::get_real_field(static::$table(), $fk, $this);
+    $this->_has[$table] = array(
+      'type' => static::TYPE_RELATION_MANY,
+      'fk' => $fk,
+      'sk' => $sk,
+      );
 
-      $this->_has[$table] = array(
-        'type' => static::TYPE_RELATION_MANY,
-        'fk' => $fk,
-        'sk' => $sk,
-        );
-      return $this;
-    }
-    else {
-      $fk = static::get_real_field(static::$table(), $fk);
-      $msk = static::get_real_field(static::$mapTable(), $msk, $this);
-      $mfk = static::get_real_field(static::$mapTable(), $mfk, static::$table());
+    return $this;
+  }
+  public function hasManyX($table, $mapTable, $smap, $fmap){
 
-      $this->_has[$table] = array(
-        'type' => static::TYPE_RELATION_MANY_X,
-        'map' => $mapTable,
-        'sk' => $sk,
-        'msk' => $msk,
-        'fk' => $fk,
-        'mfk' => $mfk,
-        );
-    }
+    $this->_has[$table] = array(
+      'type' => static::TYPE_RELATION_MANY_X,
+      'table' => $mapTable,
+      'smap' => $smap,
+      'fmap' => $fmap,
+      );
+
     return $this;
   }
 
