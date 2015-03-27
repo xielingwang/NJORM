@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-26 13:36:45
+ * @Last Modified time: 2015-03-27 16:40:55
  */
 namespace NJORM;
 use \NJORM\NJSql\NJTable;
@@ -177,10 +177,13 @@ class NJModel implements Countable,ArrayAccess,JsonSerializable,Iterator {
     return call_user_func_array(array($this->$name, 'where'), $arguments);
   }
   function getRelOne($rel, $table) {
-    return (new NJQuery($table))->where($rel['fk'], $this[$rel['sk']])->limit(1);
+    return (new NJQuery($table))->setRelData(array(
+      $rel['fk'] => $this[$rel['sk']]), 1);
   }
   function getRelMany($rel, $table) {
-    return (new NJQuery($table))->where($rel['fk'], $this[$rel['sk']]);
+    return (new NJQuery($table))->setRelData(array(
+      $rel['fk'] => $this[$rel['sk']]
+      ));
   }
   function getRelManyX($rel, $table) {
     

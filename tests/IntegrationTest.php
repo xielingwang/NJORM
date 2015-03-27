@@ -2,8 +2,8 @@
 /**
  * @Author: AminBy
  * @Date:   2015-02-26 23:52:23
- * @Last Modified by:   Amin by
- * @Last Modified time: 2015-03-04 20:15:53
+ * @Last Modified by:   AminBy
+ * @Last Modified time: 2015-03-27 17:25:59
  */
 use NJORM\NJSql\NJTable;
 use NJORM\NJSql\NJExpr;
@@ -46,62 +46,95 @@ class IntegrationTest extends PHPUnit_Framework_TestCase {
     ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
    */
   function setUp() {
-    if(!NJTable::defined('user')) {
-      NJTable::define('qn_users', 'user')
+    if(!NJTable::defined('users')) {
+      NJTable::define('qn_users', 'users')
         ->primary('user_id', 'id')
+
         ->field('user_name', 'name')
+        ->valid('unique', ['lengthBetween', 7, 16])
+
         ->field('user_pass', 'pass')
+        ->valid('unique', ['lengthBetween', 7, 16])
+
         ->field('user_balance', 'bal')
+        ->valid('float', 'positive')
+
         ->field('user_email', 'eml')
+        ->valid('email','unique')
+
         ->field('user_created', 'ct')
         ->field('user_updated', 'ut');
-        NJTable::define('qn_posts', 'post')
+
+        NJTable::define('qn_posts', 'posts')
         ->primary('post_id', 'id')
+
         ->field('post_user_id', 'uid')
+        ->valid('integer')
+
         ->field('post_title', 'tit')
+        ->valid('notEmpty', ['lengthMax', 50])
+
         ->field('post_content', 'cnt')
+        ->valid('notEmpty', ['lengthMax', 2000])
+
         ->field('post_created', 'ct');
-        NJTable::define('qn_tags', 'tag')
+
+        NJTable::define('qn_tags', 'tags')
         ->primary('tag_id', 'id')
+
         ->field('tag_name', 'nm')
+        ->valid('notEmpty', ['lengthMax', 50])
+
         ->field('tag_created', 'ct');
-        NJRelationship::oneMany(array('user'=>'id','post'=>'uid'));
-        NJRelationship::manyMany(array('post'=>'id','tag'=>'id'));
+
+        NJRelationship::oneMany(array('users'=>'id','posts'=>'uid'));
+        NJRelationship::manyMany(array('posts'=>'id','tags'=>'id'));
     }
   }
 
   function testCreateManyUser() {
-    /*
-    for($i=0;$i<50;$i++){
-      $data = array(
-        'name' => 'name-'.rand(100,999),
-        'pass' => 'pass-'.rand(100,999),
-        'bal' => rand(0,9999) / 100.0,
-        'eml' => rand(100,999).'@gmail.com',
-        'ct' => new NJExpr('unix_timestamp()'),
-        // 'ct' => new NJExpr('unix_timestamp()', 60),
-        'ut' => new NJExpr('unix_timestamp()'),
+    $array = [];
+    $_strs = [];
+    for($i=0;$i<10;$i++){
+      $d = array(
+        'name' => 'mname-'.rand(10000,99999),
+        'pass' => 'mpass-'.rand(10000,99999),
+        'bal' => rand(0,99999) / 100.0,
+        'eml' => rand(0,99999).'@gmail.com',
+        'ct' => new NJExpr('unix_timestamp()+?', $rand = rand(0, 3600)),
+        'ut' => new NJExpr('unix_timestamp()+?', $rand + rand(0, 3600)),
         );
-
-      $ins_user = NJORM::inst()->user->insert($data);
+      $_strs[] = "('{$d['name']}','{$d['pass']}',{$d['bal']},'{$d['eml']}',unix_timestamp()+?,unix_timestamp()+?)";
+      $array[] = $d;
     }
-    */
+    try {
+      NJORM::inst()->users->insert($array);
+      $str = "INSERT INTO `qn_users`(`user_name`,`user_pass`,`user_balance`,`user_email`,`user_created`,`user_updated`) VALUES " . implode(',', $_strs);
+      $this->assertEquals($str, NJORM::lastquery('sql'));
+    }
+    catch(\NJORM\NJException $e) {
+      print_r($e->getMsgs());
+      $this->assertTrue(false, 'here should no exceptions');
+    }
   }
 
   function testCreateUser() {
     $data = array(
-      'name' => 'name-'.rand(100,999),
-      'pass' => 'pass-'.rand(100,999),
+      'name' => 'sname-'.rand(10000,99999),
+      'pass' => 'spass-'.rand(10000,99999),
       'bal' => rand(0,9999) / 100.0,
-      'eml' => rand(100,999).'@gmail.com',
+      'eml' => rand(100,9999).'@gmail.com',
       'ct' => new NJExpr('unix_timestamp()'),
-      // 'ct' => new NJExpr('unix_timestamp()', 60),
       'ut' => new NJExpr('unix_timestamp()'),
       );
-    // echo NJORM::inst()->user->sqlInsert($data);
-    // print_r(NJORM::inst()->user->paramInsert($data));
-    $ins_user = NJORM::inst()->user->insert($data);
-    $db_user = NJORM::inst()->user->where('id', $ins_user['id'])->limit(1)->fetch();
+
+    $ins_user = NJORM::inst()->users->insert($data);
+    $this->assertEquals("INSERT INTO `qn_users`(`user_name`,`user_pass`,`user_balance`,`user_email`,`user_created`,`user_updated`) VALUES ('{$data['name']}','{$data['pass']}',{$data['bal']},'{$data['eml']}',unix_timestamp(),unix_timestamp())", NJORM::lastquery('sql'));
+
+    $db_user = NJORM::inst()->users[$ins_user['id']];
+
+    $this->assertEquals("SELECT `user_id` `id`,`user_name` `name`,`user_pass` `pass`,`user_balance` `bal`,`user_email` `eml`,`user_created` `ct`,`user_updated` `ut` FROM `qn_users` WHERE `user_id` = {$ins_user['id']} LIMIT 1", NJORM::lastquery('sql'));
+
     $this->assertEquals($ins_user['id'], $db_user['id']);
     $this->assertEquals($ins_user['name'], $db_user['name']);
     $this->assertEquals($ins_user['pass'], $db_user['pass']);
@@ -110,7 +143,6 @@ class IntegrationTest extends PHPUnit_Framework_TestCase {
     $this->assertGreaterThan(0, $db_user['ct'], 'ct > 0');
     $this->assertGreaterThan(0, $db_user['ut'], 'ut > 0');
 
-    // $this->assertEquals(60, $db_user['ut'] - $db_user['ct']);
     $this->assertEquals(0, $db_user['ut'] - $db_user['ct']);
 
     return $db_user;
@@ -123,37 +155,56 @@ class IntegrationTest extends PHPUnit_Framework_TestCase {
     $data = array(
       'uid' => $db_user['id'],
       'tit' => 'Post-'.rand(0,999),
-      'cnt' => 'Post-Content-'.rand(0,999),
-      'ct' => new NJExpr('unix_timestamp()'),
+      'cnt' => 'Post-Content-'.rand(0,9999),
+      'ct' => new NJExpr('unix_timestamp()+?', 86400),
       );
 
-    var_dump($db_user);
+    $ins_post = NJORM::inst()->posts->insert($data);
+    $this->assertEquals("INSERT INTO `qn_posts`(`post_user_id`,`post_title`,`post_content`,`post_created`) VALUES ({$data['uid']},'{$data['tit']}','{$data['cnt']}',unix_timestamp()+?)", NJORM::lastquery('sql'));
+    in_array(86400, NJORM::lastquery('params'));
 
-    echo NJORM::inst()->post->sqlInsert($data);
-    // print_r(NJORM::inst()->user->paramInsert($data));
-    $ins_post = NJORM::inst()->post->insert($data);
-    $db_post = NJORM::inst()->post->where('id = ?', $ins_post['id'])->limit(1)->fetch();
+    $db_post = NJORM::inst()->posts[$ins_post['id']];
+    $this->assertEquals("SELECT `post_id` `id`,`post_user_id` `uid`,`post_title` `tit`,`post_content` `cnt`,`post_created` `ct` FROM `qn_posts` WHERE `post_id` = {$db_post['id']} LIMIT 1", NJORM::lastquery('sql'));
+
     $this->assertEquals($ins_post['uid'], $db_post['uid']);
     $this->assertEquals($ins_post['tit'], $db_post['tit']);
     $this->assertEquals($ins_post['cnt'], $db_post['cnt']);
     $this->assertGreaterThan(0, $db_post['ct'], 'ct > 0');
 
-    $db_post1 = $db_user->post->where('id = ?', $ins_post['id'])->limit(1)->fetch();
-    $this->assertEquals($db_post1['uid'], $db_post['uid']);
-    $this->assertEquals($db_post1['tit'], $db_post['tit']);
-    $this->assertEquals($db_post1['cnt'], $db_post['cnt']);
-    $this->assertEquals($db_post1['ct'], $db_post['ct']);
+    $db_user->posts->delete($ins_post['id']);
+    $this->assertEquals("DELETE FROM `qn_posts` WHERE `post_id` = {$ins_post['id']}", NJORM::lastquery('sql'));
 
-    $db_post1->delete();
+    $db_post->delete();
+    $this->assertEquals("DELETE FROM `qn_posts` WHERE `post_id` = {$ins_post['id']}", NJORM::lastquery('sql'));
   }
 
   /**
    * @depends testCreateUser
    */
+  function testCreatePost2($db_user) {
+    $data = array(
+      'tit' => 'Post-'.rand(0,99999),
+      'cnt' => 'Post-Content-'.rand(0,9999),
+      'ct' => new NJExpr('unix_timestamp()+?', 86400),
+      );
+
+    $ins_post = $db_user->posts->insert($data);
+    $this->assertEquals("INSERT INTO `qn_posts`(`post_user_id`,`post_title`,`post_content`,`post_created`) VALUES ({$db_user['id']},'{$data['tit']}','{$data['cnt']}',unix_timestamp()+?)", NJORM::lastquery('sql'));
+    in_array(86400, NJORM::lastquery('params'));
+
+    $id = $ins_post['id'];
+    $ins_post->delete();
+    $this->assertEquals("DELETE FROM `qn_posts` WHERE `post_id` = {$id}", NJORM::lastquery('sql'));
+  }
+
+  /**
+   * @depends testCreateUser
+   * @depends testCreatePost
+   */
   function testDeleteUser($db_user) {
     $id = $db_user['id'];
-    $db_user->delete();
-    $db_user = NJORM::inst()->user->where('id', $id)->limit(1)->fetch();
+    NJORM::inst()->users[$id]->delete();
+    $db_user = NJORM::inst()->users[$id];
     $this->assertNull($db_user, 'db user deleted');
   }
 }

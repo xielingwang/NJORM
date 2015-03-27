@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-26 18:47:57
+ * @Last Modified time: 2015-03-27 14:01:15
  */
 namespace NJORM;
 
@@ -80,10 +80,12 @@ class NJORM extends \PDO {
   /****************************************************************************************
    * debug/log
    ****************************************************************************************/
-  public static function lastquery() {
+  public static function lastquery($col = null) {
+    if(in_array($col, array('sql', 'params')))
+      return NJDb::$lastquery[$col];
     return NJDb::$lastquery;
-
   }
+
   public static function queries() {
     return NJDb::$queries;
   }
@@ -94,7 +96,7 @@ class NJORM extends \PDO {
       $error = $argument;
     }
     elseif(is_callable($error)) {
-      $error('[NJORM]'.$argument);
+      $error(' [NJORM] '.$argument);
     } 
   }
   public static function debug($argument) {
@@ -103,7 +105,7 @@ class NJORM extends \PDO {
       $debug = $argument;
     }
     elseif(is_callable($debug)) {
-      $debug('[NJORM]'.$argument);
+      $debug(' [NJORM] '.$argument);
     }
   }
 

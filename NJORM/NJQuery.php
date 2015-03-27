@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-26 19:12:23
+ * @Last Modified time: 2015-03-27 17:25:26
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -25,6 +25,7 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
   protected $_cond_limit;
   protected $_cond_where;
   protected $_cond_sort;
+  protected $_rel_data; // relationship data
 
   public function __construct($table) {
     $this->_type = static::QUERY_TYPE_SELECT;
@@ -144,9 +145,13 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
     return $this;
   }
 
+  public function setRelData($data, $limit=null) {
+    $this->_rel_data = $data;
+    return $this;
+  }
 
   /****************************************************************************************
-   * protected param
+   * protected params
    ****************************************************************************************/
   protected function paramsUpdate() {
     $parameters = array();
@@ -193,6 +198,10 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
    * select/fetch api
    ****************************************************************************************/
   protected function sqlSelect() {
+    if($this->_rel_data) {
+      $this->where($this->_rel_data);
+    }
+
     if(empty($this->_expr_sel)) {
       $this->_expr_sel = $this->_table->columns($this->_sel_cols);
     }
@@ -217,18 +226,42 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
   protected $_last_stmt;
   protected $_last_stmt_md5;
 
-  public function fetchOne() {
-    return $this->_fetch()->_fetchOne($this->_last_stmt);
+  public function __call($name, $args) {
+    $method = str_replace(array('fetch','load'), 'get', $name);
+
+    // fetch one
+    if(in_array($method, array('getOne', 'get', 'one'))) {
+      return $this->_fetch()->_fetchOne($this->_last_stmt);
+    }
+
+    // fetch all
+    if(in_array($method, array('getAll', 'getMany', 'all', 'many'))) {
+      return $this->_fetch()->_fetchMany($this->_last_stmt);
+    }
+
+    // fetch column
+    if(in_array($method, array('getCol', 'getColumn', 'col', 'column'))) {
+      return call_user_func_array(array($this, '_fetchCol'), $args);
+    }
+
+    // fetch grouped pairs
+    if(in_array($method, array('getGroupedPairs', 'groupedPairs', 'grouped'))){
+      return call_user_func_array(array($this, '_fetchGroupedPairs'), $args);
+    }
+
+    if(in_array($method, array('pairs', 'getPairs'))) {
+      return call_user_func_array(array($this, '_fetchPairs'), $args);
+    }
+
+    trigger_error("NJQuery::{$name}() undefined!");
   }
 
-  public function fetchAll() {
-    return $this->_fetch()->_fetchMany($this->_last_stmt);
-  }
-
-  public function fetchCol($col=0, $unique=false) {
+  protected function _fetchCol($col=0, $unique=false) {
     if($this->_fetch()->_last_stmt) {
+
       $style = \PDO::FETCH_COLUMN;
-      if($unique) $style |= \PDO::FETCH_UNIQUE;
+      $style |= $unique ? \PDO::FETCH_UNIQUE : 0;
+
       return $this->_last_stmt->fetchAll($style,$col);
     }
   }
@@ -241,14 +274,22 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
    *
    * Fetch Result Like: [k1 => [v1,v2,v3], k2 => [v4,v5], ...]
    */
-  public function fetchGroupedPairs($name, $value) {
-    $arr = compact('name', 'value');
-    $this->_sel_cols = array_map(function($col, $alias){
-      return (new NJSql\NJExpr(NJMisc::wrapGraveAccent($this->_table->getField($col))))->as($alias);
-    }, $arr, array_keys($arr));
+  protected function _fetchGroupedPairs($name, $value) {
+    $query = clone $this;
 
-    if($this->_fetch()->_last_stmt) {
-      return $this->_last_stmt->fetchAll(\PDO::FETCH_GROUP|\PDO::FETCH_COLUMN);
+    $name = $this->_table->getField($name);
+    $value = $this->_table->getField($value);
+
+    // select col1 as name, col2 as value
+    $query->_sel_cols = array_map(function($col, $alias){
+      return (new NJSql\NJExpr(NJMisc::wrapGraveAccent($col)))
+      ->as($alias);
+    }
+    , array($name, $value)
+    , array('name', 'value'));
+
+    if($query->_fetch()->_last_stmt) {
+      return $query->_last_stmt->fetchAll(\PDO::FETCH_GROUP|\PDO::FETCH_COLUMN);
     }
   }
 
@@ -261,27 +302,34 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
    * Case 2: fetch result lkie: [k1 => njmodel1, k2 => njmodel2...]
    * NOTE: if these are same keys, the value would be set to the last one
    */
-  public function fetchPairs($name) {
+  protected function _fetchPairs($name) {
+    $query = clone $this;
+
     // Case 1
     if(func_num_args() > 1) {
-      $value = func_get_arg(1);
+      $name = $this->_table->getField($name);
+      $value = $this->_table->getField(func_get_arg(1));
       $arr = compact('name', 'value');
-      $this->_sel_cols = array_map(function($col, $alias){
-        return (new NJSql\NJExpr(NJMisc::wrapGraveAccent($this->_table->getField($col))))->as($alias);
-      }, $arr, array_keys($arr));
 
-      if($this->_fetch()->_last_stmt) {
-        return $this->_last_stmt->fetchAll(\PDO::FETCH_KEY_PAIR);
+      // select col1 as name, col2 as value
+      $query->_sel_cols = array_map(function($col, $alias){
+        return (new NJSql\NJExpr(NJMisc::wrapGraveAccent($col)))->as($alias);
+      }
+      , array($name, $value)
+      , array('name', 'value'));
+
+      if($query->_fetch()->_last_stmt) {
+        return $query->_last_stmt->fetchAll(\PDO::FETCH_KEY_PAIR);
       }
     }
 
     // Case 2
     else {
-      $this->_sel_cols = '*';
-      if($this->_fetch()->_last_stmt && $r = $this->_last_stmt->fetchAll(\PDO::FETCH_ASSOC)) {
+      $query->_sel_cols = '*';
+      if($query->_fetch()->_last_stmt && $r = $query->_last_stmt->fetchAll(\PDO::FETCH_ASSOC)) {
         $ret = array();
         foreach ($r as $_) {
-          $ret[$_[$name]] = new NJModel($this->_table, $_);
+          $ret[$_[$name]] = new NJModel($query->_table, $_);
         }
         return $ret;
       }
@@ -333,6 +381,10 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
   }
 
   protected function sqlCount($col) {
+    if($this->_rel_data) {
+      $this->where($this->_rel_data);
+    }
+
     $col or $col = '*';
     $col == '*' or $col = NJMisc::wrapGraveAccent($this->_table->getField($col));
     $sql = sprintf('SELECT COUNT(%s) `c` FROM %s'
@@ -351,6 +403,20 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
    * Insertation
    ****************************************************************************************/
   protected function sqlInsert($data) {
+
+    // single => multiple
+    if(!is_numeric(implode('', array_keys($data)))){
+      $data = array($data);
+    }
+
+    // relation ship data
+    if($this->_rel_data) {
+      $data = array_map(function($data) {
+        array_walk($this->_rel_data, function($val,$key) use (&$data){unset($data[$key]);});
+        return array_merge($this->_rel_data, $data);
+      }, $data);
+    }
+
     $this->_type = static::QUERY_TYPE_INSERT;
     $sql = 'INSERT INTO '.$this->_table->name();
 
@@ -373,6 +439,10 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
   }
 
   protected function sqlUpdate($data){
+    if($this->_rel_data) {
+      $this->where($this->_rel_data);
+    }
+
     $this->_type = static::QUERY_TYPE_UPDATE;
 
     $this->_expr_upd = $this->_table->values($data, true);
@@ -418,6 +488,10 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
    * Deletion
    ****************************************************************************************/
   protected function sqlDelete() {
+    if($this->_rel_data) {
+      $this->where($this->_rel_data);
+    }
+
     $this->_type = static::QUERY_TYPE_DELETE;
     $sql = 'DELETE FROM '.$this->_table->name();
 
@@ -437,8 +511,11 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
   }
 
   public function delete() {
-    $sql = $this->sqlDelete();
+    if(func_num_args() > 0) {
+      return (new NJQuery($this->_table))->where($this->_table->primary(), func_get_arg(0))->delete();
+    }
 
+    $sql = $this->sqlDelete();
     $stmt = NJDb::execute($sql, $this->paramsDelete());
 
     return true;

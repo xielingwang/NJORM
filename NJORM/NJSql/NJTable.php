@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-02-02 23:27:30
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-26 19:21:03
+ * @Last Modified time: 2015-03-27 17:12:18
  */
 
 namespace NJORM\NJSql;
@@ -436,6 +436,8 @@ class NJTable {
         return array($refFields[$col] => $val);
 
     }, array_keys($values), array_values($values));
+    if(!$keyvalues)
+      return array();
     return call_user_func_array('array_merge', array_filter($keyvalues));
   }
 
@@ -470,10 +472,6 @@ class NJTable {
       return $this->values4update($values);
     }
     else {
-      // single => multiple
-      if(!is_array(current($values)))
-        $values = array($values);
-
       // remove unavailable cols and duang
       $_values = array();
       foreach ($values as $vals) {

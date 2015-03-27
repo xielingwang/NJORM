@@ -3,7 +3,7 @@
  * @name: byamin
  * @Date:   2015-01-01 12:21:16
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-09 14:42:23
+ * @Last Modified time: 2015-03-27 15:46:44
  */
 
 
@@ -193,7 +193,7 @@ class NJQuerySelectTest extends PHPUnit_Framework_TestCase {
   function testQueryFetchGroupedPairs() {
     // CASE 1
     $query = NJORM::inst()->users();
-    $ret = $query->fetchGroupedPairs('name', 'uid');
+    $ret = $query->grouped('name', 'uid');
     $this->assertArrayHasKey('name-297', $ret);
     $this->assertInternalType('array', $ret['name-297']);
     $this->assertContains(6, $ret['name-297']);

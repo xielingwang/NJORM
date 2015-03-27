@@ -15,3 +15,11 @@ $njorm->upgrade();
 NJException(
 'type' => 'duplicate/sqlerror/linkerror/dataerror/.etc'
 );
+
+# 默认值
+插入时的默认值
+
+# 过滤
+入库前的过滤
+密码加密
+可以用NJExpr转换成Mysql函数
