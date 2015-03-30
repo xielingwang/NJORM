@@ -3,7 +3,7 @@
  * @Author: AminBy
  * @Date:   2015-02-26 23:52:23
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-27 18:01:49
+ * @Last Modified time: 2015-03-30 14:43:11
  */
 use NJORM\NJSql\NJTable;
 use NJORM\NJSql\NJExpr;
@@ -47,7 +47,7 @@ class IntegrationTest extends PHPUnit_Framework_TestCase {
    */
   function setUp() {
     if(!NJTable::defined('users')) {
-      NJTable::define('qn_users', 'users')
+      NJTable::define('users', 'users')
         ->primary('user_id', 'id')
 
         ->field('user_name', 'name')
@@ -65,7 +65,7 @@ class IntegrationTest extends PHPUnit_Framework_TestCase {
         ->field('user_created', 'ct')
         ->field('user_updated', 'ut');
 
-        NJTable::define('qn_posts', 'posts')
+        NJTable::define('posts', 'posts')
         ->primary('post_id', 'id')
 
         ->field('post_user_id', 'uid')
@@ -79,7 +79,7 @@ class IntegrationTest extends PHPUnit_Framework_TestCase {
 
         ->field('post_created', 'ct');
 
-        NJTable::define('qn_tags', 'tags')
+        NJTable::define('tags', 'tags')
         ->primary('tag_id', 'id')
 
         ->field('tag_name', 'nm')
@@ -88,7 +88,7 @@ class IntegrationTest extends PHPUnit_Framework_TestCase {
         ->field('tag_created', 'ct');
 
         NJRelationship::oneMany(array('users'=>'id','posts'=>'uid'));
-        NJRelationship::manyMany(array('posts'=>'id','tags'=>'id'), null, 'qn_posts_tags');
+        NJRelationship::manyMany(array('posts'=>'id','tags'=>'id'), null, 'posts_tags');
     }
   }
 

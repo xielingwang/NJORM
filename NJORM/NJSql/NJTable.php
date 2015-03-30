@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-02-02 23:27:30
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-27 22:11:03
+ * @Last Modified time: 2015-03-30 19:10:53
  */
 
 namespace NJORM\NJSql;
@@ -245,10 +245,15 @@ class NJTable {
   const TYPE_RELATION_MANY_X = 3;
   public $_has = array();
   public function rel($table) {
-    if(!array_key_exists($table, $this->_has)) {
-      trigger_error(sprintf('Undefined relationship "" for "%s"', $table, $this->_name));
+    if(array_key_exists($table, $this->_has)) {
+      return array($table, $this->_has[$table]);
     }
-    return $this->_has[$table];
+    if(array_key_exists($table.'s', $this->_has)) {
+      $rel =& $this->_has[$table.'s'];
+      if($rel['type'] == static::TYPE_RELATION_ONE)
+        return array($table.'s', $rel);
+    }
+    trigger_error(sprintf('Undefined relationship "" for "%s"', $table, $this->_name));
   }
 
   public function hasOne($sk, $table, $fk) {
@@ -261,25 +266,19 @@ class NJTable {
 
     return $this;
   }
-  public function hasMany($sk, $table, $fk) {
-    $fk = static::get_real_field(static::$table(), $fk, $this);
-
-    $this->_has[$table] = array(
-      'type' => static::TYPE_RELATION_MANY,
+  public function hasMany($sk, $table, $fk, $map=null) {
+    $data = array(
       'fk' => $fk,
       'sk' => $sk,
       );
-
-    return $this;
-  }
-  public function hasManyX($table, $mapTable, $smap, $fmap){
-
-    $this->_has[$table] = array(
-      'type' => static::TYPE_RELATION_MANY_X,
-      'table' => $mapTable,
-      'smap' => $smap,
-      'fmap' => $fmap,
-      );
+    if(is_null($map)) {
+      $data['type'] = static::TYPE_RELATION_MANY;
+    }
+    else {
+      $data['type'] = static::TYPE_RELATION_MANY_X;
+      $data['map'] = $map;
+    }
+    $this->_has[$table] = $data;
 
     return $this;
   }

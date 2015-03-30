@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-27 17:58:34
+ * @Last Modified time: 2015-03-30 19:14:17
  */
 namespace NJORM;
 use \NJORM\NJSql\NJTable;
@@ -159,34 +159,16 @@ class NJModel implements Countable,ArrayAccess,JsonSerializable,Iterator {
   function __get($name) {
     $this->lazyReload();
 
-    $rel = $this->_table->rel($name);
-    switch($rel['type']) {
-      case NJTable::TYPE_RELATION_ONE:
-      return $this->getRelOne($rel, $name);
-      break;
-      case NJTable::TYPE_RELATION_MANY:
-      return $this->getRelMany($rel, $name);
-      break;
-      case NJTable::TYPE_RELATION_MANY_X:
-      return $this->getRelManyX($rel, $name);
-      break;
-    }
+    $relInfo = $this->_table->rel($name);
+
+    return (new NJQuery($relInfo[0]))->setRelData(array(
+      'rel' => $relInfo[1],
+      'data' => $this[$relInfo[1]['sk']],
+      ));
   }
 
   function __call($name, $arguments) {
     return call_user_func_array(array($this->$name, 'where'), $arguments);
-  }
-  function getRelOne($rel, $table) {
-    return (new NJQuery($table))->setRelData(array(
-      $rel['fk'] => $this[$rel['sk']]), 1);
-  }
-  function getRelMany($rel, $table) {
-    return (new NJQuery($table))->setRelData(array(
-      $rel['fk'] => $this[$rel['sk']]
-      ));
-  }
-  function getRelManyX($rel, $table) {
-    
   }
 
   /* JsonSerializable */

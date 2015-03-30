@@ -3,10 +3,10 @@
  * @Author: byamin
  * @Date:   2015-02-17 19:56:26
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-25 12:19:37
+ * @Last Modified time: 2015-03-30 18:54:17
  */
 namespace NJORM\NJSql;
-class NJExpr{
+class NJExpr implements NJExprInterface{
   protected $_parameters = array();
   protected $_value = null;
   protected $_alias = null;
@@ -178,5 +178,9 @@ class NJExpr{
       }
       return implode(' ', $strs);
     }
+  }
+
+  public function isEnclosed() {
+    return false;
   }
 }

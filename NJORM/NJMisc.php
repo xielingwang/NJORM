@@ -6,8 +6,9 @@
 * @Last Modified time: 2014-12-27 09:58:45
 */
 namespace NJORM;
+use NJORM\NJSql\NJExprInterface;
 use NJORM\NJSql\NJExpr;
-class NJMisc{
+class NJMisc {
 /**
  * [wrapGraveAccent description]
  * @param  [type] $v [description]
@@ -41,11 +42,15 @@ public static function unwrapGraveAccent($v) {
 public static function formatValue($v, $context=null) {
 
   // NJExpr
-  if($v instanceof NJExpr) {
+  if($v instanceof NJExprInterface) {
     if($context instanceof NJExpr) {
       $context->addParameters($v->parameters());
     }
-    return $v->stringify();
+    $str = $v->stringify();
+    if($v->isEnclosed()) {
+      $str = '('.$str.')';
+    }
+    return $str;
   }
 
   // array

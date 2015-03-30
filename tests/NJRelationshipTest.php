@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-02-04 23:22:54
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-27 22:23:43
+ * @Last Modified time: 2015-03-30 17:19:18
  */
 use NJORM\NJSql\NJTable;
 use NJORM\NJModel;
@@ -56,8 +56,8 @@ class NJRelationshipTest extends PHPUnit_Framework_TestCase {
     ->field('name', 'nm');
 
     NJTable::define('prefix_post_tag', 'post_tag')
-    ->primary('tag_id', 'pttid')
-    ->primary('post_id', 'ptpid');
+    ->primary('tag_id', 'tid')
+    ->primary('post_id', 'pid');
 
     NJTable::define('prefix_post_keyword', 'postkeywords')
     ->primary('id_keyword', 'pkkid')
@@ -119,48 +119,47 @@ class NJRelationshipTest extends PHPUnit_Framework_TestCase {
   }
 
   public function testManyMany(){
-    NJRelationship::manyMany('user', 'course');
-    NJRelationship::manyMany('tag.id <=> tid', 'post.pid <=> pid', 'post_tag');
+    NJRelationship::manyMany('tag.id', 'post.pid', array('post_tag', 'tid', 'pid'));
 
     $rel = NJTable::tag()->rel('post');
     $this->assertEquals(NJTable::TYPE_RELATION_MANY_X, $rel['type']);
-    $this->assertEquals('post_tag', $rel['table']);
-    $this->assertEquals(array('id', 'tid'), $rel['smap']);
-    $this->assertEquals(array('pid', 'pid'), $rel['fmap']);
+    $this->assertEquals('id', $rel['sk']);
+    $this->assertEquals('pid', $rel['fk']);
+    $this->assertEquals(['post_tag', 'tid', 'pid'], $rel['map']);
 
     $rel = NJTable::post()->rel('tag');
     $this->assertEquals(NJTable::TYPE_RELATION_MANY_X, $rel['type']);
-    $this->assertEquals('post_tag', $rel['table']);
-    $this->assertEquals(array('pid', 'pid'), $rel['smap']);
-    $this->assertEquals(array('id', 'tid'), $rel['fmap']);
+    $this->assertEquals('pid', $rel['sk']);
+    $this->assertEquals('id', $rel['fk']);
+    $this->assertEquals(['post_tag', 'pid', 'tid'], $rel['map']);
 
     NJRelationship::manyMany('user', 'course');
 
     $rel = NJTable::user()->rel('course');
     $this->assertEquals(NJTable::TYPE_RELATION_MANY_X, $rel['type']);
-    $this->assertEquals('usercourse', $rel['table']);
-    $this->assertEquals(array('id', 'usid'), $rel['smap']);
-    $this->assertEquals(array('id', 'coid'), $rel['fmap']);
+    $this->assertEquals('id', $rel['sk']);
+    $this->assertEquals('id', $rel['fk']);
+    $this->assertEquals(['usercourse', 'uid', 'cid'], $rel['map']);
 
     $rel = NJTable::course()->rel('user');
     $this->assertEquals(NJTable::TYPE_RELATION_MANY_X, $rel['type']);
-    $this->assertEquals('usercourse', $rel['table']);
-    $this->assertEquals(array('id', 'coid'), $rel['smap']);
-    $this->assertEquals(array('id', 'usid'), $rel['fmap']);
+    $this->assertEquals('id', $rel['sk']);
+    $this->assertEquals('id', $rel['fk']);
+    $this->assertEquals(['usercourse', 'cid', 'uid'], $rel['map']);
 
     NJRelationship::manyMany('post', 'keyword', 'postkeywords');
 
     $rel = NJTable::post()->rel('keyword');
     $this->assertEquals(NJTable::TYPE_RELATION_MANY_X, $rel['type']);
-    $this->assertEquals('postkeywords', $rel['table']);
-    $this->assertEquals(array('pid', 'pkpid'), $rel['smap']);
-    $this->assertEquals(array('id', 'pkkid'), $rel['fmap']);
+    $this->assertEquals('pid', $rel['sk']);
+    $this->assertEquals('id', $rel['fk']);
+    $this->assertEquals(['postkeywords', 'pkpid', 'pkkid'], $rel['map']);
 
     $rel = NJTable::keyword()->rel('post');
     $this->assertEquals(NJTable::TYPE_RELATION_MANY_X, $rel['type']);
-    $this->assertEquals('postkeywords', $rel['table']);
-    $this->assertEquals(array('id', 'pkkid'), $rel['smap']);
-    $this->assertEquals(array('pid', 'pkpid'), $rel['fmap']);
+    $this->assertEquals('id', $rel['sk']);
+    $this->assertEquals('pid', $rel['fk']);
+    $this->assertEquals(['postkeywords', 'pkkid', 'pkpid'], $rel['map']);
   }
 
   public function testNJModelHasOne() {

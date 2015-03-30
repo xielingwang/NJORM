@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-26 16:23:53
+ * @Last Modified time: 2015-03-30 18:54:37
  */
 namespace NJORM\NJSql;
 use NJORM\NJMisc;
@@ -351,7 +351,7 @@ class NJCondition extends NJExpr{
     return $this;
   }
 
-  protected function isEnclosed() {
+  public function isEnclosed() {
     $v = $this->_GetValue();
     return is_array($v)
       && count($v) > 1

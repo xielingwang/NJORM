@@ -3,13 +3,14 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-27 17:51:01
+ * @Last Modified time: 2015-03-30 19:25:58
  */
 namespace NJORM;
 use \NJORM\NJSql;
+use \NJORM\NJSql\NJExprInterface;
 use \Countable,\IteratorAggregate,\ArrayIterator, \ArrayAccess;
 
-class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
+class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface {
   const QUERY_TYPE_SELECT = 0;
   const QUERY_TYPE_COUNT = 1;
   const QUERY_TYPE_INSERT = 2;
@@ -34,49 +35,36 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
     $this->_table = $table;
   }
 
+  public function setRelData($data) {
+    $this->_rel_data = $data;
+    return $this;
+  }
+
+  /************************************************
+   * NJExprInterface
+   ***********************************************/
   public function stringify(){
-    $type = (func_num_args() <= 0)
-      ? static::QUERY_TYPE_SELECT
-      : intval(func_get_arg(0));
-
-    $args = func_get_args();
-    $args && array_shift($args);
-
-    $map = array(
-      static::QUERY_TYPE_SELECT => 'sqlSelect',
-      static::QUERY_TYPE_COUNT => 'sqlCount',
-      static::QUERY_TYPE_INSERT => 'sqlCreate',
-      static::QUERY_TYPE_UPDATE => 'sqlUpdate',
-      static::QUERY_TYPE_DELETE => 'sqlDelete',
-      );
-
-    return call_user_func_array(array($this, $map[$type]), $args);
+    return $this->sqlSelect();
   }
 
-  public function params() {
-    $type = (func_num_args() <= 0)
-      ? static::QUERY_TYPE_SELECT
-      : intval(func_get_arg(0));
-
-    $args = func_get_args();
-    $args && array_shift($args);
-
-    $map = array(
-      static::QUERY_TYPE_SELECT => 'paramsSelect',
-      static::QUERY_TYPE_COUNT => 'paramsCount',
-      static::QUERY_TYPE_INSERT => 'paramsCreate',
-      static::QUERY_TYPE_UPDATE => 'paramsUpdate',
-      static::QUERY_TYPE_DELETE => 'paramsDelete',
-      );
-
-    return call_user_func_array(array($this, $map[$type]), $args);
+  public function parameters() {
+    return $this->paramsSelect();
+  }
+  public function isEnclosed() {
+    return true;
   }
 
-  // read
+  /************************************************
+   * select
+   * limit
+   * where
+   * sortAsc, sortDesc
+   ***********************************************/
   public function selectWithout() {
     $this->_type = static::QUERY_TYPE_SELECT;
     $this->select($this->table->columnsWithout(func_get_args()));
   }
+
   /**
    * Case1.select('a,b,c,d', 'e,f,g'...) => a,b,c,d,e,f,g...
    * Case2.select('a,b,c,d', NJExpr, 'e,f,g', NJExpr) => a,b,c,d,expr,e,f,g,expr
@@ -145,11 +133,6 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
     return $this;
   }
 
-  public function setRelData($data, $limit=null) {
-    $this->_rel_data = $data;
-    return $this;
-  }
-
   /****************************************************************************************
    * protected params
    ****************************************************************************************/
@@ -199,7 +182,19 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
    ****************************************************************************************/
   protected function sqlSelect() {
     if($this->_rel_data) {
-      $this->where($this->_rel_data);
+      $rd =& $this->_rel_data;
+
+      if(in_array($rd['rel']['type'], array(NJSql\NJTable::TYPE_RELATION_ONE, NJSql\NJTable::TYPE_RELATION_MANY))) {
+        $this->where($rd['rel']['fk'], $rd['data']);
+
+        if($rd['rel']['type'] == NJSql\NJTable::TYPE_RELATION_ONE && !is_array($rd['data'])) {
+          $this->limit(1);
+        }
+      }
+      else {
+        list($mt, $mk1, $mk2) = $rd['rel']['map'];
+        $this->where($rd['rel']['fk'], (new NJQuery($mt))->select($mk2)->where($mk1, $rd['data']));
+      }
     }
 
     if(empty($this->_expr_sel)) {
@@ -353,7 +348,7 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
 
   protected function _fetch() {
     $sql = $this->sqlSelect();
-    $params = $this->params();
+    $params = $this->paramsSelect();
     $stmt_md5 = md5($sql.serialize($params));
 
     if(!$this->_last_stmt || $this->_last_stmt_md5 != $stmt_md5) {
@@ -384,7 +379,8 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
 
   protected function sqlCount($col) {
     if($this->_rel_data) {
-      $this->where($this->_rel_data);
+      $rd =& $this->_rel_data;
+      $this->where($rd['rel']['fk'], $rd['data']);
     }
 
     $col or $col = '*';
@@ -429,6 +425,22 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
   }
 
   public function insert($data) {
+
+    // single => multiple
+    if(!is_numeric(implode('', array_keys($data)))){
+      $data = array($data);
+    }
+
+    // TYPE_RELATION_MANY,
+    if($this->_rel_data) {
+      $rd =& $this->_rel_data;
+      if($rd['type'] == NJSql\NJTable::TYPE_RELATION_MANY) {
+        $data = array_map(function(&$dt) use($rd) {
+          $dt[$rd['rel']['fk']] = $rd['data'];
+        }, $data);
+      }
+    }
+
     $sql = $this->sqlInsert($data);
 
     $stmt = NJDb::execute($sql, $this->paramsInsert());
@@ -442,7 +454,8 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
 
   protected function sqlUpdate($data){
     if($this->_rel_data) {
-      $this->where($this->_rel_data);
+      $rd =& $this->_rel_data;
+      $this->where($rd['rel']['fk'], $rd['data']);
     }
 
     $this->_type = static::QUERY_TYPE_UPDATE;
@@ -470,13 +483,6 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
   public function update($data){
 
     $prikey = $this->_table->primary();
-    /*
-    if(!array_key_exists($prikey, $data)) {
-      trigger_error('NJQuery::update expects data with primary key!');
-    }
-    $this->where($prikey, $data[$prikey]);
-    unset($data[$prikey]);
-    */
 
     $sql = $this->sqlUpdate($data);
 
@@ -491,7 +497,8 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
    ****************************************************************************************/
   protected function sqlDelete() {
     if($this->_rel_data) {
-      $this->where($this->_rel_data);
+      $rd =& $this->_rel_data;
+      $this->where($rd['rel']['fk'], $rd['data']);
     }
 
     $this->_type = static::QUERY_TYPE_DELETE;
@@ -590,26 +597,37 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess {
 
   // sumary
   public function offsetExists($offset) {
-    if($this->_cond_limit or $this->_cond_where or $this->_cond_sort){
+    if(!is_numeric($offset)
+      || $this->_cond_limit
+      || $this->_cond_where
+      || $this->_cond_sort){
       return $this->offsetExistsByFetch($offset);
     }
     return $this->offsetExistsById($offset);
   }
   public function offsetGet($offset) {
-    // print_r(array($this->_cond_limit or $this->_cond_where or $this->_cond_sort));
-    if($this->_cond_limit or $this->_cond_where or $this->_cond_sort){
+    if(!is_numeric($offset)
+      || $this->_cond_limit
+      || $this->_cond_where
+      || $this->_cond_sort){
       return $this->offsetGetByFetch($offset);
     }
     return $this->offsetGetById($offset);
   }
   public function offsetSet($offset, $value) {
-    if($this->_cond_limit or $this->_cond_where or $this->_cond_sort){
+    if(!is_numeric($offset)
+      || $this->_cond_limit
+      || $this->_cond_where
+      || $this->_cond_sort){
       return $this->offsetSetByFetch($offset);
     }
     return $this->offsetSetById($offset);
   }
   public function offsetUnset($offset) {
-    if($this->_cond_limit or $this->_cond_where or $this->_cond_sort){
+    if(!is_numeric($offset)
+      || $this->_cond_limit
+      || $this->_cond_where
+      || $this->_cond_sort){
       return $this->offsetUnsetByFetch($offset);
     }
     return $this->offsetUnsetById($offset);
