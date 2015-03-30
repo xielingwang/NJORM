@@ -3,10 +3,12 @@
  * @Author: AminBy
  * @Date:   2015-02-17 22:21:26
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-26 19:19:08
+ * @Last Modified time: 2015-03-30 21:06:50
  */
 
 use \NJORM\NJSql\NJTable;
+use \NJORM\NJSql\NJExpr;
+use \NJORM\NJSql\NJDefaults;
 use \NJORM\NJQuery;
 use \NJORM\NJORM;
 
@@ -25,11 +27,40 @@ class NJQueryWithValidTest extends PHPUnit_Framework_TestCase {
         ->field('user_pass', 'pass')
         ->valid('notEmpty', ['lengthBetween', 7,32])
 
-        ->field('user_balance', 'balance')
-        ->valid('float', ['between', 0, 1])
+        ->field('user_balance', 'bal')
+        ->valid('notEmpty', 'float', ['between', 0, 200])
+        ->default(100)
 
         ->field('user_email', 'email')
-        ->valid('email');
+        ->valid('email')
+        ->default(function(){
+          return rand(100, 9999).'@useremail.com';
+        })
+
+        ->field('user_created', 'ct')
+        ->default(new NJExpr('unix_timestamp()'))
+
+        ->field('user_updated', 'ut')
+        ->defaultUpd(new NJExpr('unix_timestamp()+1000'));
+    }
+  }
+
+  public function testInsertDefaults() {
+    NJORM::error(function($msg){
+      echo $msg;
+    });
+    try {
+      $obj = NJORM::inst()->users->insert(array(
+        'name' => 'df'.rand(100, 9999999),
+        'pass' => 'pwd'.rand(10000, 99999999999),
+        ));
+      $uid = $obj['uid'];
+      $obj['bal'] = 22.3;
+      $obj->save();
+      $this->assertEquals('UPDATE `qn_users` SET `user_balance`=22.3,`user_updated`=unix_timestamp()+1000 WHERE `user_id` = '.$uid, NJORM::lastquery('sql'));
+    }
+    catch(\NJORM\NJException $e) {
+      print_r($e->getMsgs());
     }
   }
 
@@ -43,7 +74,7 @@ class NJQueryWithValidTest extends PHPUnit_Framework_TestCase {
       $query->insert(array(
         'name' => 'flowergogogo1',
         'pass' => '012345678910',
-        'balance' => '0.22',
+        'bal' => '0.22',
         'email' => 'email@email.com',
         ));
     }
@@ -68,14 +99,14 @@ class NJQueryWithValidTest extends PHPUnit_Framework_TestCase {
       $this->assertEquals('flowergogogo', $user['name']);
       $user->save(array(
         'name' => 'flowergogogo1',
-        'balance' => 3,
+        'bal' => 201,
         ));
     }
     catch(\NJORM\NJException $e) {
       $msgs = [
         '"flowergogogo1"\'s length must between 5 and 9',
         'users.name should be unique, "flowergogogo1" has been existed before, extra: nil',
-        '"3" must between 0 and 1',
+        '"201" must between 0 and 200',
       ];
       $this->assertEquals($msgs, $e->getMsgs());
       return;

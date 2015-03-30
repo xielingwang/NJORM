@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-30 19:14:17
+ * @Last Modified time: 2015-03-30 21:00:26
  */
 namespace NJORM;
 use \NJORM\NJSql\NJTable;
@@ -134,9 +134,10 @@ class NJModel implements Countable,ArrayAccess,JsonSerializable,Iterator {
     }
 
     $tbname = $this->_table->getName();
-    $this->_modified[$this->_table->primary()] = $this->pri_key_value();
 
-    if(NJORM::inst()->$tbname->update($this->_modified)){
+    if(NJORM::inst()->$tbname
+      ->where($this->_table->primary(), $this->pri_key_value())
+      ->update($this->_modified)){
       $this->_data = array_merge($this->_data, $this->_modified);
       $this->_modified = array();
       $this->withLazyReload();

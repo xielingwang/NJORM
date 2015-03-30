@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-30 19:25:58
+ * @Last Modified time: 2015-03-30 20:48:20
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -369,7 +369,7 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
     }
 
     $sql = $this->sqlCount($col);
-    $stmt = NJDb::execute($sql, $this->params());
+    $stmt = NJDb::execute($sql, $this->parameters());
 
     if($stmt) {
       return intval($stmt->fetchColumn());

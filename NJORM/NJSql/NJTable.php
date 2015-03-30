@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-02-02 23:27:30
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-30 19:10:53
+ * @Last Modified time: 2015-03-30 21:06:28
  */
 
 namespace NJORM\NJSql;
@@ -119,6 +119,9 @@ class NJTable {
     return $this;
   }
 
+  /************************************************
+  * valid and duang
+  *************************************************/
   private $_prev_field;
   protected $_duang;
   protected $_unique_cols = array();
@@ -173,6 +176,39 @@ class NJTable {
     return $this;
   }
 
+  /****************************************************
+   * defaults
+   ****************************************************/
+  protected $_defaults;
+  protected function _default($val, $type) {
+    if(!$this->_prev_field) {
+      trigger_error('Field should be define first!');
+    }
+
+    if(!$this->_defaults) {
+      $this->_defaults = new NJDefaults;
+    }
+
+    $args = array($this->_prev_field, $val, $type);
+    call_user_func_array(array($this->_defaults, 'set'), $args);
+    return $this;
+  }
+  public function __call($name, $args) {
+    return call_user_func_array(array($this, 'defaultIns'), $args);
+  }
+  public function defaultIns($val) {
+    return $this->_default($val, NJDefaults::TYPE_SET_INS);
+  }
+  public function defaultUpd($val) {
+    return $this->_default($val, NJDefaults::TYPE_SET_UPD);
+  }
+  public function defaultBth($val) {
+    return $this->_default($val, NJDefaults::TYPE_SET_BTH);
+  }
+
+  /****************************************************
+   * primary / field
+   ****************************************************/
   public function primary($field=null, $alias = null) {
     if(!func_num_args()){
       return $this->_fields[$this->_pri_key];
@@ -433,8 +469,10 @@ class NJTable {
         return array($refFields[$col] => $val);
 
     }, array_keys($values), array_values($values));
+
     if(!$keyvalues)
       return array();
+
     return call_user_func_array('array_merge', array_filter($keyvalues));
   }
 
@@ -458,6 +496,10 @@ class NJTable {
 
   public function values($values, $update=false) {
     if($update) {
+      if($this->_defaults) {
+        $values = $this->_defaults->doit($values, true);
+      }
+
       // execute Duang
       $this->executeDuang($values, $update);
 
@@ -472,6 +514,10 @@ class NJTable {
       // remove unavailable cols and duang
       $_values = array();
       foreach ($values as $vals) {
+        if($this->_defaults) {
+          $vals = $this->_defaults->doit($vals, false);
+        }
+
         $vals = $this->filterValues($vals);
 
         // execute Duang
