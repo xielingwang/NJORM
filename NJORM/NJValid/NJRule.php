@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-01-07 00:27:39
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-26 18:50:30
+ * @Last Modified time: 2015-03-31 14:57:56
  */
 namespace NJORM\NJValid;
 use NJORM\NJSql;
@@ -95,7 +95,7 @@ class NJRule {
 
     // rule 'integer'
     $this->addRule('integer', function($val){
-      return !!filter_var($val, FILTER_VALIDATE_INT, FILTER_FLAG_ALLOW_THOUSAND);
+      return is_numeric($val) && ''.intval($val) == $val;
      })->msg('"{v}" must be an integer number');
 
     // rule 'float'

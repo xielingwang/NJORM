@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-30 20:48:20
+ * @Last Modified time: 2015-03-31 14:54:07
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -402,19 +402,6 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
    ****************************************************************************************/
   protected function sqlInsert($data) {
 
-    // single => multiple
-    if(!is_numeric(implode('', array_keys($data)))){
-      $data = array($data);
-    }
-
-    // relation ship data
-    if($this->_rel_data) {
-      $data = array_map(function($data) {
-        array_walk($this->_rel_data, function($val,$key) use (&$data){unset($data[$key]);});
-        return array_merge($this->_rel_data, $data);
-      }, $data);
-    }
-
     $this->_type = static::QUERY_TYPE_INSERT;
     $sql = 'INSERT INTO '.$this->_table->name();
 
@@ -434,9 +421,10 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
     // TYPE_RELATION_MANY,
     if($this->_rel_data) {
       $rd =& $this->_rel_data;
-      if($rd['type'] == NJSql\NJTable::TYPE_RELATION_MANY) {
+      if($rd['rel']['type'] == NJSql\NJTable::TYPE_RELATION_MANY) {
         $data = array_map(function(&$dt) use($rd) {
           $dt[$rd['rel']['fk']] = $rd['data'];
+          return $dt;
         }, $data);
       }
     }

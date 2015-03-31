@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-26 18:46:19
+ * @Last Modified time: 2015-03-31 14:28:17
  */
 namespace NJORM;
 
@@ -148,7 +148,7 @@ class NJDb {
         'charset' => 'utf8',
         ]))
       ->config('macMini', $inst->mysql([
-        'dbname' => 'qndb',
+        'dbname' => 'cjoa',
         'host' => 'localhost',
         'user' => 'root',
         'pass' => 'password',
