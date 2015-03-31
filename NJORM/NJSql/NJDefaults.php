@@ -3,7 +3,7 @@
  * @Author: AminBy
  * @Date:   2015-03-30 19:27:57
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-30 21:06:03
+ * @Last Modified time: 2015-03-31 11:16:50
  */
 namespace NJORM\NJSql;
 
@@ -25,7 +25,7 @@ class NJDefaults {
           $rv =& $data[$col];
           $data[$col] = $pipe($rv, $data);
         }
-        elseif(empty($data[$col])) {
+        elseif(!isset($data[$col])) {
           $data[$col] = $pipe;
         }
       }, $pipes);
