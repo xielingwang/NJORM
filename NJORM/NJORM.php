@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-30 14:48:53
+ * @Last Modified time: 2015-03-31 11:36:51
  */
 namespace NJORM;
 
@@ -120,6 +120,9 @@ class NJORM extends \PDO {
     return new NJQuery($name);
   }
   public function __call($name, $args) {
+    if(in_array($name, array('TBegin', 'TRollback', 'TCommit'))) {
+      $this->$name = true;
+    }
     if(empty($args))
       return $this->$name;
     return call_user_func_array(array($this->$name, 'where'), $args);
