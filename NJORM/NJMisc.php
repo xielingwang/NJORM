@@ -110,7 +110,7 @@ public static function formatOperator($op, $val) {
 
   // IN IS
   if(in_array($op, array('=','=='))){
-    if(is_array($val)){
+    if(is_array($val) || ($val instanceof NJExprInterface)){
       $op = 'IN';
     }
     elseif(is_bool($val) || is_null($val)) {
@@ -120,7 +120,7 @@ public static function formatOperator($op, $val) {
 
   // NOT IN / IS NOT
   elseif(in_array($op, array('!=','<>'))){
-    if(is_array($val)){
+    if(is_array($val) || ($val instanceof NJExprInterface)){
       $op = 'NOT IN';
     }
     elseif(is_bool($val) || is_null($val)) {
