@@ -3,14 +3,14 @@
  * @Author: byamin
  * @Date:   2015-01-01 12:09:20
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-31 14:54:07
+ * @Last Modified time: 2015-04-03 17:04:58
  */
 namespace NJORM;
 use \NJORM\NJSql;
 use \NJORM\NJSql\NJExprInterface;
-use \Countable,\IteratorAggregate,\ArrayIterator, \ArrayAccess;
+use \Countable,\IteratorAggregate,\ArrayIterator, \ArrayAccess, \JsonSerializable;
 
-class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface {
+class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface,JsonSerializable {
   const QUERY_TYPE_SELECT = 0;
   const QUERY_TYPE_COUNT = 1;
   const QUERY_TYPE_INSERT = 2;
@@ -450,8 +450,11 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
 
     $this->_expr_upd = $this->_table->values($data, true);
 
+    $vsql = $this->_expr_upd->stringify();
+    if(!$vsql) return null;
+
     $sql = 'UPDATE '.$this->_table->name()
-      .' SET '.$this->_expr_upd->stringify();
+      .' SET '.$vsql;
 
     if($this->_cond_where) {
       $sql .= ' '.$this->_cond_where->whereString();
@@ -474,7 +477,9 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
 
     $sql = $this->sqlUpdate($data);
 
-    $stmt = NJDb::execute($sql, $this->paramsUpdate());
+    if($sql) {
+      $stmt = NJDb::execute($sql, $this->paramsUpdate());
+    }
 
     return true;
   }
@@ -527,6 +532,15 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
     $this->_cond_where = null;
   }
 
+  /* jsonSerialize */
+  public function jsonSerialize() {
+    if($this->_cond_limit
+    || $this->_cond_where
+    || $this->_cond_sort) {
+      return $this->all();
+    }
+    return $this->one();
+  }
   /* IteratorAggregate */
   public function getIterator() {
     $this->_collection ? $this->_collection : $this->_collection = $this->fetchAll();
