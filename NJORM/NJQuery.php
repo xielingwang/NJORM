@@ -1,9 +1,11 @@
 <?php
 /**
- * @Author: byamin
- * @Date:   2015-01-01 12:09:20
+ * NJQuery.php
+ * 
+ * @Author: AminBy (xielingwang@gmail.com)
+ * @Date:   2015-04-03 23:36:06
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-04-03 17:04:58
+ * @Last Modified time: 2015-04-03 23:49:04
  */
 namespace NJORM;
 use \NJORM\NJSql;

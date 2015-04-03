@@ -1,9 +1,10 @@
 <?php
 /**
- * @Author: AminBy
- * @Date:   2015-03-30 19:27:57
+ * @File: NJDefaults.php
+ * @Author: AminBy (xielingwang@gmail.com)
+ * @Date:   2015-04-03 23:36:06
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-31 11:16:50
+ * @Last Modified time: 2015-04-03 23:50:43
  */
 namespace NJORM\NJSql;
 
