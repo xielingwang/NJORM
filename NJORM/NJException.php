@@ -3,39 +3,33 @@
  * @Author: AminBy
  * @Date:   2015-03-24 17:27:30
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-26 18:52:37
+ * @Last Modified time: 2015-04-02 17:24:42
  */
 
 namespace NJORM;
 use \NJORM\NJValid\NJRule;
 
 class NJException extends \Exception {
-  const ERROR_TYPE_DBACCESS = 'error_dbaccess';
-  const ERROR_TYPE_DBEXECUTION = 'error_sql_execution';
-  const ERROR_TYPE_VALIDATION = 'error_validation';
+  const TYPE_DBACCESS = 'error_dbaccess';
+  const TYPE_DBEXECUTION = 'error_sql_execution';
+  const TYPE_VALIDATION = 'error_validation';
 
   protected $_messages = [];
   protected $_msgs = [];
-  protected $_type = 1;
-  protected $_error;
+  protected $_type;
 
   const TYPE_SYST = 0;
   const TYPE_USER = 1;
-  public function __construct($error, $type=1, $params = null) {
+  public function __construct($type, $params = null) {
     $this->_messages = array_merge($this->_messages, NJRule::messages(), static::$s_messages);
 
-    $this->_type = $type;
-    $this->_error = $error;
+    $this->_type = is_null($type) ? static::TYPE_DBACCESS : $type;
 
     $this->init_error_msgs();
   }
 
   public function init_error_msgs() {
 
-  }
-
-  public function getError() {
-    return $this->_error;
   }
 
   protected static $s_messages = array();
@@ -53,6 +47,10 @@ class NJException extends \Exception {
 
   public function getMsg() {
     return reset($this->_msgs);
+  }
+
+  public function getType() {
+    return $this->_type;
   }
 
   public function addValidFailed($domain, $key, $rule, $params, $val) {
