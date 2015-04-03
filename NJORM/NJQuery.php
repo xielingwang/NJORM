@@ -5,7 +5,7 @@
  * @Author: AminBy (xielingwang@gmail.com)
  * @Date:   2015-04-03 23:36:06
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-04-03 23:49:04
+ * @Last Modified time: 2015-04-04 01:13:37
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -328,6 +328,7 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
       if($query->_fetch()->_last_stmt && $r = $query->_last_stmt->fetchAll(\PDO::FETCH_ASSOC)) {
         $ret = array();
         foreach ($r as $_) {
+          $_ = $this->_table->doPipeOut($_);
           $ret[$_[$name]] = new NJModel($query->_table, $_);
         }
         return $ret;
@@ -336,14 +337,19 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
   }
 
   protected function _fetchMany($stmt) {
-    if($stmt && $r = $stmt->fetchAll(\PDO::FETCH_ASSOC)) {
-      $_cols = new NJCollection($this->_table, $r);
+    if($stmt && $rs = $stmt->fetchAll(\PDO::FETCH_ASSOC)) {
+      $tb =& $this->_table;
+      $rs = array_map(function($r) use ($tb){
+        return $tb->doPipeOut($r);
+      }, $rs);
+      $_cols = new NJCollection($this->_table, $rs);
       return $_cols;
     }
   }
 
   protected function _fetchOne($stmt) {
     if($stmt && $r = $stmt->fetch(\PDO::FETCH_ASSOC)) {
+      $r = $this->_table->doPipeOut($r);
       return new NJModel($this->_table, $r);
     }
   }

@@ -4,7 +4,7 @@
  * @Author: AminBy (xielingwang@gmail.com)
  * @Date:   2015-04-03 23:36:06
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-04-03 23:50:52
+ * @Last Modified time: 2015-04-04 01:13:54
  */
 
 namespace NJORM\NJSql;
@@ -178,6 +178,43 @@ class NJTable {
   }
 
   /****************************************************
+   * pipeline
+   ****************************************************/
+  protected $_pipelines;
+  protected function _pipeline_set($in, $out) {
+    if(!$this->_prev_field) {
+      trigger_error('Field should be define first!');
+    }
+    if(!$this->_pipelines) {
+      $this->_pipelines = new NJPipeline();
+    }
+    $this->_pipelines->set($this->_prev_field, $in, $out);
+    return $this;
+  }
+
+  public function pl_push($in) {
+    return $this->_pipeline_set(func_get_args(), null);
+  }
+
+  public function pl_pop($out) {
+    return $this->_pipeline_set(null, func_get_args());
+  }
+
+  protected function doPipeIn($data) {
+    if($this->_pipelines) {
+      $data = $this->_pipelines->do_in($data);
+    }
+    return $data;
+  }
+
+  public function doPipeOut($data) {
+    if($this->_pipelines) {
+      $data = $this->_pipelines->do_out($data);
+    }
+    return $data;
+  }
+
+  /****************************************************
    * defaults
    ****************************************************/
   protected $_defaults;
@@ -205,6 +242,12 @@ class NJTable {
   }
   public function defaultBth($val) {
     return $this->_default($val, NJDefaults::TYPE_SET_BTH);
+  }
+  protected function doDefault($values, $update) {
+    if($this->_defaults) {
+      $values = $this->_defaults->doit($values, $update);
+    }
+    return $values;
   }
 
   /****************************************************
@@ -497,33 +540,31 @@ class NJTable {
 
   public function values($values, $update=false) {
     if($update) {
-      if($this->_defaults) {
-        $values = $this->_defaults->doit($values, true);
-      }
+      $values = $this->doDefault($values, $update);
 
       // execute Duang
-      $this->executeDuang($values, $update);
+      $this->executeDuang($values, true);
 
       // filter: remove primary key values
       foreach((array)$this->primary() as $key) {
         unset($values[$key]);
       }
 
+      $values = $this->doPipeIn($values);
       return $this->values4update($values);
     }
     else {
       // remove unavailable cols and duang
       $_values = array();
       foreach ($values as $vals) {
-        if($this->_defaults) {
-          $vals = $this->_defaults->doit($vals, false);
-        }
+        $vals = $this->doDefault($vals, false);
 
         $vals = $this->filterValues($vals);
 
         // execute Duang
         $this->executeDuang($vals, $update);
 
+        $vals = $this->doPipeIn($vals);
         $_values[] = $vals;
       }
 

@@ -3,8 +3,12 @@
  * @Author: AminBy
  * @Date:   2015-02-23 20:10:16
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-04-04 00:28:55
+ * @Last Modified time: 2015-04-04 01:14:14
  */
+use \NJORM\NJORM;
+use \NJORM\NJException;
+use \NJORM\NJSql\NJTable;
+use \NJORM\NJSql\NJExpr;
 use \NJORM\NJSql\NJPipeline;
 
 class NJExprTest extends PHPUnit_Framework_TestCase {
@@ -32,4 +36,61 @@ class NJExprTest extends PHPUnit_Framework_TestCase {
     $this->assertEquals($data['unarr'], $outr['unarr']);
     $this->assertEquals($data['arr'], $outr['arr']);
   }
+
+  public function testNJPipeline2() {
+
+    NJTable::define('qn_users', 'users')
+      ->primary('user_id', 'id')
+
+      ->field('user_name', 'name')
+      ->valid('unique', ['lengthBetween', 7, 16])
+
+      ->field('user_pass', 'pass')
+      ->valid(['lengthBetween', 7, 16])
+      ->pl_push(function($v) { return md5($v);})
+
+      ->field('user_balance', 'bal')
+      ->valid('float', 'positive')
+
+      ->field('user_email', 'eml')
+      ->valid('email','unique')
+
+      ->field('attrs', 'att')
+      ->pl_push('serialize')
+      ->pl_pop(function($arr) {
+        return array_combine(array_keys($arr), array_map(function($v) {
+          return ucfirst($v);
+        }, array_values($arr)));
+      },'unserialize')
+
+      ->field('user_created', 'ct')->default(new NJExpr('unix_timestamp()'))
+      ->field('user_updated', 'ut')->defaultUpd(new NJExpr('unix_timestamp()'));
+
+    $data = array(
+      'name' => 'hello'.rand(0,999999),
+      'pass' => 12345678,
+      'bal' => 20,
+      'eml' => 'hello'.rand(0,999).'@'.rand(10,99).'.com',
+      'att' => [
+      'hello' => 'world',
+      'ya' => 'miedie',
+      ]
+      );
+    NJORM::error(function($str){
+      echo $str;
+    });
+    try {
+      $r = NJORM::inst()->users->insert($data);
+      $r2 = NJORM::inst()->users[$r['id']];
+
+      $this->assertEquals([
+      'hello' => 'World',
+      'ya' => 'Miedie',
+      ], $r2['att']);
+    }
+    catch(NJException $e) {
+      var_dump($e->getMsgs());
+      $this->assertTrue(false, 'a NJException');
+    }
+  } 
 }
