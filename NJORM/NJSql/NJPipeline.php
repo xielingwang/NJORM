@@ -4,7 +4,7 @@
  * @Author: AminBy (xielingwang@gmail.com)
  * @Date:   2015-04-03 23:39:53
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-04-06 22:01:01
+ * @Last Modified time: 2015-04-06 22:13:40
  */
 
 namespace NJORM\NJSql;
@@ -52,15 +52,21 @@ class NJPipeline {
           $refPL[$col] = array();
         }
         is_array($$type) || $$type = array($$type);
-        if(is_callable(reset($$type))){
+
+        if(is_array(reset($$type))) {
+          $is_multi = true;
+        }
+        elseif(is_callable(reset($$type))){
           $is_multi = false;
-          foreach (array_slice($$type, 1) as $v) {
-            if(is_callable($v)) {
+          foreach(array_slice($$type, 1) as $v) {
+            if(is_callable($v) || is_array($v)) {
               $is_multi = true;
               break;
             }
           }
         }
+
+        // 
         if(!$is_multi)
           $refPL[$col][] = $$type;
         else {
