@@ -3,7 +3,7 @@
  * @Author: AminBy
  * @Date:   2015-02-23 20:10:16
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-04-04 01:14:14
+ * @Last Modified time: 2015-04-06 22:06:17
  */
 use \NJORM\NJORM;
 use \NJORM\NJException;
@@ -44,6 +44,9 @@ class NJExprTest extends PHPUnit_Framework_TestCase {
 
       ->field('user_name', 'name')
       ->valid('unique', ['lengthBetween', 7, 16])
+      ->pl_pop(function($name, $id){
+        return implode('_', func_get_args());
+      }, 'id')
 
       ->field('user_pass', 'pass')
       ->valid(['lengthBetween', 7, 16])
@@ -57,11 +60,11 @@ class NJExprTest extends PHPUnit_Framework_TestCase {
 
       ->field('attrs', 'att')
       ->pl_push('serialize')
-      ->pl_pop(function($arr) {
+      ->pl_pop('unserialize', function($arr) {
         return array_combine(array_keys($arr), array_map(function($v) {
           return ucfirst($v);
         }, array_values($arr)));
-      },'unserialize')
+      })
 
       ->field('user_created', 'ct')->default(new NJExpr('unix_timestamp()'))
       ->field('user_updated', 'ut')->defaultUpd(new NJExpr('unix_timestamp()'));
@@ -83,6 +86,7 @@ class NJExprTest extends PHPUnit_Framework_TestCase {
       $r = NJORM::inst()->users->insert($data);
       $r2 = NJORM::inst()->users[$r['id']];
 
+      $this->assertEquals(implode('_', [$data['name'], $r['id']]), $r2['name']);
       $this->assertEquals([
       'hello' => 'World',
       'ya' => 'Miedie',
