@@ -3,8 +3,8 @@
  * @File: NJTable.php
  * @Author: AminBy (xielingwang@gmail.com)
  * @Date:   2015-04-03 23:36:06
- * @Last Modified by:   AminBy
- * @Last Modified time: 2015-04-04 01:13:54
+ * @Last Modified by:   byamin
+ * @Last Modified time: 2015-04-12 10:07:42
  */
 
 namespace NJORM\NJSql;
@@ -171,8 +171,8 @@ class NJTable {
       trigger_error('Field should be define first!');
     }
 
-    $this->_unique_fields[] = $this->_prev_field;
-    $this->_unique_fields = array_filter($this->_unique_fields);
+    $this->_unique_cols[] = $this->_prev_field;
+    $this->_unique_cols = array_unique($this->_unique_cols);
 
     return $this;
   }
