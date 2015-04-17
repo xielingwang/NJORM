@@ -5,7 +5,7 @@
  * @Author: AminBy (xielingwang@gmail.com)
  * @Date:   2015-04-03 23:36:06
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-04-04 01:13:37
+ * @Last Modified time: 2015-04-17 19:00:01
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -327,9 +327,8 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
       $query->_sel_cols = '*';
       if($query->_fetch()->_last_stmt && $r = $query->_last_stmt->fetchAll(\PDO::FETCH_ASSOC)) {
         $ret = array();
-        foreach ($r as $_) {
-          $_ = $this->_table->doPipeOut($_);
-          $ret[$_[$name]] = new NJModel($query->_table, $_);
+        foreach($r as $v) {
+          $ret[$v[$name]] = new NJModel($query->_table, $v);
         }
         return $ret;
       }
@@ -338,18 +337,14 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
 
   protected function _fetchMany($stmt) {
     if($stmt && $rs = $stmt->fetchAll(\PDO::FETCH_ASSOC)) {
-      $tb =& $this->_table;
-      $rs = array_map(function($r) use ($tb){
-        return $tb->doPipeOut($r);
-      }, $rs);
       $_cols = new NJCollection($this->_table, $rs);
       return $_cols;
     }
+    return new NJCollection($this->_table, []);
   }
 
   protected function _fetchOne($stmt) {
     if($stmt && $r = $stmt->fetch(\PDO::FETCH_ASSOC)) {
-      $r = $this->_table->doPipeOut($r);
       return new NJModel($this->_table, $r);
     }
   }
@@ -545,9 +540,9 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
     if($this->_cond_limit
     || $this->_cond_where
     || $this->_cond_sort) {
-      return $this->all();
+      return $this->all()->jsonSerialize();
     }
-    return $this->one();
+    return $this->one()->jsonSerialize();
   }
   /* IteratorAggregate */
   public function getIterator() {
@@ -564,20 +559,6 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
     return (new NJQuery($this->_table))->where($this->_table->primary(), $offset)->limit(1)->fetchOne();
   }
   public function offsetSetById($offset, $value) {
-    /*
-    if(is_array($value)) {
-      $subquery = new NJQuery($this->_table);
-      $m = $this[$offset];
-      if( !$m ) {
-        $value[$this->_table->primary()] = $offset;
-        return $subquery->insert($value);
-      }
-      else {
-        $m->update($value);
-        return $m;
-      }
-    }
-    */
     trigger_error('unexpected involving method of NJQuery::offsetSet()');
   }
   public function offsetUnsetById($offset) {

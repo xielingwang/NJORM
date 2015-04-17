@@ -4,7 +4,7 @@
  * @Author: AminBy (xielingwang@gmail.com)
  * @Date:   2015-04-03 23:39:53
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-04-06 22:13:40
+ * @Last Modified time: 2015-04-17 20:02:22
  */
 
 namespace NJORM\NJSql;
@@ -12,6 +12,11 @@ namespace NJORM\NJSql;
 class NJPipeline {
   protected $_in_pl = array();
   protected $_out_pl = array();
+  protected $_is_update = false;
+
+  public function setIsUpdate($bool){
+    $this->_is_update = $bool;
+  }
 
   public function do_in($data) {
     return $this->doit($data, true);
@@ -29,16 +34,21 @@ class NJPipeline {
       $_pls =& $this->_out_pl;
     }
 
-    array_map(function($pipes, $col) use(&$data) {
+    array_walk($_pls, function($pipes, $col) use (&$data, $in) {
+      if($this->_is_update && !isset($data[$col]))
+        return;
+
       foreach($pipes as $pipe) {
         $func = array_shift($pipe);
         array_unshift($pipe, $col);
-        $args = array_map(function($col) use($data) {
+        $args = array_map(function($col) use($data, $in) {
           return isset($data[$col]) ? $data[$col] : null;
         }, $pipe);
-        $data[$col] = call_user_func_array($func, $args);
+        $ret = call_user_func_array($func, $args);
+        if(!is_null($ret) || !$in)
+          $data[$col] = $ret;
       }
-    }, array_values($_pls), array_keys($_pls));
+    });
 
     return $data;
   }

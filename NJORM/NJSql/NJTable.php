@@ -4,7 +4,7 @@
  * @Author: AminBy (xielingwang@gmail.com)
  * @Date:   2015-04-03 23:36:06
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-04-04 01:13:54
+ * @Last Modified time: 2015-04-17 20:03:39
  */
 
 namespace NJORM\NJSql;
@@ -200,8 +200,9 @@ class NJTable {
     return $this->_pipeline_set(null, func_get_args());
   }
 
-  protected function doPipeIn($data) {
+  protected function doPipeIn($data, $isUpdate = false) {
     if($this->_pipelines) {
+      $this->_pipelines->setIsUpdate($isUpdate);
       $data = $this->_pipelines->do_in($data);
     }
     return $data;
@@ -542,6 +543,8 @@ class NJTable {
     if($update) {
       $values = $this->doDefault($values, $update);
 
+      $values = $this->filterValues($values);
+
       // execute Duang
       $this->executeDuang($values, true);
 
@@ -550,7 +553,7 @@ class NJTable {
         unset($values[$key]);
       }
 
-      $values = $this->doPipeIn($values);
+      $values = $this->doPipeIn($values, true);
       return $this->values4update($values);
     }
     else {

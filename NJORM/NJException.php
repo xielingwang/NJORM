@@ -3,7 +3,7 @@
  * @Author: AminBy
  * @Date:   2015-03-24 17:27:30
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-04-02 17:24:42
+ * @Last Modified time: 2015-04-16 16:52:53
  */
 
 namespace NJORM;
@@ -124,7 +124,8 @@ class NJException extends \Exception {
       return $v;
     };
 
-    return preg_replace_callback('/{([a-z])(?:([0-9])+)?}/i', function($match) use ($domain, $key, $val, $params, $toString) {
+    $hasKey = false;
+    $ret = preg_replace_callback('/{([a-z])(?:([0-9])+)?}/i', function($match) use ($domain, $key, $val, $params, $toString, $hasKey) {
 
       // value
       if($match[1] == 'v')
@@ -146,6 +147,7 @@ class NJException extends \Exception {
 
       // key
       if( $match[1] == 'k') {
+        $hasKey = true;
         return $key;
       }
 
@@ -157,5 +159,11 @@ class NJException extends \Exception {
       // not available holdplacers
       return $match[0];
     }, $msg);
+
+    if($key && !$hasKey) {
+      $ret = "Key \"{$key}\": " . $ret;
+    }
+
+    return $ret;
   }
 }

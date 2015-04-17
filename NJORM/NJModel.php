@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-30 21:00:26
+ * @Last Modified time: 2015-04-17 18:56:59
  */
 namespace NJORM;
 use \NJORM\NJSql\NJTable;
@@ -51,21 +51,20 @@ class NJModel implements Countable,ArrayAccess,JsonSerializable,Iterator {
   /**
    * setData: set list data for NJModel
    * 
-   * C1.setData(array(array(),array(),...))
-   * C2.setData(array($njmodel,$njmodel,...))
-   * C3.setData($offset, $njmodel)
-   * C4.setData($offset, array())
+   * C1.setData($key, $value)
+   * C2.setData(array())
    */
   protected function setData() {
-    // Case 1: two or more arguments, implements C3/C4
+    // Case 1: two or more arguments, implements C1
     if(func_num_args() >= 2) {
       // TODO: check data
       $this->_data[func_get_arg(0)] = func_get_arg(1);
     }
 
-    // Case 2: one argument, implements C1/C2
+    // Case 2: one argument, implements C2
     elseif(func_num_args() > 0) {
       $data = func_get_arg(0);
+      $data = $this->_table->doPipeOut($data);
       if(is_array($data)) {
         $this->_data = array();
         foreach($data as $k => $v) {
