@@ -5,7 +5,7 @@
  * @Author: AminBy (xielingwang@gmail.com)
  * @Date:   2015-04-03 23:36:06
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-04-17 19:00:01
+ * @Last Modified time: 2015-04-17 22:24:38
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -117,7 +117,7 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
 
   public function sortAsc() {
     if(is_null($this->_cond_sort))
-      $this->_cond_sort = new NJSql\NJOrderby();
+      $this->_cond_sort = new NJSql\NJOrderBy();
 
     foreach(func_get_args() as $field) {
       $this->_cond_sort->add($field, true);
@@ -127,7 +127,7 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
 
   public function sortDesc() {
     if(is_null($this->_cond_sort))
-      $this->_cond_sort = new NJSql\NJOrderby();
+      $this->_cond_sort = new NJSql\NJOrderBy();
 
     foreach(func_get_args() as $field) {
       $this->_cond_sort->add($field, false);

@@ -4,7 +4,7 @@
  * @Author: AminBy (xielingwang@gmail.com)
  * @Date:   2015-04-03 23:36:06
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-04-17 20:03:39
+ * @Last Modified time: 2015-04-17 22:24:03
  */
 
 namespace NJORM\NJSql;
@@ -171,8 +171,8 @@ class NJTable {
       trigger_error('Field should be define first!');
     }
 
-    $this->_unique_fields[] = $this->_prev_field;
-    $this->_unique_fields = array_filter($this->_unique_fields);
+    $this->_unique_cols[] = $this->_prev_field;
+    $this->_unique_cols = array_unique($this->_unique_cols);
 
     return $this;
   }
