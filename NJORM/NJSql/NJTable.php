@@ -515,10 +515,11 @@ class NJTable {
 
     }, array_keys($values), array_values($values));
 
+    $keyvalues = array_filter($keyvalues);
     if(!$keyvalues)
       return array();
 
-    return call_user_func_array('array_merge', array_filter($keyvalues));
+    return call_user_func_array('array_merge', $keyvalues);
   }
 
   protected function executeDuang($values, $update) {
