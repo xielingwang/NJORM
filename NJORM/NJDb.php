@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-05-04 17:58:04
+ * @Last Modified time: 2015-05-04 20:47:56
  */
 namespace NJORM;
 
@@ -119,7 +119,7 @@ class NJDb {
   public function choose($name) {
     $name = strtolower(trim($name));
     if(!array_key_exists($name, $this->_configs)) {
-      trigger_error(sprintf('DB Config "%s" is undefined'));
+      trigger_error(sprintf('DB Config "%s" is undefined', $name));
     }
     $this->_using = $name;
     return $this;

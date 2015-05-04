@@ -4,7 +4,7 @@
  * @Author: AminBy (xielingwang@gmail.com)
  * @Date:   2015-04-03 23:36:06
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-04-04 01:13:54
+ * @Last Modified time: 2015-04-17 22:24:03
  */
 
 namespace NJORM\NJSql;
@@ -171,8 +171,8 @@ class NJTable {
       trigger_error('Field should be define first!');
     }
 
-    $this->_unique_fields[] = $this->_prev_field;
-    $this->_unique_fields = array_filter($this->_unique_fields);
+    $this->_unique_cols[] = $this->_prev_field;
+    $this->_unique_cols = array_unique($this->_unique_cols);
 
     return $this;
   }
@@ -200,8 +200,9 @@ class NJTable {
     return $this->_pipeline_set(null, func_get_args());
   }
 
-  protected function doPipeIn($data) {
+  protected function doPipeIn($data, $isUpdate = false) {
     if($this->_pipelines) {
+      $this->_pipelines->setIsUpdate($isUpdate);
       $data = $this->_pipelines->do_in($data);
     }
     return $data;
@@ -514,10 +515,11 @@ class NJTable {
 
     }, array_keys($values), array_values($values));
 
+    $keyvalues = array_filter($keyvalues);
     if(!$keyvalues)
       return array();
 
-    return call_user_func_array('array_merge', array_filter($keyvalues));
+    return call_user_func_array('array_merge', $keyvalues);
   }
 
   protected function executeDuang($values, $update) {
@@ -542,6 +544,8 @@ class NJTable {
     if($update) {
       $values = $this->doDefault($values, $update);
 
+      $values = $this->filterValues($values);
+
       // execute Duang
       $this->executeDuang($values, true);
 
@@ -550,7 +554,7 @@ class NJTable {
         unset($values[$key]);
       }
 
-      $values = $this->doPipeIn($values);
+      $values = $this->doPipeIn($values, true);
       return $this->values4update($values);
     }
     else {
