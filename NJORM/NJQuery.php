@@ -5,7 +5,7 @@
  * @Author: AminBy (xielingwang@gmail.com)
  * @Date:   2015-04-03 23:36:06
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-04-04 01:13:37
+ * @Last Modified time: 2015-05-04 20:33:35
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -117,7 +117,7 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
 
   public function sortAsc() {
     if(is_null($this->_cond_sort))
-      $this->_cond_sort = new NJSql\NJOrderby();
+      $this->_cond_sort = new NJSql\NJOrderBy();
 
     foreach(func_get_args() as $field) {
       $this->_cond_sort->add($field, true);
@@ -127,7 +127,7 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
 
   public function sortDesc() {
     if(is_null($this->_cond_sort))
-      $this->_cond_sort = new NJSql\NJOrderby();
+      $this->_cond_sort = new NJSql\NJOrderBy();
 
     foreach(func_get_args() as $field) {
       $this->_cond_sort->add($field, false);
@@ -199,24 +199,36 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
       }
     }
 
+    $driver = NJORM::driver();
     if(empty($this->_expr_sel)) {
       $this->_expr_sel = $this->_table->columns($this->_sel_cols);
     }
-    $sql = sprintf('SELECT %s FROM %s'
-      , $this->_expr_sel->stringify()
-      , $this->_table->name());
+
+    $arr = array(
+      ':top' => '',
+      ':cols' => ' '.$this->_expr_sel->stringify(),
+      ':table' => ' '.$this->_table->name(),
+      ':cond' => '',
+      ':sort' => '',
+      ':limit' => '',
+      );
+    if($this->_cond_limit) {
+      if($this->_cond_limit->isTop())
+        $arr[':top'] = ' ' . $this->_cond_limit->stringify();
+      else
+        $arr[':limit'] = ' ' . $this->_cond_limit->stringify();
+    }
 
     if($this->_cond_where) {
-      $sql .= ' '.$this->_cond_where->whereString();
+      $arr[':cond'] = ' '.$this->_cond_where->whereString();
     }
 
     if($this->_cond_sort) {
-      $sql .= ' '.$this->_cond_sort->stringify();
+      $arr[':sort'] = ' '.$this->_cond_sort->stringify();
     }
 
-    if($this->_cond_limit) {
-      $sql .= ' '.$this->_cond_limit->stringify();
-    }
+    $sql = strtr('SELECT:top:cols FROM:table:cond:sort:limit', $arr);
+
     return $sql;
   }
 
@@ -327,9 +339,8 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
       $query->_sel_cols = '*';
       if($query->_fetch()->_last_stmt && $r = $query->_last_stmt->fetchAll(\PDO::FETCH_ASSOC)) {
         $ret = array();
-        foreach ($r as $_) {
-          $_ = $this->_table->doPipeOut($_);
-          $ret[$_[$name]] = new NJModel($query->_table, $_);
+        foreach($r as $v) {
+          $ret[$v[$name]] = new NJModel($query->_table, $v);
         }
         return $ret;
       }
@@ -338,18 +349,14 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
 
   protected function _fetchMany($stmt) {
     if($stmt && $rs = $stmt->fetchAll(\PDO::FETCH_ASSOC)) {
-      $tb =& $this->_table;
-      $rs = array_map(function($r) use ($tb){
-        return $tb->doPipeOut($r);
-      }, $rs);
       $_cols = new NJCollection($this->_table, $rs);
       return $_cols;
     }
+    return new NJCollection($this->_table, []);
   }
 
   protected function _fetchOne($stmt) {
     if($stmt && $r = $stmt->fetch(\PDO::FETCH_ASSOC)) {
-      $r = $this->_table->doPipeOut($r);
       return new NJModel($this->_table, $r);
     }
   }
@@ -393,7 +400,8 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
 
     $col or $col = '*';
     $col == '*' or $col = NJMisc::wrapGraveAccent($this->_table->getField($col));
-    $sql = sprintf('SELECT COUNT(%s) `c` FROM %s'
+    $sql = sprintf('SELECT COUNT(%s) %s FROM %s'
+      , NJMisc::wrapGraveAccent('c')
       , $col
       , $this->_table->name());
 
@@ -439,12 +447,24 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
 
     $sql = $this->sqlInsert($data);
 
+
+    if(in_array(NJORM::driver(), array('mssql', 'dblib'))) {
+      $sql = str_replace('VALUES', 'output inserted.' . $this->_table->getField($this->_table->primary()) . ' VALUES', $sql);
+    }
+
     $stmt = NJDb::execute($sql, $this->paramsInsert());
 
-    $lastInsertId = NJORM::inst()->lastInsertId();
+    if(in_array(NJORM::driver(), array('mssql', 'dblib'))) {
+      $lastInsertId = $stmt->fetchColumn();
+    }
+    else {
+      $lastInsertId = NJORM::inst()->lastInsertId();
+    }
+
     if(is_numeric($lastInsertId) && ''.intval($lastInsertId) === ''.$lastInsertId) {
       $lastInsertId = floatval($lastInsertId);
     }
+
     return (new NJModel($this->_table, array($this->_table->primary() => $lastInsertId)))->withLazyReload();
   }
 
@@ -545,9 +565,9 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
     if($this->_cond_limit
     || $this->_cond_where
     || $this->_cond_sort) {
-      return $this->all();
+      return $this->all()->jsonSerialize();
     }
-    return $this->one();
+    return $this->one()->jsonSerialize();
   }
   /* IteratorAggregate */
   public function getIterator() {
@@ -564,20 +584,6 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
     return (new NJQuery($this->_table))->where($this->_table->primary(), $offset)->limit(1)->fetchOne();
   }
   public function offsetSetById($offset, $value) {
-    /*
-    if(is_array($value)) {
-      $subquery = new NJQuery($this->_table);
-      $m = $this[$offset];
-      if( !$m ) {
-        $value[$this->_table->primary()] = $offset;
-        return $subquery->insert($value);
-      }
-      else {
-        $m->update($value);
-        return $m;
-      }
-    }
-    */
     trigger_error('unexpected involving method of NJQuery::offsetSet()');
   }
   public function offsetUnsetById($offset) {
@@ -607,7 +613,7 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
 
   // sumary
   public function offsetExists($offset) {
-    if(!is_numeric($offset)
+    if(!is_string($offset)
       || $this->_cond_limit
       || $this->_cond_where
       || $this->_cond_sort){
@@ -616,7 +622,7 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
     return $this->offsetExistsById($offset);
   }
   public function offsetGet($offset) {
-    if(!is_numeric($offset)
+    if(!is_string($offset)
       || $this->_cond_limit
       || $this->_cond_where
       || $this->_cond_sort){
@@ -625,7 +631,7 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
     return $this->offsetGetById($offset);
   }
   public function offsetSet($offset, $value) {
-    if(!is_numeric($offset)
+    if(!is_string($offset)
       || $this->_cond_limit
       || $this->_cond_where
       || $this->_cond_sort){
@@ -634,7 +640,7 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
     return $this->offsetSetById($offset);
   }
   public function offsetUnset($offset) {
-    if(!is_numeric($offset)
+    if(!is_string($offset)
       || $this->_cond_limit
       || $this->_cond_where
       || $this->_cond_sort){

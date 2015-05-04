@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-04-02 17:26:56
+ * @Last Modified time: 2015-05-04 18:12:23
  */
 namespace NJORM;
 
@@ -27,10 +27,22 @@ class NJORM extends \PDO {
 
   public function __construct() {
     call_user_func_array('parent::__construct', func_get_args());
-    $this->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
+    if(in_array($this->getAttribute(\PDO::ATTR_DRIVER_NAME), ['mysql'])) {
+      $this->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
+    }
     $this->setAttribute(\PDO::ATTR_STRINGIFY_FETCHES, false);
     $this->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
   }
+
+  public static function driver() {
+    // oci dblib mssql sqlsrv
+    static $driver;
+    if(!$driver) {
+      $driver = static::inst()->getAttribute(\PDO::ATTR_DRIVER_NAME);
+    }
+    return $driver;
+  }
+
 
   /****************************************************************************************
    * Transaction

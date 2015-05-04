@@ -3,9 +3,11 @@
  * @Author: byamin
  * @Date:   2014-12-26 01:41:57
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-07 18:16:03
+ * @Last Modified time: 2015-05-04 19:24:03
  */
 namespace NJORM\NJSql;
+use \NJORM\NJORM;
+
 // TODO: extends NJObject
 class NJLimit extends NJExpr {
   protected $_limit = 1;
@@ -29,20 +31,36 @@ class NJLimit extends NJExpr {
   }
 
   public function stringify() {
-    if(func_num_args() > 0) {
-      return ($this->_isOffsetType || !$this->_offset)
-      ? 'LIMIT ' . $this->_limit
-      : 'LIMIT ' . $this->_offset;
-    }
     return parent::stringify();
   }
 
+  public function isTop() {
+    $driver = NJORM::driver();
+    return !in_array($driver, array('mysql'));
+  }
+
   protected function _updateValueWithComma(){
-    $this->_SetValue(sprintf('LIMIT %s%d', $this->_offset?($this->_offset.','):'', $this->_limit));
+
+    if($this->isTop()){
+      $this->_updateValueWithOffset();
+    }
+
+    else {
+      $this->_SetValue(sprintf('LIMIT %s%d', $this->_offset?($this->_offset.','):'', $this->_limit));
+    }
   }
 
   public function _updateValueWithOffset() {
-    $this->_SetValue(sprintf('LIMIT %d%s', $this->_limit, $this->_offset?(' OFFSET '.$this->_offset):''));
+
+    if($this->isTop()) {
+      $value = 'TOP ' . $this->_limit;
+    }
+
+    else {
+      $value = sprintf('LIMIT %d%s', $this->_limit, $this->_offset?(' OFFSET '.$this->_offset):'');
+    }
+
+    $this->_SetValue($value);
   }
 
   public function limit() {

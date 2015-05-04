@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-04-04 00:30:50
+ * @Last Modified time: 2015-05-04 17:58:04
  */
 namespace NJORM;
 
@@ -93,6 +93,8 @@ class NJDb {
   protected function dsn_keys($driver) {
     $dsns = [
     'mysql' => ['host','port','dbname','unix_socket','charset'],
+    'mssql' => ['host','port','dbname','unix_socket','charset'],
+    'dblib' => ['host','port','dbname','unix_socket','charset'],
     ];
     return $dsns[$driver];
   }
@@ -126,9 +128,29 @@ class NJDb {
   public function mysql($config) {
     $dsn = $this->get_dsn('mysql', $config);
     $options = [];
-    if(empty($config['charset'])) {
+    if(!empty($config['charset'])
+      && version_compare(PHP_VERSION, '5.3.6', '<=')) {
       $options[\PDO::MYSQL_ATTR_INIT_COMMAND] = 'SET NAMES ' . $config['charset'];
     }
+    $user = $config['user'];
+    $pass = $config['pass'];
+
+    return compact('dsn', 'user', 'pass', 'options');
+  }
+  // dblib:host=$hostname:$port;dbname=$dbname
+  public function mssql($config) {
+    $dsn = $this->get_dsn('mssql', $config);
+    $options = [];
+
+    $user = $config['user'];
+    $pass = $config['pass'];
+
+    return compact('dsn', 'user', 'pass', 'options');
+  }
+  public function dblib($config) {
+    $dsn = $this->get_dsn('dblib', $config);
+    $options = [];
+
     $user = $config['user'];
     $pass = $config['pass'];
 
