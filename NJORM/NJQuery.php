@@ -5,7 +5,7 @@
  * @Author: AminBy (xielingwang@gmail.com)
  * @Date:   2015-04-03 23:36:06
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-05-04 20:47:34
+ * @Last Modified time: 2015-05-06 17:25:56
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -104,8 +104,9 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
 
   public function where($arg) {
     NJSql\NJCondition::setTable($this->_table);
-    if(!($arg instanceof NJSql\NJCondition))
-      $arg = NJSql\NJCondition::fact(func_get_args());
+    if(!($arg instanceof NJSql\NJCondition)) {
+      $arg = call_user_func_array('\\NJORM\\NJSql\\NJCondition::fact', func_get_args());
+    }
     if($this->_cond_where instanceof NJSql\NJCondition) {
       $this->_cond_where->and($arg);
     }

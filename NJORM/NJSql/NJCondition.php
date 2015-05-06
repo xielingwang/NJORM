@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-30 18:54:37
+ * @Last Modified time: 2015-05-06 17:19:32
  */
 namespace NJORM\NJSql;
 use NJORM\NJMisc;
@@ -339,6 +339,7 @@ class NJCondition extends NJExpr{
 
         // fields
         if(static::$s_table) {
+          // print_r($args);
           $args[0] = static::$s_table->getField($args[0]);
         }
         $lOp = NJMisc::formatFieldName($args[0]);
