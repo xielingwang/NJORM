@@ -4,7 +4,7 @@
  * @Author: AminBy (xielingwang@gmail.com)
  * @Date:   2015-04-03 23:36:06
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-04-17 22:24:03
+ * @Last Modified time: 2015-05-06 11:08:45
  */
 
 namespace NJORM\NJSql;
@@ -35,10 +35,10 @@ class NJTable {
 
   public function name($alias = null) {
     if($alias) {
-      return sprintf("`%s` `%s`", $this->_name, $alias);
+      return sprintf("%s %s", NJMisc::wrapGraveAccent($this->_name), NJMisc::wrapGraveAccent($alias));
     }
 
-    return sprintf("`%s`", $this->_name);
+    return sprintf("%s", NJMisc::wrapGraveAccent($this->_name));
   }
 
   public function getName() {

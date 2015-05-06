@@ -5,7 +5,7 @@
  * @Author: AminBy (xielingwang@gmail.com)
  * @Date:   2015-04-03 23:36:06
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-05-06 17:25:56
+ * @Last Modified time: 2015-05-06 17:55:44
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -402,8 +402,8 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
     $col or $col = '*';
     $col == '*' or $col = NJMisc::wrapGraveAccent($this->_table->getField($col));
     $sql = sprintf('SELECT COUNT(%s) %s FROM %s'
-      , NJMisc::wrapGraveAccent('c')
       , $col
+      , NJMisc::wrapGraveAccent('c')
       , $this->_table->name());
 
     if($this->_cond_where) {
