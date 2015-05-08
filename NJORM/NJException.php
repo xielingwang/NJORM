@@ -3,7 +3,7 @@
  * @Author: AminBy
  * @Date:   2015-03-24 17:27:30
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-04-16 16:52:53
+ * @Last Modified time: 2015-05-07 15:55:20
  */
 
 namespace NJORM;
@@ -160,9 +160,10 @@ class NJException extends \Exception {
       return $match[0];
     }, $msg);
 
+    /*
     if($key && !$hasKey) {
       $ret = "Key \"{$key}\": " . $ret;
-    }
+    }*/
 
     return $ret;
   }

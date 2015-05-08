@@ -17,7 +17,7 @@ class NJMisc {
 public static function wrapGraveAccent($v) {
   $v = trim($v);
 
-  if(!in_array(NJORM::driver(), ['mysql']))
+  if(!NJORM::isDriver('mysql'))
     return $v;
 
   if(!is_numeric($v) && !self::isWrappedGraveAccent($v)) {

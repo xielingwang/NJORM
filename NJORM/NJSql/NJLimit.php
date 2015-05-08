@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-26 01:41:57
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-05-04 19:24:03
+ * @Last Modified time: 2015-05-08 12:09:24
  */
 namespace NJORM\NJSql;
 use \NJORM\NJORM;
@@ -32,11 +32,6 @@ class NJLimit extends NJExpr {
 
   public function stringify() {
     return parent::stringify();
-  }
-
-  public function isTop() {
-    $driver = NJORM::driver();
-    return !in_array($driver, array('mysql'));
   }
 
   protected function _updateValueWithComma(){

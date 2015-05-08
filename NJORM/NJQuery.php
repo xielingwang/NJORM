@@ -5,7 +5,7 @@
  * @Author: AminBy (xielingwang@gmail.com)
  * @Date:   2015-04-03 23:36:06
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-05-06 17:55:44
+ * @Last Modified time: 2015-05-08 12:09:12
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -200,7 +200,6 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
       }
     }
 
-    $driver = NJORM::driver();
     if(empty($this->_expr_sel)) {
       $this->_expr_sel = $this->_table->columns($this->_sel_cols);
     }
@@ -214,7 +213,7 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
       ':limit' => '',
       );
     if($this->_cond_limit) {
-      if($this->_cond_limit->isTop())
+      if(NJORM::isDriver('mssql'))
         $arr[':top'] = ' ' . $this->_cond_limit->stringify();
       else
         $arr[':limit'] = ' ' . $this->_cond_limit->stringify();
@@ -449,13 +448,13 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
     $sql = $this->sqlInsert($data);
 
 
-    if(in_array(NJORM::driver(), array('mssql', 'dblib'))) {
+    if(NJORM::isDriver('mssql')) {
       $sql = str_replace('VALUES', 'output inserted.' . $this->_table->getField($this->_table->primary()) . ' VALUES', $sql);
     }
 
     $stmt = NJDb::execute($sql, $this->paramsInsert());
 
-    if(in_array(NJORM::driver(), array('mssql', 'dblib'))) {
+    if(NJORM::isDriver('mssql')) {
       $lastInsertId = $stmt->fetchColumn();
     }
     else {

@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-05-04 18:12:23
+ * @Last Modified time: 2015-05-07 20:29:12
  */
 namespace NJORM;
 
@@ -27,20 +27,33 @@ class NJORM extends \PDO {
 
   public function __construct() {
     call_user_func_array('parent::__construct', func_get_args());
-    if(in_array($this->getAttribute(\PDO::ATTR_DRIVER_NAME), ['mysql'])) {
+    if(static::isDriver('mysql', $this->getAttribute(\PDO::ATTR_DRIVER_NAME)) ) {
       $this->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
     }
     $this->setAttribute(\PDO::ATTR_STRINGIFY_FETCHES, false);
     $this->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
   }
 
-  public static function driver() {
+  public static function isDriver($drvr1, $drvr2 = null) {
     // oci dblib mssql sqlsrv
     static $driver;
-    if(!$driver) {
-      $driver = static::inst()->getAttribute(\PDO::ATTR_DRIVER_NAME);
+    if(!$drvr2) {
+      if(!$driver) {
+        $driver = static::inst()->getAttribute(\PDO::ATTR_DRIVER_NAME);
+      }
+      $drvr2 = $driver;
     }
-    return $driver;
+
+    $drvrmap = array(
+      'mysql' => array('mysql'),
+      'mssql' => array('dblib', 'mssql', 'sqlsvr'),
+    );
+    $func = function($drvr) use ($drvrmap) {
+      return implode('', array_unique(array_map(function($k, $v) use($drvr) {
+        return in_array($drvr, $v) ? $k : null;
+      }, array_keys($drvrmap), array_values($drvrmap))));
+    };
+    return $func($drvr1) == $func($drvr2);
   }
 
 
