@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-05-04 20:47:56
+ * @Last Modified time: 2015-05-08 17:53:20
  */
 namespace NJORM;
 
@@ -79,24 +79,46 @@ class NJDb {
    ) ENGINE=InnoDB AUTO_INCREMENT=1 DEFAULT CHARSET=utf8;
    */
   protected function get_dsn($driver, $config) {
-    $_config = array();
     $config = array_change_key_case($config);
-
-    foreach($this->dsn_keys($driver) as $k) {
-      if(array_key_exists($k, $config)) {
-        $_config[] = $k.'='.$config[$k];
+    
+    if($driver == 'sqlsrv') {
+      $format = '#driver:Server=#host,#port;Database=#dbname;';
+      if(!isset($config['port'])) {
+        $format = str_replace(',#port', '', $format);
       }
     }
-    return $driver.':'.implode(';', $_config);
-  }
+    else {
+      $format = '#driver:unix_socket=#unix_socket;host=#host;port=#port;dbname=#dbname;charset=#charset;';
+      if(isset($config['unix_socket'])) {
+        $format = strtr($format, array(
+          'host=#host;' => '',
+          'port=#port;' => ''
+          ));
+      }
+      else {
+        $format = str_replace('unix_socket=#unix_socket;', '', $format);
+        if(!isset($config['port'])) {
+          $format = str_replace('port=#port;', '', $format);
+        }
+      }
+      if(!isset($config['charset'])) {
+        $format = str_replace('charset=#charset;', '', $format);
+      }
+    }
 
-  protected function dsn_keys($driver) {
-    $dsns = [
-    'mysql' => ['host','port','dbname','unix_socket','charset'],
-    'mssql' => ['host','port','dbname','unix_socket','charset'],
-    'dblib' => ['host','port','dbname','unix_socket','charset'],
-    ];
-    return $dsns[$driver];
+    $config['driver'] = $driver;
+    $dsn = preg_replace_callback('/#([a-z_]+)/i', function($v) use($config) {
+      $key = $v[1];
+      if(isset($config[$key]))
+        return $config[$key];
+      return $v[0];
+    }, $format);
+
+    if(strpos($dsn, '#') !== false) {
+      trigger_error('Not a good DSN: '.$dsn);
+    }
+
+    return $dsn;
   }
 
   protected $_configs = array();
@@ -149,6 +171,15 @@ class NJDb {
   }
   public function dblib($config) {
     $dsn = $this->get_dsn('dblib', $config);
+    $options = [];
+
+    $user = $config['user'];
+    $pass = $config['pass'];
+
+    return compact('dsn', 'user', 'pass', 'options');
+  }
+  public function sqlsrv($config) {
+    $dsn = $this->get_dsn('sqlsrv', $config);
     $options = [];
 
     $user = $config['user'];

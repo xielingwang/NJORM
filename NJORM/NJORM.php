@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-05-07 20:29:12
+ * @Last Modified time: 2015-05-08 17:02:55
  */
 namespace NJORM;
 
@@ -46,7 +46,7 @@ class NJORM extends \PDO {
 
     $drvrmap = array(
       'mysql' => array('mysql'),
-      'mssql' => array('dblib', 'mssql', 'sqlsvr'),
+      'mssql' => array('dblib', 'mssql', 'sqlsrv'),
     );
     $func = function($drvr) use ($drvrmap) {
       return implode('', array_unique(array_map(function($k, $v) use($drvr) {
