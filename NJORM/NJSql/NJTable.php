@@ -4,7 +4,7 @@
  * @Author: AminBy (xielingwang@gmail.com)
  * @Date:   2015-04-03 23:36:06
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-05-06 11:08:45
+ * @Last Modified time: 2015-05-11 13:31:52
  */
 
 namespace NJORM\NJSql;
@@ -379,15 +379,19 @@ class NJTable {
   public static function define($name, $alias=null) {
     if(!array_key_exists($name, static::$_tables)) {
       static::$_tables[$name] = new static($name, $alias);
-      if($alias) {
+    }
+    if($alias) {
+      if(!array_key_exists($alias, static::$_tables)) {
         static::$_aliases[$alias] =& static::$_tables[$name];
       }
+      else {
+        trigger_error("Alias {$alias} is defined.");
+      }
     }
-    else
-      trigger_error('Table has been exists: ' . $name);
 
     return static::$_tables[$name];
   }
+
   public static function factory($name) {
     $class = get_called_class();
     if($name instanceof $class)

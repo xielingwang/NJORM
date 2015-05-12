@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-26 01:41:57
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-05-08 12:09:24
+ * @Last Modified time: 2015-05-11 14:25:33
  */
 namespace NJORM\NJSql;
 use \NJORM\NJORM;
@@ -36,7 +36,7 @@ class NJLimit extends NJExpr {
 
   protected function _updateValueWithComma(){
 
-    if($this->isTop()){
+    if(NJORM::isDriver('mssql')){
       $this->_updateValueWithOffset();
     }
 
@@ -47,7 +47,7 @@ class NJLimit extends NJExpr {
 
   public function _updateValueWithOffset() {
 
-    if($this->isTop()) {
+    if(NJORM::isDriver('mssql')) {
       $value = 'TOP ' . $this->_limit;
     }
 
