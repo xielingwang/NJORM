@@ -5,7 +5,7 @@
  * @Author: AminBy (xielingwang@gmail.com)
  * @Date:   2015-04-03 23:36:06
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-05-11 14:24:51
+ * @Last Modified time: 2015-05-13 16:34:57
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -613,8 +613,7 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
 
   // sumary
   public function offsetExists($offset) {
-    if(!is_string($offset)
-      || $this->_cond_limit
+    if($this->_cond_limit
       || $this->_cond_where
       || $this->_cond_sort){
       return $this->offsetExistsByFetch($offset);
@@ -622,8 +621,7 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
     return $this->offsetExistsById($offset);
   }
   public function offsetGet($offset) {
-    if(!is_string($offset)
-      || $this->_cond_limit
+    if($this->_cond_limit
       || $this->_cond_where
       || $this->_cond_sort){
       return $this->offsetGetByFetch($offset);
@@ -631,8 +629,7 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
     return $this->offsetGetById($offset);
   }
   public function offsetSet($offset, $value) {
-    if(!is_string($offset)
-      || $this->_cond_limit
+    if($this->_cond_limit
       || $this->_cond_where
       || $this->_cond_sort){
       return $this->offsetSetByFetch($offset);
@@ -640,8 +637,7 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
     return $this->offsetSetById($offset);
   }
   public function offsetUnset($offset) {
-    if(!is_string($offset)
-      || $this->_cond_limit
+    if($this->_cond_limit
       || $this->_cond_where
       || $this->_cond_sort){
       return $this->offsetUnsetByFetch($offset);

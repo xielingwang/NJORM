@@ -3,7 +3,7 @@
  * @Author: AminBy
  * @Date:   2015-03-24 17:27:30
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-05-07 15:55:20
+ * @Last Modified time: 2015-05-18 20:53:38
  */
 
 namespace NJORM;
@@ -21,6 +21,8 @@ class NJException extends \Exception {
   const TYPE_SYST = 0;
   const TYPE_USER = 1;
   public function __construct($type, $params = null) {
+    parent::__construct($type);
+
     $this->_messages = array_merge($this->_messages, NJRule::messages(), static::$s_messages);
 
     $this->_type = is_null($type) ? static::TYPE_DBACCESS : $type;

@@ -4,7 +4,7 @@
  * @Author: AminBy (xielingwang@gmail.com)
  * @Date:   2015-04-03 23:36:06
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-05-11 13:31:52
+ * @Last Modified time: 2015-05-15 16:20:27
  */
 
 namespace NJORM\NJSql;
@@ -50,7 +50,12 @@ class NJTable {
       return $field;
     if($f = array_search($field, $this->_fields))
       return $f;
-    trigger_error(sprintf('NJTable::getField("%s") error for table: %s', $this->_name, $field));
+    trigger_error(sprintf('NJTable::getField("%s") error for table: %s', $field, $this->_name));
+  }
+
+  public function fieldExists($field) {
+    return isset($this->_fields[$field])
+      || in_array($field, $this->_fields);
   }
 
   public function field($field, $alias = null) {

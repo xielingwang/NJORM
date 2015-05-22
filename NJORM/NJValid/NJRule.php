@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-01-07 00:27:39
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-31 14:57:56
+ * @Last Modified time: 2015-05-19 15:16:32
  */
 namespace NJORM\NJValid;
 use NJORM\NJSql;
@@ -168,7 +168,10 @@ class NJRule {
 
     // rule 'length'
     $this->addRule('length', function($val, $len){
-      return strlen($val) == $len;
+      $vlen = function_exists('mb_strlen')
+        ? mb_strlen($val)
+        : strlen($val);
+      return $vlen == $len;
     })->msg('"{v}"\'s length must equal of {p}');
 
     // rule 'lengthBetween'
@@ -178,12 +181,18 @@ class NJRule {
 
     // rule 'lengthMin'
     $this->addRule('lengthMin', function($val, $min){
-      return strlen($val) >= $min;
+      $vlen = function_exists('mb_strlen')
+        ? mb_strlen($val)
+        : strlen($val);
+      return $vlen >= $min;
     })->msg('"{v}"\'s length must greater or equal than {p}');
 
     // rule 'lengthMax'
     $this->addRule('lengthMax', function($val, $max){
-      return strlen($val) <= $max;
+      $vlen = function_exists('mb_strlen')
+        ? mb_strlen($val)
+        : strlen($val);
+      return $vlen <= $max;
     })->msg('"{v}"\'s length must less or equal than {p}');
 
     // rule 'contains'
@@ -236,7 +245,11 @@ class NJRule {
           : strcmp(end($val), $needle)
           ) === 0;
       }
-      $last = strlen($val) - strlen($needle);
+      if(function_exists('mb_strlen'))
+        $last = mb_strlen($val) - mb_strlen($needle);
+      else
+        $last = strlen($val) - strlen($needle);
+
       if(function_exists('mb_detect_encoding')) {
         $encoding = mb_detect_encoding($val);
         $encoding || $encoding = 'utf-8';

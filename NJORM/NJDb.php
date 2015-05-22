@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-05-08 17:53:20
+ * @Last Modified time: 2015-05-18 20:39:20
  */
 namespace NJORM;
 
@@ -124,8 +124,15 @@ class NJDb {
   protected $_configs = array();
   protected $_using = null;
   public function config() {
-    if(func_num_args() < 2) {
+    if(func_num_args() < 1) {
       return $this->_configs[$this->_using];
+    }
+    elseif(func_num_args() < 2) {
+      list($name) = func_get_args();
+      if(!isset($this->_configs[$name])) {
+        trigger_error($name.' config not found!');
+      }
+      return $this->_configs[$name];
     }
 
     list($name, $value) = func_get_args();

@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-05-08 17:02:55
+ * @Last Modified time: 2015-05-19 15:32:20
  */
 namespace NJORM;
 
@@ -11,10 +11,35 @@ class NJORM extends \PDO {
   static $config = array();
 
   public static function inst() {
+    static $instName;
     static $pdo;
-    if(!$pdo){
+
+    if(func_num_args() > 0) {
+      $name = func_get_arg(0);
+      if($name != $instName) {
+        $pdo = null;
+        $instName = $name;
+      }
+    }
+
+    if(empty($instName)) {
+      $instName = 'default';
+    }
+
+    if(!$pdo) {
+
       try {
-        extract(NJDb::getInstance()->config(), EXTR_PREFIX_ALL, 'pdo');
+        if($instName == 'default') {
+          $config = NJDb::getInstance()->config();
+        }
+        else {
+          $config = NJDb::getInstance()->config($instName);
+        }
+
+        extract($config, EXTR_PREFIX_ALL, 'pdo');
+
+        empty($pdo_options) && $pdo_options = array();
+
         $pdo = new static($pdo_dsn, $pdo_user, $pdo_pass, $pdo_options);
       }
       catch(\PDOException $e) {
