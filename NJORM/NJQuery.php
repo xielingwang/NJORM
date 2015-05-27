@@ -5,7 +5,7 @@
  * @Author: AminBy (xielingwang@gmail.com)
  * @Date:   2015-04-03 23:36:06
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-06-01 16:00:27
+ * @Last Modified time: 2015-06-01 16:14:13
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -64,7 +64,7 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
    ***********************************************/
   public function selectWithout() {
     $this->_type = static::QUERY_TYPE_SELECT;
-    $this->select($this->table->columnsWithout(func_get_args()));
+    return $this->select(implode(',', $this->_table->columnsWithout(func_get_args())));
   }
 
   /**

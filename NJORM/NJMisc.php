@@ -17,11 +17,15 @@ class NJMisc {
 public static function wrapGraveAccent($v) {
   $v = trim($v);
 
-  if(!NJORM::isDriver('mysql'))
-    return $v;
-
-  if(!is_numeric($v) && !self::isWrappedGraveAccent($v)) {
-    $v = "`{$v}`";
+  if(NJORM::isDriver('mysql')) {
+    if(!is_numeric($v) && !self::isWrappedGraveAccent($v)) {
+      $v = "`{$v}`";
+    }
+  }
+  elseif(NJORM::isDriver('mssql')) {
+    if(!is_numeric($v) && !self::isWrappedGraveAccent($v)) {
+      $v = "[{$v}]";
+    }
   }
   return $v;
 }
@@ -143,9 +147,18 @@ public static function formatOperator($op, $val) {
 public static function isWrappedGraveAccent($v) {
 
   $v = trim($v);
-  return strlen($v)>=2
-    && substr($v, 0, 1) == '`'
-    && substr($v, -1) == '`';
+
+  if(NJORM::isDriver('mysql')) {
+    return strlen($v)>=2
+      && substr($v, 0, 1) == '`'
+      && substr($v, -1) == '`';
+  }
+  elseif(NJORM::isDriver('mssql')) {
+    return strlen($v)>=2
+      && substr($v, 0, 1) == '['
+      && substr($v, -1) == ']';
+  }
+  return false;
 }
 
 /**
