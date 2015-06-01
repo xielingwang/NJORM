@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2015-01-07 00:27:39
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-05-19 15:16:32
+ * @Last Modified time: 2015-06-01 15:34:41
  */
 namespace NJORM\NJValid;
 use NJORM\NJSql;
@@ -70,7 +70,7 @@ class NJRule {
   public function __construct() {
     // rule 'notEmpty'
     $this->addRule('notEmpty', function($val){
-      return !empty($val);
+      return !is_null($val) && $val !== '';
     })->msg('"{v}" must not empty');
 
     // rule 'in'
