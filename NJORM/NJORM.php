@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-05-19 15:32:20
+ * @Last Modified time: 2015-06-01 15:59:06
  */
 namespace NJORM;
 
@@ -52,9 +52,15 @@ class NJORM extends \PDO {
 
   public function __construct() {
     call_user_func_array('parent::__construct', func_get_args());
-    if(static::isDriver('mysql', $this->getAttribute(\PDO::ATTR_DRIVER_NAME)) ) {
+
+    $curDriver = $this->getAttribute(\PDO::ATTR_DRIVER_NAME);
+    if(static::isDriver('mysql', $curDriver) ) {
       $this->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
     }
+    elseif('sqlsrv' == $curDriver) {
+      $this->setAttribute(\PDO::SQLSRV_ATTR_ENCODING, \PDO::SQLSRV_ENCODING_UTF8);
+    }
+
     $this->setAttribute(\PDO::ATTR_STRINGIFY_FETCHES, false);
     $this->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
   }

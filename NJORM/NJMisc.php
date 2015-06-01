@@ -81,7 +81,7 @@ public static function formatValue($v, $context=null) {
 
   // boolean
   elseif(is_bool($v)) {
-    return $v ? 'TRUE' : 'FALSE';
+    return $v ? '1' : '0';
   }
 
   // string
@@ -117,7 +117,7 @@ public static function formatOperator($op, $val) {
     if(is_array($val) || ($val instanceof NJExprInterface)){
       $op = 'IN';
     }
-    elseif(is_bool($val) || is_null($val)) {
+    elseif(is_null($val)) {
       return 'IS';
     }
   }
@@ -127,7 +127,7 @@ public static function formatOperator($op, $val) {
     if(is_array($val) || ($val instanceof NJExprInterface)){
       $op = 'NOT IN';
     }
-    elseif(is_bool($val) || is_null($val)) {
+    elseif(is_null($val)) {
       return 'IS NOT';
     }
   }

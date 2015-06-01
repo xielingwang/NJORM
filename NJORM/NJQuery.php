@@ -5,7 +5,7 @@
  * @Author: AminBy (xielingwang@gmail.com)
  * @Date:   2015-04-03 23:36:06
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-05-13 16:34:57
+ * @Last Modified time: 2015-06-01 16:00:27
  */
 namespace NJORM;
 use \NJORM\NJSql;
@@ -456,6 +456,9 @@ class NJQuery implements Countable,IteratorAggregate,ArrayAccess,NJExprInterface
 
     if(NJORM::isDriver('mssql')) {
       $lastInsertId = $stmt->fetchColumn();
+      if(!$lastInsertId) {
+        throw new \NJORM\NJException(\NJORM\NJException::TYPE_DBEXECUTION);
+      }
     }
     else {
       $lastInsertId = NJORM::inst()->lastInsertId();
