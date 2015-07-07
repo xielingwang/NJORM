@@ -3,7 +3,7 @@
  * @Author: byamin
  * @Date:   2014-12-21 16:51:57
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-05-15 16:36:35
+ * @Last Modified time: 2015-07-07 11:47:38
  */
 namespace NJORM\NJSql;
 use NJORM\NJMisc;
@@ -228,18 +228,20 @@ class NJCondition extends NJExpr{
     // 3. Strings and Pramaters
     // 3.1. Reconize as field
     if(empty($matched)) {
-      $text = $field = $this->_GetValue();
+      $text = $field = trim($this->_GetValue());
 
       // 2.3.DEAL WITH FUNCTIONS AND PRODURES
-      $regexOp = '/[a-z0-9]+\([a-z0-9]+?(?:\s*,\s*[a-z0-9]+)*\)/i';
-      if(preg_match($regexOp, $text)) {
+      // $regexOp = '/[a-z0-9]+\([a-z0-9]+?(?:\s*,\s*[a-z0-9]+)*\)/i';
+      if(preg_match('/^\w+\s*\([`\'"\w]*\)$/i', $text)
+        || preg_match('/^\w+\s*\(\s*[`\'"\w]+(\s*,\s*[`\'"\w]+)*\s*\)$/i', $text)
+        ) {
         return $this;
       }
 
-      if(static::$s_table && static::$s_table->fieldExists($text)) {
-        $text = static::$s_table->getField($text);
+      if(static::$s_table && static::$s_table->fieldExists($field)) {
+        $field = static::$s_table->getField($field);
+        $this->_SetValue(NJMisc::formatFieldName($field));
       }
-      $this->_SetValue(NJMisc::formatFieldName($text));
       return $this;
     }
 
@@ -296,7 +298,11 @@ class NJCondition extends NJExpr{
     return $ret;
   }
 
-  // supported %s, %d, %f, %l
+  // supported %s, %d, %f, %l, %Q
+  // %s: string
+  // %d, %l: integer, long integer
+  // %f: float
+  // %Q: field name
   protected function _parseWithParameters(&$args) {
     parent::parse($args);
 
@@ -342,6 +348,7 @@ class NJCondition extends NJExpr{
         // A VALUE A Field
         else {
           $rOp = NJMisc::formatValue($args[2], $this);
+          $op = NJMisc::formatOperator($op, $rOp);
         }
 
         // fields

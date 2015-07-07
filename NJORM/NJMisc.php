@@ -117,7 +117,7 @@ public static function formatOperator($op, $val) {
   is_array($val) && empty($val) && $val = null;
 
   // IN IS
-  if(in_array($op, array('=','=='))){
+  if(in_array($op, array('=','==', 'IN', 'IS'))){
     if(is_array($val) || ($val instanceof NJExprInterface)){
       $op = 'IN';
     }
@@ -127,7 +127,7 @@ public static function formatOperator($op, $val) {
   }
 
   // NOT IN / IS NOT
-  elseif(in_array($op, array('!=','<>'))){
+  elseif(in_array($op, array('!=','<>', 'NOT IN', 'IS NOT'))){
     if(is_array($val) || ($val instanceof NJExprInterface)){
       $op = 'NOT IN';
     }

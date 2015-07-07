@@ -3,7 +3,7 @@
  * @Author: Amin by
  * @Date:   2014-12-15 10:22:32
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-05-18 20:39:20
+ * @Last Modified time: 2015-07-07 18:26:08
  */
 namespace NJORM;
 
@@ -27,8 +27,6 @@ class NJDb {
         $stmt = NJORM::inst()->prepare($sql);
 
         if(!$stmt->execute($params)) {
-          echo $stmt->queryString.PHP_EOL;
-          echo $stmt->errorCode().PHP_EOL;
           print_r($stmt->errorInfo());
           throw new \Exception("bindParam Error");
         }

@@ -3,9 +3,11 @@
  * @Author: byamin
  * @Date:   2015-02-17 19:56:26
  * @Last Modified by:   AminBy
- * @Last Modified time: 2015-03-30 18:54:17
+ * @Last Modified time: 2015-07-07 18:01:37
  */
 namespace NJORM\NJSql;
+use \NJORM\NJMisc;
+
 class NJExpr implements NJExprInterface{
   protected $_parameters = array();
   protected $_value = null;
@@ -44,6 +46,7 @@ class NJExpr implements NJExprInterface{
   }
 
   public function parse($args) {
+
     // 1.transfer % to @#PCNT#@ and ? to @#QUSTN#@
     $format = preg_replace_callback("/'[^']*[%?][^']*'/", function($matches){
       return str_replace(array('%','?'), array('@#PCNT#@','@#QUSTN#@'), $matches[0]);
@@ -51,11 +54,16 @@ class NJExpr implements NJExprInterface{
 
     // 2.capture printf arguments and their offset
     $format = str_replace('%s', "'%s'", $format);
-    $r = preg_match_all("/%[sdfl]/", $format, $matches, PREG_PATTERN_ORDER|PREG_OFFSET_CAPTURE);
-    $offsetPtf = array();
-    foreach($matches[0] as $_){
-      $offsetPtf[] = $_[1];
-    }
+    $r = preg_match_all("/%([sdflQ])/", $format, $matches, PREG_PATTERN_ORDER|PREG_OFFSET_CAPTURE);
+
+    $offsetPtf = array_map(function($_) {
+      return $_[1];
+    }, $matches[1]);
+
+    $flagPtf = array_map(function($_) {
+      return $_[0];
+    }, $matches[1]);
+
 
     // 3.catpure question marks and their offset
     $offsetQM = array();
@@ -70,37 +78,29 @@ class NJExpr implements NJExprInterface{
       trigger_error('Too few arguments for NJExpr::parse()');
     }
     sort($offsetMarks);
-    $offsetMarks = array_flip($offsetMarks);
-    $args4sprintf = array();
-    foreach($offsetPtf as $idx) {
-      $args4sprintf[] = $args[$offsetMarks[$idx]];
-    }
+
+    $args4sprintf = array_map(function($idx, $k) use($offsetMarks, &$args, $flagPtf) {
+      $pos = array_search($idx, $offsetMarks);
+      $ret = $args[$pos];
+      if( $flagPtf[$k] == 'Q'
+        && static::$s_table
+        && static::$s_table->fieldExists( $ret ) ) {
+
+        $ret = NJMisc::formatFieldName(
+          static::$s_table->getField( $ret )
+        );
+        return $args[$pos] = $ret;
+      }
+      return $ret;
+    }, $offsetPtf, array_keys($offsetPtf));
+    $format = str_replace('%Q', '%s', $format);
+
 
     // 5.get parameters and condition statement
     $this->_SetParameters(array_diff($args, $args4sprintf));
     array_unshift($args4sprintf, $format);
     $this->_SetValue(str_replace(array('@#PCNT#@','@#QUSTN#@'), array('%','?'), call_user_func_array('sprintf', $args4sprintf)));
 
-    return $this;
-  }
-
-  public function addParameters() {
-    if(empty($this->_parameters)){
-      $this->_parameters = array();
-    }
-    elseif(!is_array($this->_parameters)) {
-      $this->_parameters = array($this->_parameters);
-    }
-    foreach(func_get_args() as $arg) {
-      if(is_array($arg)) {
-        foreach($arg as $sarg) {
-          $this->_parameters[] = $sarg;
-        }
-      }
-      else {
-        $this->_parameters[] = $arg;
-      }
-    }
     return $this;
   }
 
@@ -133,6 +133,18 @@ class NJExpr implements NJExprInterface{
     if(func_num_args() > 0) {
       return call_user_func_array(array($this, 'addParameters'), func_get_args());
     }
+    return $this;
+  }
+
+  protected function addParameters() {
+    if(empty($this->_parameters)) {
+      $this->_parameters = array();
+    }
+
+    $args = func_get_args();
+    array_unshift($args, $this->_parameters);
+    $this->_parameters = call_user_func_array('array_merge', $args);
+
     return $this;
   }
 
